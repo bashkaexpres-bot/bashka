@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bashka Express - Driver App</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#232840;
+  --border:#2a3050;--accent:#f0b429;--green:#22c55e;--red:#ef4444;
+  --blue:#3b82f6;--muted:#6b7499;--text:#e8ecf8;--text2:#a0aac8;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+html,body{height:100%;background:var(--bg)}
+.app{font-family:var(--font-body);background:var(--bg);color:var(--text);max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+.header{background:var(--surface);border-bottom:2px solid var(--accent);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:18px;color:#000;letter-spacing:-1px}
+.header-title{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:1px;text-transform:uppercase;line-height:1}
+.header-sub{font-size:10px;color:var(--muted);font-family:var(--font-mono);letter-spacing:1px}
+.pulse{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.login-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:radial-gradient(ellipse at 30% 20%,rgba(240,180,41,0.08) 0%,transparent 60%),var(--bg);gap:32px}
+.login-logo{width:80px;height:80px;background:var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:38px;color:#000;letter-spacing:-2px;box-shadow:0 0 40px rgba(240,180,41,0.3)}
+.login-title{font-family:var(--font-display);font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;line-height:1;text-align:center}
+.login-subtitle{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:6px;text-transform:uppercase;text-align:center}
+.login-form{width:100%;display:flex;flex-direction:column;gap:14px}
+.input-group{display:flex;flex-direction:column;gap:6px}
+.input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.input-field{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--font-body);font-size:15px;outline:none;transition:border-color 0.2s;width:100%}
+.input-field:focus{border-color:var(--accent)}
+.btn-primary{background:var(--accent);color:#000;border:none;border-radius:8px;padding:14px;font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;width:100%}
+.content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:80px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:var(--surface);border-top:1.5px solid var(--border);display:grid;grid-template-columns:repeat(6,1fr);padding:8px 4px 12px;z-index:50}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 2px;border-radius:8px;transition:all 0.15s;font-family:var(--font-mono);font-size:9px;letter-spacing:0.5px}
+.nav-btn.active{color:var(--accent)}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.card-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.card-body{padding:14px}
+.map-container{background:var(--surface2);border-radius:12px;overflow:hidden;border:1.5px solid var(--border);position:relative;height:260px}
+.map-visual{width:100%;height:100%;background:linear-gradient(rgba(30,40,70,0.9),rgba(20,28,55,0.95)),repeating-linear-gradient(0deg,transparent,transparent 30px,rgba(59,130,246,0.05) 30px,rgba(59,130,246,0.05) 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,rgba(59,130,246,0.05) 30px,rgba(59,130,246,0.05) 31px);display:flex;align-items:center;justify-content:center;position:relative}
+.map-pin{position:absolute;width:44px;height:44px;background:var(--accent);border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(240,180,41,0.5);animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:rotate(-45deg) translateY(0)}50%{transform:rotate(-45deg) translateY(-4px)}}
+.map-pin-inner{transform:rotate(45deg);font-size:18px}
+.map-range{position:absolute;width:120px;height:120px;border:2px dashed rgba(240,180,41,0.25);border-radius:50%;animation:expand 3s ease-out infinite}
+@keyframes expand{0%{transform:scale(0.7);opacity:0.6}100%{transform:scale(1.2);opacity:0}}
+.map-overlay{position:absolute;top:10px;left:10px;background:rgba(13,15,20,0.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--green);display:flex;flex-direction:column;gap:3px}
+.map-overlay span{color:var(--text2);font-size:10px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-box{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-val{font-family:var(--font-display);font-size:26px;font-weight:900;line-height:1;color:var(--accent)}
+.stat-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.tag{font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:1px}
+.tag-assigned{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}
+.tag-transit{background:rgba(240,180,41,0.15);color:var(--accent);border:1px solid rgba(240,180,41,0.3)}
+.tag-delivered{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+.tag-pending{background:rgba(107,116,153,0.15);color:var(--muted);border:1px solid rgba(107,116,153,0.3)}
+.tag-urgent{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+.job-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.job-card:hover{border-color:var(--accent)}
+.job-id{font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:500}
+.job-customer{font-family:var(--font-display);font-size:17px;font-weight:700;line-height:1.1}
+.job-address{font-size:13px;color:var(--text2)}
+.job-meta{display:flex;gap:12px;font-family:var(--font-mono);font-size:11px;color:var(--muted);padding-top:6px;border-top:1px solid var(--border)}
+.btn{border-radius:7px;padding:9px 14px;font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.15s}
+.btn-accent{background:var(--accent);color:#000}
+.btn-outline{background:transparent;color:var(--text2);border:1.5px solid var(--border)}
+.btn-success{background:rgba(34,197,94,0.15);color:var(--green);border:1.5px solid rgba(34,197,94,0.3)}
+.btn-danger{background:rgba(239,68,68,0.15);color:#f87171;border:1.5px solid rgba(239,68,68,0.3)}
+.clock-widget{background:linear-gradient(135deg,var(--surface2),var(--surface));border:1.5px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.clock-time{font-family:var(--font-mono);font-size:42px;font-weight:500;letter-spacing:2px;color:var(--accent);line-height:1;margin-bottom:4px}
+.clock-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.clock-status{margin-top:14px;padding:8px 16px;border-radius:6px;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;display:inline-block}
+.clocked-in{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+.clocked-out{background:rgba(107,116,153,0.1);color:var(--muted);border:1px solid rgba(107,116,153,0.2)}
+.log-table{width:100%;border-collapse:collapse}
+.log-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+.log-table td{font-size:11px;padding:10px;border-bottom:1px solid rgba(42,48,80,0.5);color:var(--text2);font-family:var(--font-mono)}
+.log-table tr:last-child td{border-bottom:none}
+.chat-messages{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;padding:4px 0}
+.msg{display:flex;flex-direction:column;gap:2px;max-width:80%}
+.msg.mine{align-self:flex-end;align-items:flex-end}
+.msg.theirs{align-self:flex-start;align-items:flex-start}
+.msg-sender{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+.msg-bubble{padding:10px 13px;border-radius:12px;font-size:14px;line-height:1.4}
+.msg.mine .msg-bubble{background:var(--accent);color:#000;border-radius:12px 12px 0 12px}
+.msg.theirs .msg-bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:12px 12px 12px 0}
+.msg-time{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+.chat-input-row{display:flex;gap:8px;margin-top:12px}
+.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none}
+.chat-input:focus{border-color:var(--accent)}
+.btn-icon{width:42px;height:42px;background:var(--accent);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#000;flex-shrink:0;font-size:18px}
+.check-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(42,48,80,0.5);cursor:pointer}
+.check-item:last-child{border-bottom:none}
+.check-box{width:22px;height:22px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.check-box.done{background:var(--green);border-color:var(--green)}
+.check-label{font-size:14px;flex:1}
+.check-label.done{color:var(--muted);text-decoration:line-through}
+.pod-upload{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.pod-upload:hover{border-color:var(--accent)}
+.sig-pad{border:2px solid var(--border);border-radius:10px;background:var(--surface2);height:100px;display:flex;align-items:center;justify-content:center;cursor:crosshair;font-family:var(--font-mono);font-size:12px;color:var(--muted);gap:6px}
+.sig-pad.signed{border-color:var(--green)}
+.alert-banner{background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;color:#fca5a5;font-size:13px}
+.alert-banner.info{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.25);color:#93c5fd}
+.section-title{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.geo-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.geo-item:last-child{border-bottom:none}
+.geo-icon{width:36px;height:36px;border-radius:8px;background:rgba(59,130,246,0.1);border:1.5px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;color:#60a5fa;flex-shrink:0;font-size:16px}
+.geo-name{font-weight:600;font-size:14px}
+.geo-addr{font-size:12px;color:var(--muted)}
+.geo-radius{font-family:var(--font-mono);font-size:11px;color:var(--accent)}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.2s}
+.toggle.on::after{transform:translateX(16px)}
+.notif-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;border:1.5px solid var(--surface)}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.3s}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-screen">
+      <div class="login-logo">BE</div>
+      <div>
+        <div class="login-title">Bashka Express</div>
+        <div class="login-subtitle">Driver Portal - v2.1</div>
+      </div>
+      <div class="login-form">
+        <div class="input-group"><div class="input-label">Driver ID / Email</div><input class="input-field" value="driver@bashkaexpress.com" type="email"></div>
+        <div class="input-group"><div class="input-label">Password</div><input class="input-field" type="password" value="password"></div>
+        <button class="btn-primary" onclick="showApp()">Sign In</button>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center">Bashka Express LLC - Eagan, MN 55121<br>Dispatch: (651) 555-0192</div>
+    </div>
+  </div>
+  <!-- MAIN APP -->
+  <div id="main-app" style="display:none;flex-direction:column;flex:1">
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="header-logo">BE</div>
+        <div><div class="header-title">Bashka Express</div><div class="header-sub">DRIVER - EAGAN, MN</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--green)"><div class="pulse"></div>Live</div>
+        <button onclick="logout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px">&#x2192;</button>
+      </div>
+    </div>
+    <div class="content" id="screen-content"></div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" onclick="showTab('map',this)" id="nav-map">&#x1F5FA;<br>Map</button>
+      <button class="nav-btn" onclick="showTab('jobs',this)" id="nav-jobs">&#x1F4CB;<br>Jobs</button>
+      <button class="nav-btn" onclick="showTab('clock',this)" id="nav-clock">&#x23F0;<br>Clock</button>
+      <button class="nav-btn" onclick="showTab('pod',this)" id="nav-pod">&#x1F4F7;<br>POD</button>
+      <button class="nav-btn" onclick="showTab('check',this)" id="nav-check">&#x1F527;<br>Check</button>
+      <button class="nav-btn" onclick="showTab('chat',this)" id="nav-chat" style="position:relative">&#x1F4AC;<br>Chat<div class="notif-badge"></div></button>
+    </div>
+  </div>
+</div>
+<script>
+const JOBS=[{id:'JOB-4421',customer:'Nordic Wholesale Co.',address:'1450 Energy Lane, Eagan MN',pickup:'Bashka HQ',time:'08:00 AM',weight:'340 lbs',status:'assigned',priority:'high',items:12},{id:'JOB-4422',customer:'TwinCity Parts Depot',address:'7800 Hwy 13 W, Savage MN',pickup:'Bashka HQ',time:'10:30 AM',weight:'520 lbs',status:'in_transit',priority:'normal',items:8},{id:'JOB-4423',customer:'Midwest Grocery Chain',address:'2300 County Rd B2, Roseville MN',pickup:'Roseville Hub',time:'01:00 PM',weight:'890 lbs',status:'delivered',priority:'normal',items:31},{id:'JOB-4424',customer:'Prairie Medical Supply',address:'555 Wentworth Ave, West St. Paul',pickup:'Bashka HQ',time:'03:00 PM',weight:'120 lbs',status:'pending',priority:'urgent',items:4}];
+const GEOFENCES=[{id:1,name:'Bashka HQ',address:'3299 Valley Ridge Dr, Eagan',radius:'200m',active:true},{id:2,name:'Roseville Hub',address:'2300 County Rd B2, Roseville',radius:'150m',active:true},{id:3,name:'Savage Depot',address:'7800 Hwy 13 W, Savage',radius:'100m',active:false}];
+const MESSAGES=[{id:1,from:'Dispatch',text:'Good morning! Route 4 is clear, proceed as planned.',time:'07:42 AM',mine:false},{id:2,from:'Me',text:'Copy that. Heading out now.',time:'07:45 AM',mine:true},{id:3,from:'Dispatch',text:'JOB-4424 has been flagged URGENT - medical equipment. Handle with care.',time:'08:15 AM',mine:false},{id:4,from:'Dispatch',text:'FYI: construction on Hwy 52. Take alternate via Cedar Ave.',time:'09:00 AM',mine:false}];
+const CHECKLIST=[{id:1,label:'Tires & Pressure',checked:true},{id:2,label:'Lights & Signals',checked:true},{id:3,label:'Brakes',checked:true},{id:4,label:'Mirrors',checked:false},{id:5,label:'Fuel Level',checked:false},{id:6,label:'Fire Extinguisher',checked:false},{id:7,label:'Load Security',checked:false},{id:8,label:'Dashboard Warnings',checked:true}];
+let currentTab='map';
+let clockedIn=false;
+let clockLogs=[{type:'out',time:'Yesterday 05:31 PM',loc:'Eagan HQ'},{type:'in',time:'Today 06:58 AM',loc:'Eagan HQ'}];
+let messages=[...MESSAGES];
+let checklist=[...CHECKLIST];
+let selectedJob=null;
+let signed=false;
+let photo=false;
+let podSubmitted=false;
+let issueSubmitted=false;
+let geoToggles=GEOFENCES.map(g=>g.active);
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='flex';
+  showTab('map',document.getElementById('nav-map'));
+}
+function logout(){
+  document.getElementById('login-screen').style.display='block';
+  document.getElementById('main-app').style.display='none';
+}
+function showTab(tab,btn){
+  currentTab=tab;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderScreen();
+}
+
+function renderScreen(){
+  const c=document.getElementById('screen-content');
+  if(currentTab==='map')c.innerHTML=mapScreen();
+  else if(currentTab==='jobs')c.innerHTML=jobsScreen();
+  else if(currentTab==='clock')c.innerHTML=clockScreen();
+  else if(currentTab==='pod')c.innerHTML=podScreen();
+  else if(currentTab==='check')c.innerHTML=checkScreen();
+  else if(currentTab==='chat')c.innerHTML=chatScreen();
+  attachHandlers();
+}
+
+function mapScreen(){
+  return '<div class="alert-banner info" style="margin-bottom:0">&#x1F4F6; Live tracking active - Broadcasting to Dispatch</div>'+
+  '<div class="map-container"><div class="map-visual"><div class="map-range"></div><div class="map-pin"><div class="map-pin-inner">&#x1F69B;</div></div><div class="map-overlay"><div style="color:#fff;font-weight:600">LIVE GPS</div><span>44.8048N, 93.1669W</span><span>Eagan, MN - 38 mph</span></div></div></div>'+
+  '<div class="stats-row"><div class="stat-box"><div class="stat-val">38</div><div class="stat-label">MPH</div></div><div class="stat-box"><div class="stat-val">4</div><div class="stat-label">Jobs</div></div><div class="stat-box"><div class="stat-val" style="color:var(--green)">ON</div><div class="stat-label">Tracking</div></div></div>'+
+  '<div class="card"><div class="card-header"><div class="card-title">&#x1F6E1; Geofences</div><span class="tag tag-assigned">'+geoToggles.filter(Boolean).length+' Active</span></div><div class="card-body" style="padding:0 14px">'+
+  GEOFENCES.map((g,i)=>'<div class="geo-item"><div class="geo-icon">&#x1F4CD;</div><div style="flex:1"><div class="geo-name">'+g.name+'</div><div class="geo-addr">'+g.address+'</div><div class="geo-radius">Radius: '+g.radius+'</div></div><button class="toggle '+(geoToggles[i]?'on':'')+'" onclick="toggleGeo('+i+')"></button></div>').join('')+
+  '</div></div>';
+}
+
+function jobsScreen(){
+  if(selectedJob!==null){
+    const j=JOBS[selectedJob];
+    const nextStatus={assigned:'in_transit',in_transit:'delivered'};
+    const nextLabel={assigned:'Pick Up',in_transit:'Mark Delivered'};
+    return '<button class="btn btn-outline" onclick="selectedJob=null;renderScreen()" style="align-self:flex-start;margin-bottom:4px">Back to Jobs</button>'+
+    '<div class="card"><div class="card-header"><div><div class="job-id">'+j.id+'</div><div class="job-customer">'+j.customer+'</div></div><span class="tag tag-'+(j.status==='in_transit'?'transit':j.status)+'">'+j.status.replace('_',' ')+'</span></div>'+
+    '<div class="card-body" style="display:flex;flex-direction:column;gap:12px">'+
+    '<div><div class="section-title">Pickup</div><div style="font-size:13px;color:var(--text2)">&#x1F4CD; '+j.pickup+'</div></div>'+
+    '<div><div class="section-title">Delivery</div><div style="font-size:13px;color:var(--text2)">&#x1F4CD; '+j.address+'</div></div>'+
+    '<div style="display:flex;gap:10px"><div class="stat-box" style="flex:1"><div class="stat-val" style="font-size:18px">'+j.time+'</div><div class="stat-label">Scheduled</div></div><div class="stat-box" style="flex:1"><div class="stat-val" style="font-size:18px">'+j.items+'</div><div class="stat-label">Items</div></div><div class="stat-box" style="flex:1"><div class="stat-val" style="font-size:18px">'+j.weight.replace(' lbs','')+'</div><div class="stat-label">Lbs</div></div></div>'+
+    (nextStatus[j.status]?'<button class="btn btn-accent" onclick="advanceJob('+selectedJob+')">'+nextLabel[j.status]+'</button>':'')+
+    (j.status==='delivered'?'<div class="alert-banner" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.25);color:var(--green)">&#x2714; Job completed successfully</div>':'')+
+    '</div></div>';
+  }
+  const counts={assigned:JOBS.filter(j=>j.status==='assigned').length,in_transit:JOBS.filter(j=>j.status==='in_transit').length,delivered:JOBS.filter(j=>j.status==='delivered').length};
+  return '<div class="stats-row"><div class="stat-box"><div class="stat-val" style="color:var(--blue)">'+counts.assigned+'</div><div class="stat-label">Assigned</div></div><div class="stat-box"><div class="stat-val" style="color:var(--accent)">'+counts.in_transit+'</div><div class="stat-label">In Transit</div></div><div class="stat-box"><div class="stat-val" style="color:var(--green)">'+counts.delivered+'</div><div class="stat-label">Delivered</div></div></div>'+
+  JOBS.map((j,i)=>'<div class="job-card" onclick="selectedJob='+i+';renderScreen()" '+(j.priority==='urgent'?'style="border-left-color:var(--red)"':'')+'><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="job-id">'+j.id+'</div><div class="job-customer">'+j.customer+'</div></div><span class="tag tag-'+(j.status==='in_transit'?'transit':j.status)+'">'+j.status.replace('_',' ')+'</span></div><div class="job-address">'+j.address+'</div><div class="job-meta"><span>&#x23F0; '+j.time+'</span><span>&#x1F4E6; '+j.items+' items</span><span>'+j.weight+'</span></div></div>').join('');
+}
+
+function clockScreen(){
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const now=new Date();
+  const h=now.getHours(),m=now.getMinutes(),s=now.getSeconds(),ampm=h>=12?'PM':'AM',h12=h%12||12;
+  const fmt=n=>String(n).padStart(2,'0');
+  const timeStr=fmt(h12)+':'+fmt(m)+':'+fmt(s)+' '+ampm;
+  const dateStr=days[now.getDay()]+' - '+months[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+  return '<div class="clock-widget"><div class="clock-time">'+timeStr+'</div><div class="clock-date">'+dateStr+'</div><div class="clock-status '+(clockedIn?'clocked-in':'clocked-out')+'">'+(clockedIn?'Clocked In':'Clocked Out')+'</div></div>'+
+  '<div class="alert-banner info">&#x1F6E1; Location verified - Inside Bashka HQ geofence</div>'+
+  '<button class="btn '+(clockedIn?'btn-danger':'btn-accent')+'" style="padding:16px;font-size:16px;letter-spacing:2px;width:100%" onclick="toggleClock()">'+(clockedIn?'Clock Out':'Clock In')+'</button>'+
+  '<div class="card"><div class="card-header"><div class="card-title">&#x23F0; Shift Log</div></div>'+
+  '<table class="log-table"><thead><tr><th>Type</th><th>Time</th><th>Location</th></tr></thead><tbody>'+
+  clockLogs.map(l=>'<tr><td><span class="tag '+(l.type==='in'?'tag-delivered':'tag-pending')+'">'+l.type.toUpperCase()+'</span></td><td>'+l.time+'</td><td>'+l.loc+'</td></tr>').join('')+
+  '</tbody></table></div>';
+}
+
+function podScreen(){
+  if(podSubmitted)return'<div class="card"><div class="card-body"><div class="alert-banner" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.25);color:var(--green)">&#x2714; POD submitted - Geo-tagged and timestamped</div></div></div>';
+  return '<div class="card"><div class="card-header"><div class="card-title">&#x1F4F7; Proof of Delivery</div><span class="tag tag-transit">JOB-4422</span></div><div class="card-body" style="display:flex;flex-direction:column;gap:14px">'+
+  '<div><div class="section-title">Photo</div><div class="pod-upload" onclick="photo=true;renderScreen()" style="border-color:'+(photo?'var(--green)':'var(--border)')+'"><div style="font-size:28px">'+(photo?'&#x2705;':'&#x1F4F7;')+'</div><div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:'+(photo?'var(--green)':'var(--text2)+')+'">'+(photo?'Photo Captured':'Tap to Capture Photo')+'</div><div style="font-size:12px;color:var(--muted)">Geo-tagged - Timestamped</div></div></div>'+
+  '<div><div class="section-title">Signature</div><div class="sig-pad '+(signed?'signed':'')+'" onclick="signed=true;renderScreen()">'+(signed?'<span style="color:var(--green)">&#x2714; Signed</span>':'&#x270D; Sign here')+'</div></div>'+
+  '<div><div class="section-title">Notes</div><textarea class="input-field" rows="3" placeholder="Add notes or exceptions..." style="resize:none"></textarea></div>'+
+  '<button class="btn '+(photo&&signed?'btn-accent':'btn-outline')+'" style="opacity:'+(photo&&signed?1:0.5)+'" onclick="if(photo&&signed){podSubmitted=true;renderScreen()}">Submit POD</button>'+
+  '</div></div>';
+}
+
+function checkScreen(){
+  const done=checklist.filter(i=>i.checked).length;
+  return '<div class="card"><div class="card-header"><div class="card-title">&#x1F527; Pre-Trip Inspection</div><span class="tag tag-assigned">'+done+'/'+checklist.length+'</span></div><div class="card-body">'+
+  '<div style="height:6px;background:var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden"><div style="height:100%;width:'+(done/checklist.length*100)+'%;background:'+(done===checklist.length?'var(--green)':'var(--accent)')+';border-radius:3px;transition:width 0.3s"></div></div>'+
+  checklist.map((item,i)=>'<div class="check-item" onclick="toggleCheck('+i+')"><div class="check-box '+(item.checked?'done':'')+'">'+( item.checked?'&#x2714;':'')+' </div><div class="check-label '+(item.checked?'done':'')+'">'+item.label+'</div></div>').join('')+
+  '</div></div>'+
+  '<div class="card"><div class="card-header"><div class="card-title">&#x26A0; Report Issue</div></div><div class="card-body">'+
+  (issueSubmitted?'<div class="alert-banner info">&#x2714; Issue reported to dispatch.</div>':
+  '<textarea class="input-field" rows="3" placeholder="Describe any mechanical issues..." style="resize:none" id="issue-box"></textarea><button class="btn btn-accent" style="margin-top:10px;width:100%" onclick="submitIssue()">Submit Report</button>')+
+  '</div></div>';
+}
+
+function chatScreen(){
+  return '<div class="card"><div class="card-header"><div class="card-title">&#x1F4AC; Dispatch Chat</div><div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--green)"><div class="pulse"></div>Online</div></div><div class="card-body">'+
+  '<div class="chat-messages" id="chat-msgs">'+
+  messages.map(m=>'<div class="msg '+(m.mine?'mine':'theirs')+'">'+(!m.mine?'<div class="msg-sender">'+m.from+'</div>':'')+
+  '<div class="msg-bubble">'+m.text+'</div><div class="msg-time">'+m.time+'</div></div>').join('')+
+  '</div><div class="chat-input-row"><input class="chat-input" id="chat-input" placeholder="Message dispatch..." onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn-icon" onclick="sendMsg()">&#x27A4;</button></div></div></div>'+
+  '<div class="card"><div class="card-header"><div class="card-title">&#x1F514; Recent Alerts</div></div><div class="card-body" style="display:flex;flex-direction:column;gap:8px">'+
+  '<div class="alert-banner">&#x26A0; JOB-4424 marked URGENT - medical equipment</div>'+
+  '<div class="alert-banner info">&#x1F6A7; Construction on Hwy 52 - use Cedar Ave</div>'+
+  '</div></div>';
+}
+
+function attachHandlers(){
+  const msgs=document.getElementById('chat-msgs');
+  if(msgs)msgs.scrollTop=msgs.scrollHeight;
+  if(currentTab==='clock'){
+    setInterval(()=>{
+      const el=document.querySelector('.clock-time');
+      if(!el)return;
+      const now=new Date();
+      const h=now.getHours(),m=now.getMinutes(),s=now.getSeconds(),ampm=h>=12?'PM':'AM',h12=h%12||12;
+      const fmt=n=>String(n).padStart(2,'0');
+      el.textContent=fmt(h12)+':'+fmt(m)+':'+fmt(s)+' '+ampm;
+    },1000);
+  }
+}
+window.toggleGeo=(i)=>{geoToggles[i]=!geoToggles[i];renderScreen()};
+window.advanceJob=(i)=>{const next={assigned:'in_transit',in_transit:'delivered'};if(next[JOBS[i].status])JOBS[i].status=next[JOBS[i].status];renderScreen()};
+window.toggleClock=()=>{
+  const now=new Date();
+  const t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  clockedIn=!clockedIn;
+  clockLogs.unshift({type:clockedIn?'in':'out',time:'Today '+t,loc:'Eagan HQ'});
+  renderScreen();
+};
+window.toggleCheck=(i)=>{checklist[i].checked=!checklist[i].checked;renderScreen()};
+window.submitIssue=()=>{const box=document.getElementById('issue-box');if(box&&box.value){issueSubmitted=true;renderScreen()}};
+window.sendMsg=()=>{
+  const inp=document.getElementById('chat-input');
+  if(!inp||!inp.value.trim())return;
+  const now=new Date();
+  const t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  messages.push({id:Date.now(),from:'Me',text:inp.value,time:t,mine:true});
+  inp.value='';
+  renderScreen();
+  setTimeout(()=>{
+    messages.push({id:Date.now()+1,from:'Dispatch',text:'Got it, thanks for the update.',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),mine:false});
+    renderScreen();
+  },1500);
+};
+</script>
+</body>
+</html>
