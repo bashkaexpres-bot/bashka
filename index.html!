@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bashka Express — Logistics Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --gold:#E8A020;--gold-glow:rgba(232,160,32,0.15);--orange:#D95F2A;
+  --red:#E53535;--green:#1DB954;--blue:#2D7DD2;--teal:#0EA5A0;
+  --bg:#080b10;--bg2:#0d1117;--surface:#111620;--surface2:#171d2b;
+  --surface3:#1e2638;--border:#232d42;--border2:#2d3a55;
+  --text:#E8EDF8;--text2:#8B96B8;--text3:#5A6485;--muted:#3D4A6A;
+  --display:'Syne',sans-serif;--body:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.sys-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(8,11,16,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;height:52px}
+.sys-logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:17px;margin-right:28px}
+.sys-logo-badge{width:30px;height:30px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000}
+.sys-tabs{display:flex;gap:0;flex:1}
+.sys-tab{padding:0 18px;height:52px;display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.sys-tab:hover{color:var(--text2)}
+.sys-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sys-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.live-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--green);background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);padding:4px 10px;border-radius:20px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.screen{display:none;padding-top:52px}
+.screen.active{display:block}
+.hero{min-height:100vh;position:relative;overflow:hidden;display:flex;align-items:center;background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(232,160,32,0.07) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 10% 80%,rgba(217,95,42,0.05) 0%,transparent 50%),var(--bg)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 30%,transparent 100%);opacity:0.3}
+.hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:80px 40px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--gold)}
+.hero-h1{font-family:var(--display);font-size:clamp(40px,5vw,68px);font-weight:800;line-height:1.0;letter-spacing:-2px;margin-bottom:24px}
+.hero-h1 em{color:var(--gold);font-style:normal}
+.hero-sub{font-size:16px;color:var(--text2);line-height:1.65;max-width:420px;margin-bottom:36px}
+.hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
+.btn-gold{background:var(--gold);color:#000;border:none;padding:14px 28px;border-radius:8px;font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s}
+.btn-gold:hover{background:#d4911c;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border2);padding:13px 28px;border-radius:8px;font-family:var(--display);font-weight:600;font-size:15px;cursor:pointer;transition:all 0.2s}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:40px}
+.hero-stat{background:var(--surface);padding:20px;text-align:center}
+.hero-stat-val{font-family:var(--display);font-size:30px;font-weight:800;color:var(--gold);line-height:1}
+.hero-stat-label{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);letter-spacing:1px}
+.fleet-visual{position:relative;height:400px}
+.fleet-card{position:absolute;background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden}
+.fleet-card-main{width:270px;height:190px;top:40px;right:0;background:linear-gradient(135deg,var(--surface2),var(--surface));padding:18px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.fleet-card-sm1{width:195px;height:125px;bottom:60px;right:40px;padding:14px;background:var(--surface2)}
+.fleet-card-sm2{width:175px;height:105px;top:10px;right:230px;padding:12px;background:var(--surface3)}
+.fleet-card-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.fleet-truck-icon{font-size:44px;text-align:center}
+.route-line{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--border2) 0,var(--border2) 4px,transparent 4px,transparent 8px)}
+.mini-bar{height:4px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:2px;background:var(--gold);width:82%}
+.marquee-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);overflow:hidden;padding:14px 0}
+.marquee-track{display:flex;gap:40px;white-space:nowrap;animation:marquee 28s linear infinite}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.marquee-item{font-family:var(--mono);font-size:12px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.marquee-item span{color:var(--gold)}
+.section{max-width:1100px;margin:0 auto;padding:80px 40px}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+.section-h2{font-family:var(--display);font-size:clamp(28px,4vw,46px);font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:16px}
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:48px}
+.service-card{background:var(--surface);padding:26px;transition:background 0.2s}
+.service-card:hover{background:var(--surface2)}
+.service-icon{width:42px;height:42px;border-radius:10px;background:var(--gold-glow);border:1px solid rgba(232,160,32,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+.service-title{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:8px}
+.service-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:44px}
+.why-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;gap:16px}
+.why-num{font-family:var(--display);font-size:34px;font-weight:800;color:var(--muted);line-height:1;flex-shrink:0;width:38px}
+.why-title{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:6px}
+.why-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.contact-section{background:linear-gradient(135deg,var(--surface) 0%,var(--bg2) 100%);border-top:1px solid var(--border)}
+.contact-inner{max-width:1100px;margin:0 auto;padding:80px 40px;display:grid;grid-template-columns:1fr 1fr;gap:60px}
+.contact-info{display:flex;flex-direction:column;gap:22px}
+.contact-item{display:flex;gap:14px;align-items:flex-start}
+.contact-icon{width:40px;height:40px;background:var(--gold-glow);border:1px solid rgba(232,160,32,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.contact-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:3px}
+.contact-val{font-size:14px;font-weight:500}
+.contact-form{display:flex;flex-direction:column;gap:13px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.form-input{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--body);font-size:14px;outline:none;transition:border-color 0.2s;width:100%}
+.form-input:focus{border-color:var(--gold)}
+.form-textarea{resize:vertical;min-height:95px}
+.footer{background:var(--bg2);border-top:1px solid var(--border);padding:36px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:1px}
+.footer-logo{font-family:var(--display);font-size:19px;font-weight:800;color:var(--text2);margin-bottom:8px}
+.dash{display:flex;height:calc(100vh - 52px)}
+.dash-sidebar{width:216px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:20px 0}
+.dash-sidebar-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);font-family:var(--display);font-weight:800;font-size:14px;color:var(--text2);display:flex;align-items:center;gap:8px}
+.sidebar-section-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:16px 18px 6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--text3);cursor:pointer;font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all 0.15s;background:none;border-right:none;border-top:none;border-bottom:none;width:100%;text-align:left}
+.sidebar-item:hover{color:var(--text2);background:rgba(255,255,255,0.02)}
+.sidebar-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-glow)}
+.sidebar-badge{margin-left:auto;background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:10px}
+.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+.dash-main{flex:1;overflow-y:auto;background:var(--bg)}
+.dash-topbar{position:sticky;top:0;z-index:10;background:rgba(8,11,16,0.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:13px 26px;display:flex;align-items:center;justify-content:space-between}
+.dash-topbar-title{font-family:var(--display);font-size:19px;font-weight:800}
+.dash-topbar-sub{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.dash-content{padding:22px 26px;display:flex;flex-direction:column;gap:22px}
+.dash-section{display:none}
+.dash-section.active{display:flex;flex-direction:column;gap:22px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.gold::before{background:var(--gold)}
+.kpi-card.green::before{background:var(--green)}
+.kpi-card.blue::before{background:var(--blue)}
+.kpi-card.orange::before{background:var(--orange)}
+.kpi-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.kpi-val{font-family:var(--display);font-size:30px;font-weight:800;line-height:1}
+.kpi-delta{font-size:12px}
+.kpi-delta.up{color:var(--green)}
+.kpi-delta.dn{color:var(--red)}
+.kpi-icon{position:absolute;top:14px;right:14px;font-size:20px;opacity:0.12}
+.dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dash-grid-3{display:grid;grid-template-columns:1.8fr 1fr;gap:18px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:var(--display);font-size:14px;font-weight:700}
+.panel-body{padding:16px 18px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg2);font-weight:400}
+.data-table td{padding:11px 14px;border-bottom:1px solid rgba(35,45,66,0.5);color:var(--text2);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,0.01)}
+.td-primary{color:var(--text)!important;font-weight:500}
+.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.tag-gold{background:rgba(232,160,32,0.12);color:var(--gold);border:1px solid rgba(232,160,32,0.25)}
+.tag-green{background:rgba(29,185,84,0.1);color:var(--green);border:1px solid rgba(29,185,84,0.2)}
+.tag-blue{background:rgba(45,125,210,0.1);color:#5BA3E8;border:1px solid rgba(45,125,210,0.2)}
+.tag-red{background:rgba(229,53,53,0.1);color:#FF7070;border:1px solid rgba(229,53,53,0.2)}
+.tag-muted{background:rgba(90,100,133,0.1);color:var(--text3);border:1px solid var(--border)}
+.tag-orange{background:rgba(217,95,42,0.1);color:#F08060;border:1px solid rgba(217,95,42,0.2)}
+.dispatch-map{height:260px;background:var(--bg2);position:relative;overflow:hidden;background-image:linear-gradient(rgba(35,45,66,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(35,45,66,0.5) 1px,transparent 1px);background-size:24px 24px}
+.map-driver-pin{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)}
+.map-driver-dot{width:14px;height:14px;border-radius:50%;border:2px solid}
+.map-driver-label{font-family:var(--mono);font-size:9px;margin-top:4px;background:rgba(8,11,16,0.85);padding:2px 5px;border-radius:3px;white-space:nowrap;color:var(--text2)}
+.map-hq-marker{position:absolute;bottom:16px;left:16px;background:rgba(8,11,16,0.9);border:1px solid var(--gold);border-radius:7px;padding:7px 11px;font-family:var(--mono);font-size:10px;color:var(--gold)}
+.feed-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(35,45,66,0.4)}
+.feed-item:last-child{border-bottom:none}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.feed-text{font-size:13px;color:var(--text2);line-height:1.4}
+.feed-text strong{color:var(--text);font-weight:600}
+.feed-time{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:96px;padding:0 2px}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;opacity:0.7;min-height:3px}
+.chart-label{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.action-btn{background:var(--gold);color:#000;border:none;padding:8px 15px;border-radius:7px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
+.action-btn-sm{padding:5px 10px;font-size:11px}
+.action-btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border);padding:7px 13px;border-radius:7px;font-family:var(--mono);font-size:11px;cursor:pointer}
+.filter-tabs{display:flex;gap:3px}
+.filter-tab{padding:5px 11px;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer}
+.filter-tab.active{background:var(--gold-glow);color:var(--gold)}
+.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px}
+.driver-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(35,45,66,0.5);cursor:pointer}
+.driver-item:last-child{border-bottom:none}
+.driver-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:13px;font-weight:700;flex-shrink:0}
+.driver-name{font-size:14px;font-weight:500;color:var(--text)}
+.driver-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.driver-status{margin-left:auto}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(35,45,66,0.4);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.notif{position:relative}
+.notif-dot{position:absolute;top:-2px;right:-2px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--surface)}
+</style>
+</head>
+<body>
+<div class="sys-bar">
+  <div class="sys-logo"><div class="sys-logo-badge">BE</div>Bashka Express</div>
+  <div class="sys-tabs">
+    <button class="sys-tab active" onclick="showScreen('site')">🌐 Marketing Site</button>
+    <button class="sys-tab" onclick="showScreen('dash')">⚙️ Dispatch Portal</button>
+  </div>
+  <div class="sys-right"><div class="live-pill"><div class="dot"></div>System Live</div></div>
+</div>
+<div id="screen-site" class="screen active">
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <div>
+        <div class="hero-eyebrow">Minnesota Logistics Leader</div>
+        <h1 class="hero-h1">Moving <em>Minnesota</em> Forward, Every Mile</h1>
+        <p class="hero-sub">Bashka Express LLC delivers dependable freight, last-mile, and regional logistics solutions across Minnesota and the Upper Midwest.</p>
+        <div class="hero-ctas">
+          <button class="btn-gold" onclick="showScreen('dash')">Launch Dispatch Portal</button>
+          <button class="btn-ghost">Request a Quote</button>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-val">2,400+</div><div class="hero-stat-label">Deliveries/Mo</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">98.7%</div><div class="hero-stat-label">On-Time Rate</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">12</div><div class="hero-stat-label">Service Zones</div></div>
+        </div>
+      </div>
+      <div class="fleet-visual">
+        <div class="fleet-card fleet-card-main">
+          <div><div class="fleet-card-label">Active Route</div><div style="font-size:15px;font-weight:700;font-family:var(--display);margin-top:4px">Route 4 - Eagan to Savage</div></div>
+          <div class="fleet-truck-icon">&#x1F69B;</div>
+          <div><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="route-line"></div><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:5px"><span>Eagan HQ</span><span>38 mph</span><span>Savage</span></div></div>
+        </div>
+        <div class="fleet-card fleet-card-sm1"><div class="fleet-card-label">Fleet Status</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span>Active</span><span style="color:var(--green);font-family:var(--mono);font-weight:600">4</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span>Idle</span><span style="color:var(--gold);font-family:var(--mono);font-weight:600">1</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span>Off Duty</span><span style="color:var(--text3);font-family:var(--mono);font-weight:600">1</span></div></div></div>
+        <div class="fleet-card fleet-card-sm2"><div class="fleet-card-label">Today's Jobs</div><div style="font-family:var(--display);font-size:26px;font-weight:800;color:var(--gold);margin-top:4px">18 <span style="font-size:12px;color:var(--text3);font-weight:400">/ 22</span></div><div class="mini-bar"><div class="mini-bar-fill"></div></div></div>
+      </div>
+    </div>
+  </section>
+  <div class="marquee-wrap"><div class="marquee-track" id="marquee"></div></div>
+  <section class="section">
+    <div class="section-label">What We Do</div>
+    <h2 class="section-h2">End-to-End Logistics Built for the Midwest</h2>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-icon">&#x1F69B;</div><div class="service-title">Freight Delivery</div><div class="service-desc">Full-truckload and LTL freight across MN, WI, ND, and SD with real-time GPS tracking.</div></div>
+      <div class="service-card"><div class="service-icon">&#x1F4E6;</div><div class="service-title">Last-Mile Delivery</div><div class="service-desc">Doorstep delivery for e-commerce, medical supply, and retail across the Twin Cities metro.</div></div>
+      <div class="service-card"><div class="service-icon">&#x1F3ED;</div><div class="service-title">Warehouse &amp; Distribution</div><div class="service-desc">Cross-docking, short-term storage, and pallet fulfillment from our Eagan hub.</div></div>
+      <div class="service-card"><div class="service-icon">&#x2744;&#xFE0F;</div><div class="service-title">Temperature-Controlled</div><div class="service-desc">Climate-controlled vehicles for pharmaceutical, food-grade, and sensitive cargo.</div></div>
+      <div class="service-card"><div class="service-icon">&#x26A1;</div><div class="service-title">Same-Day Express</div><div class="service-desc">Urgent and time-critical deliveries across the metro with guaranteed arrival windows.</div></div>
+      <div class="service-card"><div class="service-icon">&#x1F4CA;</div><div class="service-title">Supply Chain Analytics</div><div class="service-desc">Real-time dashboards, delivery reports, and KPI tracking for enterprise partners.</div></div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="section-label">Why Bashka Express</div>
+    <h2 class="section-h2">Logistics You Can Count On</h2>
+    <div class="why-grid">
+      <div class="why-card"><div class="why-num">01</div><div><div class="why-title">Real-Time GPS Tracking</div><div class="why-desc">Every vehicle transmits live location data. Clients and dispatch see exactly where their freight is, always.</div></div></div>
+      <div class="why-card"><div class="why-num">02</div><div><div class="why-title">Geofence Compliance</div><div class="why-desc">Automated clock-ins, arrival triggers, and departure alerts ensure driver accountability and payroll accuracy.</div></div></div>
+      <div class="why-card"><div class="why-num">03</div><div><div class="why-title">Digital Proof of Delivery</div><div class="why-desc">E-signatures, timestamped photos, and geo-tagged PODs eliminate disputes and streamline billing.</div></div></div>
+      <div class="why-card"><div class="why-num">04</div><div><div class="why-title">Veteran MN Team</div><div class="why-desc">Our drivers and dispatchers know Minnesota roads, winters, and logistics challenges inside and out.</div></div></div>
+    </div>
+  </section>
+  <div class="contact-section">
+    <div class="contact-inner">
+      <div>
+        <div class="section-label">Get In Touch</div>
+        <h2 class="section-h2" style="margin-bottom:28px">Ready to Ship? Let's Talk.</h2>
+        <div class="contact-info">
+          <div class="contact-item"><div class="contact-icon">&#x1F4CD;</div><div><div class="contact-label">Headquarters</div><div class="contact-val">3299 Valley Ridge Drive, Eagan, MN 55121</div></div></div>
+          <div class="contact-item"><div class="contact-icon">&#x1F4DE;</div><div><div class="contact-label">Dispatch Line</div><div class="contact-val">(651) 555-0192</div></div></div>
+          <div class="contact-item"><div class="contact-icon">&#x2709;&#xFE0F;</div><div><div class="contact-label">Email</div><div class="contact-val">dispatch@bashkaexpress.com</div></div></div>
+          <div class="contact-item"><div class="contact-icon">&#x1F550;</div><div><div class="contact-label">Hours</div><div class="contact-val">Mon-Fri 6AM-8PM - Sat 7AM-4PM</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel" style="background:var(--bg2)">
+          <div class="panel-header"><div class="panel-title">Send a Message</div></div>
+          <div class="panel-body">
+            <div class="contact-form">
+              <div class="form-row"><div class="form-group"><div class="form-label">First Name</div><input class="form-input" placeholder="John"></div><div class="form-group"><div class="form-label">Last Name</div><input class="form-input" placeholder="Doe"></div></div>
+              <div class="form-group"><div class="form-label">Company</div><input class="form-input" placeholder="Your Company LLC"></div>
+              <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" placeholder="you@company.com"></div>
+              <div class="form-group"><div class="form-label">Message</div><textarea class="form-input form-textarea" placeholder="Tell us about your freight needs..."></textarea></div>
+              <button class="btn-gold" style="width:100%;padding:13px">Send Message</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><div class="footer-logo">Bashka Express LLC</div><div>3299 Valley Ridge Drive - Eagan, MN 55121 - (651) 555-0192</div><div style="margin-top:8px">2026 Bashka Express LLC - All Rights Reserved</div></div>
+</div>
+<div id="screen-dash" class="screen">
+  <div class="dash">
+    <div class="dash-sidebar">
+      <div class="dash-sidebar-logo"><div style="width:26px;height:26px;background:var(--gold);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000">BE</div>Dispatch</div>
+      <div class="sidebar-section-label">Navigation</div>
+      <button class="sidebar-item active" onclick="showDash('overview',this)">Overview</button>
+      <button class="sidebar-item" onclick="showDash('map',this)">Live Map</button>
+      <button class="sidebar-item" onclick="showDash('jobs',this)">Jobs <span class="sidebar-badge">1</span></button>
+      <button class="sidebar-item" onclick="showDash('drivers',this)">Drivers</button>
+      <button class="sidebar-item" onclick="showDash('vehicles',this)">Vehicles</button>
+      <button class="sidebar-item" onclick="showDash('reports',this)">Reports</button>
+      <div class="sidebar-section-label">System</div>
+      <button class="sidebar-item">Settings</button>
+      <div class="sidebar-footer"><div style="font-weight:600;font-size:13px;color:var(--text2);margin-bottom:2px">Dispatch Admin</div><div style="font-family:var(--mono);font-size:10px">Eagan, MN - v2.1</div></div>
+    </div>
+    <div class="dash-main">
+      <div class="dash-topbar">
+        <div><div class="dash-topbar-title" id="dash-title">Operations Overview</div><div class="dash-topbar-sub">Bashka Express LLC - Eagan, MN 55121</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><div class="live-pill"><div class="dot"></div>4 Drivers Live</div><div class="notif"><button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px">&#x1F514;</button><div class="notif-dot"></div></div></div>
+      </div>
+      <div class="dash-content">
+        <div id="dash-overview" class="dash-section active">
+          <div class="kpi-row">
+            <div class="kpi-card green"><div class="kpi-icon">&#x1F464;</div><div class="kpi-label">Active Drivers</div><div class="kpi-val">4</div><div class="kpi-delta up">+1 from yesterday</div></div>
+            <div class="kpi-card gold"><div class="kpi-icon">&#x1F4E6;</div><div class="kpi-label">Jobs Today</div><div class="kpi-val">18</div><div class="kpi-delta up">+3 vs avg</div></div>
+            <div class="kpi-card blue"><div class="kpi-icon">&#x23F1;&#xFE0F;</div><div class="kpi-label">On-Time Rate</div><div class="kpi-val">97%</div><div class="kpi-delta up">+2% this week</div></div>
+            <div class="kpi-card orange"><div class="kpi-icon">&#x26A0;&#xFE0F;</div><div class="kpi-label">Pending Jobs</div><div class="kpi-val">1</div><div class="kpi-delta dn">Needs assignment</div></div>
+          </div>
+          <div class="dash-grid-3">
+            <div class="panel"><div class="panel-header"><div class="panel-title">Live Fleet Map</div><button class="action-btn-ghost" onclick="showDash('map',null)">Expand</button></div><div class="dispatch-map" id="overview-map"></div><div class="panel-body" style="border-top:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);font-family:var(--mono)"><span>4 drivers online</span><span style="color:var(--green)">Live</span></div></div></div>
+            <div class="panel"><div class="panel-header"><div class="panel-title">Live Activity</div><div class="live-pill"><div class="dot"></div>Live</div></div><div class="panel-body" id="activity-feed"></div></div>
+          </div>
+          <div class="dash-grid-2">
+            <div class="panel"><div class="panel-header"><div class="panel-title">Active Jobs</div><button class="action-btn action-btn-sm" onclick="showDash('jobs',null)">View All</button></div><table class="data-table"><thead><tr><th>Job</th><th>Customer</th><th>Driver</th><th>Status</th></tr></thead><tbody id="jobs-preview"></tbody></table></div>
+            <div class="panel"><div class="panel-header"><div class="panel-title">Weekly Volume</div></div><div class="panel-body"><div class="chart-bars" id="chart-bars"></div><div style="margin-top:14px;display:flex;gap:20px"><div><div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Deliveries</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--gold)">94</div></div><div><div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Pickups</div><div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--blue)">108</div></div></div></div></div>
+          </div>
+        </div>
+        <div id="dash-map" class="dash-section"><div class="panel"><div class="panel-header"><div class="panel-title">Live Fleet Map</div><div class="live-pill"><div class="dot"></div>Broadcasting</div></div><div class="dispatch-map" style="height:400px" id="full-map"></div><div class="panel-body"><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px" id="driver-cards"></div></div></div></div>
+        <div id="dash-jobs" class="dash-section"><div class="panel"><div class="panel-header"><div class="panel-title">All Jobs</div><div style="display:flex;gap:8px;align-items:center"><div class="filter-tabs" id="job-filters"></div><button class="action-btn action-btn-sm">+ New Job</button></div></div><table class="data-table"><thead><tr><th>Job ID</th><th>Customer</th><th>Driver</th><th>Route</th><th>ETA</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody id="jobs-table"></tbody></table></div></div>
+        <div id="dash-drivers" class="dash-section"><div class="dash-grid-2"><div class="panel"><div class="panel-header"><div class="panel-title">Driver Roster</div><button class="action-btn action-btn-sm">+ Add Driver</button></div><div id="driver-roster"></div></div><div class="panel"><div class="panel-header"><div class="panel-title">Shift Overview</div></div><div class="panel-body" id="shift-overview"></div></div></div></div>
+        <div id="dash-vehicles" class="dash-section"><div class="panel"><div class="panel-header"><div class="panel-title">Vehicle Fleet</div><button class="action-btn action-btn-sm">+ Register Vehicle</button></div><table class="data-table"><thead><tr><th>Vehicle</th><th>Type</th><th>Plate</th><th>Driver</th><th>Fuel</th><th>Maintenance</th><th>Status</th></tr></thead><tbody id="vehicles-table"></tbody></table></div></div>
+        <div id="dash-reports" class="dash-section"><div class="dash-grid-2" id="reports-grid"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const DRIVERS=[{id:'D-01',name:'Marcus T.',initials:'MT',route:'Route 4 Eagan-Savage',status:'on_route',jobs:3,x:42,y:38,color:'#22c55e'},{id:'D-02',name:'Priya K.',initials:'PK',route:'Route 7 Eagan-Roseville',status:'on_route',jobs:2,x:65,y:28,color:'#3b82f6'},{id:'D-03',name:'Leon W.',initials:'LW',route:'Route 2 Local Eagan',status:'idle',jobs:0,x:30,y:62,color:'#e8a020'},{id:'D-04',name:'Sara M.',initials:'SM',route:'Route 9 MN Statewide',status:'on_route',jobs:4,x:72,y:58,color:'#0ea5a0'},{id:'D-05',name:'James O.',initials:'JO',route:'No route',status:'off_duty',jobs:0,x:20,y:80,color:'#5a6485'}];
+const JOBS=[{id:'JOB-4421',customer:'Nordic Wholesale',driver:'Marcus T.',status:'in_transit',pickup:'Eagan HQ',drop:'Savage Depot',eta:'12:40 PM',priority:'high'},{id:'JOB-4422',customer:'TwinCity Parts',driver:'Priya K.',status:'in_transit',pickup:'Eagan HQ',drop:'Roseville Hub',eta:'01:15 PM',priority:'normal'},{id:'JOB-4423',customer:'Midwest Grocery',driver:'Sara M.',status:'delivered',pickup:'Roseville Hub',drop:'West St. Paul',eta:'Done',priority:'normal'},{id:'JOB-4424',customer:'Prairie Medical',driver:'Unassigned',status:'pending',pickup:'Eagan HQ',drop:'West St. Paul',eta:'03:00 PM',priority:'urgent'},{id:'JOB-4425',customer:'Summit Hardware',driver:'Marcus T.',status:'assigned',pickup:'Eagan HQ',drop:'Burnsville',eta:'02:30 PM',priority:'normal'}];
+const VEHICLES=[{id:'VH-01',type:'Box Truck',plate:'MN-TRK-401',driver:'Marcus T.',fuel:78,maint:'OK',status:'active'},{id:'VH-02',type:'Sprinter Van',plate:'MN-VAN-227',driver:'Priya K.',fuel:45,maint:'Due',status:'active'},{id:'VH-03',type:'Box Truck',plate:'MN-TRK-388',driver:'Leon W.',fuel:91,maint:'Alert',status:'idle'},{id:'VH-04',type:'Flatbed',plate:'MN-FLT-119',driver:'Sara M.',fuel:62,maint:'OK',status:'active'}];
+const ACTIVITY=[{color:'#22c55e',text:'<strong>Marcus T.</strong> delivered JOB-4420',time:'2 min ago'},{color:'#e8a020',text:'<strong>JOB-4424</strong> flagged URGENT',time:'8 min ago'},{color:'#3b82f6',text:'<strong>Priya K.</strong> clocked in at HQ',time:'14 min ago'},{color:'#0ea5a0',text:'<strong>Sara M.</strong> picked up JOB-4423',time:'22 min ago'},{color:'#e53535',text:'<strong>Leon W.</strong> reported brake light issue',time:'31 min ago'}];
+const CHART=[{l:'MON',d:14,p:16},{l:'TUE',d:19,p:21},{l:'WED',d:11,p:13},{l:'THU',d:22,p:25},{l:'FRI',d:18,p:20},{l:'SAT',d:7,p:9},{l:'SUN',d:3,p:4}];
+const REPORTS=[{title:'Delivery Performance',items:[['On-Time Deliveries','94.2%','up'],['Avg Delivery Time','42 min','up'],['Failed Deliveries','0.3%','up'],['POD Capture Rate','100%','up']]},{title:'Driver Compliance',items:[['Geofence Clock-Ins','98.1%','up'],['Pre-Trip Completions','100%','up'],['Incidents Reported','1','dn'],['Hours Logged','184 hrs','up']]},{title:'Fleet Health',items:[['Vehicles Active','4/5','up'],['Avg Fuel Level','69%','up'],['Maintenance Alerts','2','dn'],['Miles This Week','3,412','up']]},{title:'Revenue Metrics',items:[['Jobs Completed','94','up'],['Avg Revenue/Job','$148','up'],['Weekly Revenue','$13,912','up'],['MoM Growth','+11%','up']]}];
+function stTag(s){const m={in_transit:['tag-gold','In Transit'],delivered:['tag-green','Delivered'],pending:['tag-red','Pending'],assigned:['tag-blue','Assigned'],on_route:['tag-green','On Route'],idle:['tag-gold','Idle'],off_duty:['tag-muted','Off Duty'],active:['tag-green','Active']};const[c,l]=m[s]||['tag-muted',s];return '<span class="tag '+c+'">'+l+'</span>';}
+function pTag(p){if(p==='urgent')return'<span class="tag tag-red">Urgent</span>';if(p==='high')return'<span class="tag tag-orange">High</span>';return'<span class="tag tag-muted">Normal</span>';}
+function renderMap(el){el.innerHTML='<div style="position:absolute;width:200px;height:200px;left:44%;top:44%;border-radius:50%;border:1px dashed rgba(232,160,32,0.4);transform:translate(-50%,-50%)"></div>'+DRIVERS.filter(d=>d.status!=='off_duty').map(d=>'<div class="map-driver-pin" style="left:'+d.x+'%;top:'+d.y+'%"><div class="map-driver-dot" style="background:'+d.color+';border-color:'+d.color+'"></div><div class="map-driver-label">'+d.name+'</div></div>').join('')+'<div class="map-hq-marker">HQ - Eagan, MN</div>';}
+function init(){
+  const items=['GPS Tracking','Geofencing','Proof of Delivery','Real-Time Dispatch','Fleet Management','Driver Compliance'];
+  document.getElementById('marquee').innerHTML=[...items,...items].map(t=>'<div class="marquee-item"><span>&#x2726;</span>'+t+'</div>').join('');
+  document.getElementById('activity-feed').innerHTML=ACTIVITY.map(a=>'<div class="feed-item"><div class="feed-dot" style="background:'+a.color+'"></div><div><div class="feed-text">'+a.text+'</div><div class="feed-time">'+a.time+'</div></div></div>').join('');
+  document.getElementById('jobs-preview').innerHTML=JOBS.slice(0,4).map(j=>'<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">'+j.id+'</span></td><td class="td-primary">'+j.customer+'</td><td style="color:'+(j.driver==='Unassigned'?'var(--red)':'var(--text2)')+'">'+j.driver+'</td><td>'+stTag(j.status)+'</td></tr>').join('');
+  const max=Math.max(...CHART.map(d=>Math.max(d.d,d.p)));
+  document.getElementById('chart-bars').innerHTML=CHART.map(d=>'<div class="chart-bar-wrap"><div style="display:flex;gap:2px;align-items:flex-end;flex:1"><div class="chart-bar" style="height:'+(d.d/max*88)+'px;background:var(--gold)"></div><div class="chart-bar" style="height:'+(d.p/max*88)+'px;background:var(--blue)"></div></div><div class="chart-label">'+d.l+'</div></div>').join('');
+  renderMap(document.getElementById('overview-map'));
+  renderMap(document.getElementById('full-map'));
+  document.getElementById('driver-cards').innerHTML=DRIVERS.map(d=>'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px"><div style="width:8px;height:8px;border-radius:50%;background:'+d.color+'"></div><span style="font-weight:600;font-size:13px">'+d.name+'</span></div><div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">'+d.route+'</div>'+stTag(d.status)+'</div>').join('');
+  let cf='all';
+  function rJobs(){const f=cf==='all'?JOBS:JOBS.filter(j=>j.status===cf);document.getElementById('jobs-table').innerHTML=f.map(j=>'<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">'+j.id+'</span></td><td class="td-primary">'+j.customer+'</td><td style="color:'+(j.driver==='Unassigned'?'var(--red)':'var(--text2)')+'">'+j.driver+'</td><td style="font-size:12px;color:var(--text3)">'+j.pickup+' to '+j.drop+'</td><td style="font-family:var(--mono);font-size:12px">'+j.eta+'</td><td>'+pTag(j.priority)+'</td><td>'+stTag(j.status)+'</td><td>'+(j.driver==='Unassigned'?'<button class="action-btn action-btn-sm" onclick="aJob(''+j.id+'')">Assign</button>':'')+'</td></tr>').join('');}
+  document.getElementById('job-filters').innerHTML=[['all','All'],['pending','Pending'],['assigned','Assigned'],['in_transit','Transit'],['delivered','Delivered']].map(([v,l])=>'<button class="filter-tab '+(v==='all'?'active':'')+'" onclick="fJob(''+v+'',this)">'+l+'</button>').join('');
+  window.fJob=(v,b)=>{cf=v;document.querySelectorAll('.filter-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');rJobs();};
+  window.aJob=(id)=>{const j=JOBS.find(x=>x.id===id);if(j){j.driver='Leon W.';j.status='assigned';rJobs();}};
+  rJobs();
+  document.getElementById('driver-roster').innerHTML=DRIVERS.map(d=>'<div class="driver-item"><div class="driver-avatar" style="background:'+d.color+'20;color:'+d.color+'">'+d.initials+'</div><div><div class="driver-name">'+d.name+'</div><div class="driver-sub">'+d.route+'</div></div><div class="driver-status">'+stTag(d.status)+'</div></div>').join('');
+  document.getElementById('shift-overview').innerHTML=DRIVERS.map(d=>'<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:500">'+d.name+'</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+d.jobs+' jobs</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+(d.jobs/4*100)+'%;background:'+d.color+'"></div></div></div>').join('')+'<div style="border-top:1px solid var(--border);padding-top:14px;font-family:var(--mono);font-size:11px;color:var(--text3)">Clock-in compliance: <span style="color:var(--green)">4/4 verified</span></div>';
+  document.getElementById('vehicles-table').innerHTML=VEHICLES.map(v=>'<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">'+v.id+'</span></td><td class="td-primary">'+v.type+'</td><td style="font-family:var(--mono);font-size:11px">'+v.plate+'</td><td>'+v.driver+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="prog-bar" style="width:56px"><div class="prog-fill" style="width:'+v.fuel+'%;background:'+(v.fuel>50?'var(--green)':v.fuel>25?'var(--gold)':'var(--red)')+'"></div></div><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+v.fuel+'%</span></div></td><td><span class="tag '+(v.maint==='OK'?'tag-green':v.maint==='Due'?'tag-gold':'tag-red')+'">'+v.maint+'</span></td><td>'+stTag(v.status)+'</td></tr>').join('');
+  document.getElementById('reports-grid').innerHTML=REPORTS.map(r=>'<div class="panel"><div class="panel-header"><div class="panel-title">'+r.title+'</div></div><div class="panel-body">'+r.items.map(([l,v,d])=>'<div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+l+'</span><span style="font-weight:500;color:'+(d==='up'?'var(--green)':'var(--red)')+'">'+v+'</span></div>').join('')+'</div></div>').join('');
+}
+const TITLES={overview:'Operations Overview',map:'Live Fleet Map',jobs:'Job Management',drivers:'Driver Management',vehicles:'Vehicle Fleet',reports:'Reports & Analytics'};
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
+function showDash(n,b){document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n];if(b)b.classList.add('active');}
+window.showScreen=showScreen;window.showDash=showDash;init();
+</script>
+</body>
+</html>
