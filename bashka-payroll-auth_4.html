@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bashka Express Payroll</title>
+<style>
+  :root {
+    --bg: #15171a; --panel: #1c1f23; --border: #26292e; --border-hover: #3a3e44;
+    --text: #e8e6e1; --text-dim: #8a8f98; --text-faint: #5a5e64;
+    --accent: #e8732c; --accent-hover: #f3833d; --red: #d65f5f;
+    --green-bg: #1e3a2a; --green: #5fb87a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(21,23,26,0.95); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); }
+  .header-top { max-width: 880px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 32px; height: 32px; border-radius: 7px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .brand-name { font-weight: 700; font-size: 15px; line-height: 1.2; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--text-dim); line-height: 1.2; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+  .user-chip .role-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 4px; background: var(--border); color: #c5c8cc; }
+  .user-chip .role-badge.admin { background: var(--green-bg); color: var(--green); }
+  .logout-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; padding: 4px; }
+  .logout-btn:hover { color: var(--text); }
+  .save-error { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--accent); }
+  nav { max-width: 880px; margin: 0 auto; padding: 0 20px; display: flex; gap: 2px; overflow-x: auto; }
+  nav button { display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 500; color: var(--text-dim); border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit; }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+  nav button:hover:not(.active) { color: #c5c8cc; }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 20px 96px; }
+  h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .field-label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-weight: 500; }
+  input, select { width: 100%; background: var(--bg); border: 1px solid #2e3238; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--text); font-family: inherit; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(232,115,44,0.25); }
+  input::placeholder { color: var(--text-faint); }
+  .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (min-width: 560px) { .grid-form { grid-template-columns: 1fr 1fr 1fr; } }
+  .span-full { grid-column: 1 / -1; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: var(--panel); color: #c5c8cc; font-weight: 500; font-size: 12px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-family: inherit; }
+  .btn-ghost:hover { border-color: var(--border-hover); }
+  .section-label { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.02em; }
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .list-row { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+  .icon-btn { background: none; border: none; cursor: pointer; padding: 6px; color: var(--text-faint); display: flex; }
+  .icon-btn:hover { color: var(--red); }
+  .empty { text-align: center; border: 1px dashed #2e3238; border-radius: 12px; padding: 56px 20px; }
+  .empty.compact { padding: 32px 20px; }
+  .empty-title { font-size: 13px; font-weight: 500; color: #c5c8cc; margin-top: 12px; }
+  .empty-body { font-size: 12px; color: var(--text-faint); margin-top: 4px; max-width: 280px; margin-left: auto; margin-right: auto; }
+  .period-switch { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+  .period-switch button { background: none; border: none; cursor: pointer; color: var(--text-dim); padding: 4px; display: flex; }
+  .period-switch button:hover { color: var(--text); }
+  .period-label { font-size: 13px; font-weight: 500; min-width: 150px; text-align: center; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #c5c8cc; flex-shrink: 0; }
+  .pill { font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; border: none; cursor: pointer; font-family: inherit; }
+  .pill.active { background: var(--green-bg); color: var(--green); }
+  .pill.inactive { background: var(--border); color: var(--text-dim); }
+  .pill[disabled] { cursor: default; opacity: 0.7; }
+  .driver-name-input { background: transparent; border: none; font-size: 13px; font-weight: 500; padding: 2px 4px; margin: -2px -4px; width: 100%; }
+  .driver-name-input:focus { background: var(--bg); border-radius: 4px; outline: none; }
+  .driver-name-input:disabled { color: var(--text); -webkit-text-fill-color: var(--text); opacity: 1; }
+  .rate-input { background: transparent; border: none; font-size: 13px; width: 56px; text-align: right; padding: 2px 4px; }
+  .rate-input:focus { background: var(--bg); border-radius: 4px; outline: none; }
+  .stub-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .stub-summary { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-align: left; background: none; border: none; cursor: pointer; font-family: inherit; color: inherit; }
+  .stub-detail { border-top: 1px solid var(--border); padding: 14px 16px; }
+  .stub-line { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+  .stub-totals { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; font-size: 13px; }
+  .stub-totals-row { display: flex; justify-content: space-between; color: var(--text-dim); padding: 3px 0; }
+  .stub-net-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border); }
+  details.history-item { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
+  details.history-item summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  details.history-item summary::-webkit-details-marker { display: none; }
+  .chevron { transition: transform 0.15s; color: var(--text-faint); flex-shrink: 0; }
+  details[open] .chevron { transform: rotate(90deg); }
+  .history-detail { border-top: 1px solid var(--border); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stat-label { font-size: 11px; color: var(--text-dim); font-weight: 500; margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 700; }
+  .help-text { font-size: 11px; color: var(--text-faint); margin-top: 12px; }
+  .confirm-group { display: flex; align-items: center; gap: 4px; }
+  ::-webkit-scrollbar { height: 0; width: 0; }
+
+  /* Login screen */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { width: 100%; max-width: 360px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 28px 24px; }
+  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .login-brand .brand-icon { width: 44px; height: 44px; border-radius: 10px; }
+  .login-title { font-size: 17px; font-weight: 700; }
+  .login-sub { font-size: 12px; color: var(--text-dim); }
+  .login-error { background: rgba(214,95,95,0.12); border: 1px solid rgba(214,95,95,0.3); color: #f0a3a3; font-size: 12px; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .login-field { margin-bottom: 14px; }
+  .audit-row { display: flex; gap: 10px; align-items: baseline; font-size: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-time { color: var(--text-faint); white-space: nowrap; font-size: 11px; min-width: 130px; }
+  .audit-action { color: #c5c8cc; }
+  .audit-actor { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+// ============================================================
+// SUPABASE CONFIG \u2014 fill these in with your project's values
+// (Project Settings \u2192 API in your Supabase dashboard)
+// ============================================================
+const SUPABASE_URL = "https://ghrbrwusfyjprxhivxfo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES";
+
+const supabase = (SUPABASE_URL.startsWith("http"))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// ---------- icons ----------
+const Icon = ({ d, size = 16, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{d}</svg>
+);
+const TruckIcon = (p) => <Icon {...p} d={<><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>} />;
+const PlusIcon = (p) => <Icon {...p} d={<><path d="M12 5v14M5 12h14"/></>} />;
+const TrashIcon = (p) => <Icon {...p} d={<><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></>} />;
+const CalendarIcon = (p) => <Icon {...p} d={<><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></>} />;
+const UsersIcon = (p) => <Icon {...p} d={<><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></>} />;
+const FileIcon = (p) => <Icon {...p} d={<><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></>} />;
+const ChevronLeftIcon = (p) => <Icon {...p} d={<polyline points="15 18 9 12 15 6"/>} />;
+const ChevronRightIcon = (p) => <Icon {...p} d={<polyline points="9 18 15 12 9 6"/>} />;
+const XIcon = (p) => <Icon {...p} d={<><path d="M18 6L6 18M6 6l12 12"/></>} />;
+const CheckIcon = (p) => <Icon {...p} d={<polyline points="20 6 9 17 4 12"/>} />;
+const AlertIcon = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></>} />;
+const DownloadIcon = (p) => <Icon {...p} d={<><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></>} />;
+const RouteIcon = (p) => <Icon {...p} d={<><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8a3 3 0 003-3v-1a3 3 0 00-3-3H7a3 3 0 01-3-3V8a3 3 0 013-3h2"/></>} />;
+const LockIcon = (p) => <Icon {...p} d={<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></>} />;
+const ShieldIcon = (p) => <Icon {...p} d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />;
+
+// ---------- helpers ----------
+const money = (n) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const fmtDate = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+const fmtDateTime = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+};
+
+const ANCHOR = new Date("2026-01-05T00:00:00");
+const MS_DAY = 86400000;
+function periodForDate(dateObj) {
+  const diffDays = Math.floor((dateObj - ANCHOR) / MS_DAY);
+  return { periodIndex: Math.floor(diffDays / 14) };
+}
+function periodKey(periodIndex) {
+  return new Date(ANCHOR.getTime() + periodIndex * 14 * MS_DAY).toISOString().slice(0, 10);
+}
+function periodLabel(periodIndex) {
+  const start = new Date(ANCHOR.getTime() + periodIndex * 14 * MS_DAY);
+  const end = new Date(start.getTime() + 13 * MS_DAY);
+  return `${fmtDate(start.toISOString().slice(0, 10))} \u2013 ${fmtDate(end.toISOString().slice(0, 10))}`;
+}
+function currentPeriodIndex() { return periodForDate(new Date()).periodIndex; }
+
+function csvEscape(val) {
+  const s = String(val ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+function downloadCSV(filename, rows) {
+  const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+const SESSION_KEY = "bashka-payroll-session";
+
+// ============================================================
+// ROOT APP \u2014 handles config check, session, and routing
+// ============================================================
+function App() {
+  const [session, setSession] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) setSession(JSON.parse(raw));
+    } catch (e) {}
+    setCheckingSession(false);
+  }, []);
+
+  const handleLogin = (user) => {
+    setSession(user);
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch (e) {}
+  };
+  const handleLogout = () => {
+    setSession(null);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+  };
+
+  if (!supabase) {
+    return <ConfigMissing />;
+  }
+  if (checkingSession) {
+    return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-dim)", fontSize: 14}}>Loading\u2026</div>;
+  }
+  if (!session) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+  return <PayrollApp session={session} onLogout={handleLogout} />;
+}
+
+function ConfigMissing() {
+  return (
+    <div className="login-wrap">
+      <div className="login-card" style={{ maxWidth: 440 }}>
+        <div className="login-brand">
+          <div className="brand-icon"><LockIcon size={20} color="#15171a" /></div>
+          <div className="login-title">Supabase not configured</div>
+        </div>
+        <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.6 }}>
+          This file needs your Supabase project URL and anon key filled in near the top of the script
+          (look for <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code>), and the schema.sql file
+          run once in your Supabase SQL editor.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    try {
+      const { data, error: err } = await supabase.rpc("payroll_login", { p_email: email.trim(), p_password: password });
+      if (err) throw err;
+      if (!data || data.length === 0) {
+        setError("Incorrect email or password.");
+      } else {
+        onLogin(data[0]);
+      }
+    } catch (err) {
+      setError("Couldn't reach the server. Check your connection and try again.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-brand">
+          <div className="brand-icon"><TruckIcon size={20} color="#15171a" /></div>
+          <div className="login-title">Bashka Express</div>
+          <div className="login-sub">Sign in to Payroll</div>
+        </div>
+        {error && <div className="login-error"><AlertIcon size={14} />{error}</div>}
+        <form onSubmit={submit}>
+          <div className="login-field">
+            <label className="field-label">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@bashkaexpress.com" autoComplete="username" />
+          </div>
+          <div className="login-field">
+            <label className="field-label">Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" autoComplete="current-password" />
+          </div>
+          <button type="submit" className="btn" style={{ width: "100%", justifyContent: "center", marginTop: 4 }} disabled={loading}>
+            {loading ? "Signing in\u2026" : "Sign in"}
+          </button>
+        </form>
+        <p className="help-text" style={{ textAlign: "center", marginTop: 16 }}>
+          Need an account? Ask an admin to add you from the Team tab.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN APP (post-login)
+// ============================================================
+function PayrollApp({ session, onLogout }) {
+  const isAdmin = session.role === "admin";
+  const [tab, setTab] = useState("entry");
+  const [periodIndex, setPeriodIndex] = useState(currentPeriodIndex());
+  const [drivers, setDrivers] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [loads, setLoads] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
+  const refreshAll = useCallback(async () => {
+    setFetchError(false);
+    try {
+      const [d, r, l] = await Promise.all([
+        supabase.rpc("payroll_list_drivers", { p_actor_id: session.id }),
+        supabase.rpc("payroll_list_routes", { p_actor_id: session.id }),
+        supabase.rpc("payroll_list_loads", { p_actor_id: session.id }),
+      ]);
+      if (d.error || r.error || l.error) throw (d.error || r.error || l.error);
+      setDrivers(d.data || []);
+      setRoutes(r.data || []);
+      setLoads((l.data || []).map((x) => ({ ...x, driverId: x.driver_id, routeId: x.route_id, routeName: x.route_name, loadRef: x.load_ref })));
+    } catch (e) {
+      setFetchError(true);
+    }
+    setLoadingData(false);
+  }, [session.id]);
+
+  useEffect(() => { refreshAll(); }, [refreshAll]);
+
+  const loadsInPeriod = useMemo(() => loads.filter((l) => periodForDate(new Date(l.date + "T00:00:00")).periodIndex === periodIndex), [loads, periodIndex]);
+  const driverTotalsThisPeriod = useMemo(() => {
+    const map = {};
+    for (const l of loadsInPeriod) {
+      if (!map[l.driverId]) map[l.driverId] = { loadCount: 0, gross: 0, deductions: 0 };
+      map[l.driverId].loadCount += 1;
+      map[l.driverId].gross += Number(l.rate) || 0;
+      map[l.driverId].deductions += Number(l.deduction) || 0;
+    }
+    return map;
+  }, [loadsInPeriod]);
+  const periodsWithData = useMemo(() => {
+    const set = new Set();
+    for (const l of loads) set.add(periodForDate(new Date(l.date + "T00:00:00")).periodIndex);
+    return Array.from(set).sort((a, b) => b - a);
+  }, [loads]);
+
+  if (loadingData) {
+    return <div style={{minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-dim)", fontSize: 14}}>Loading payroll\u2026</div>;
+  }
+
+  return (
+    <div>
+      <Header tab={tab} setTab={setTab} session={session} onLogout={onLogout} fetchError={fetchError} isAdmin={isAdmin} />
+      <main>
+        {tab === "entry" && (
+          <EntryTab session={session} drivers={drivers} routes={routes} loads={loadsInPeriod} periodIndex={periodIndex} setPeriodIndex={setPeriodIndex} refreshAll={refreshAll} isAdmin={isAdmin} totals={driverTotalsThisPeriod} />
+        )}
+        {tab === "drivers" && (
+          <DriversTab session={session} drivers={drivers} refreshAll={refreshAll} isAdmin={isAdmin} />
+        )}
+        {tab === "routes" && (
+          <RoutesTab session={session} routes={routes} refreshAll={refreshAll} isAdmin={isAdmin} />
+        )}
+        {tab === "stubs" && (
+          <StubsTab drivers={drivers} periodIndex={periodIndex} setPeriodIndex={setPeriodIndex} loadsInPeriod={loadsInPeriod} totals={driverTotalsThisPeriod} />
+        )}
+        {tab === "history" && (
+          <HistoryTab drivers={drivers} loads={loads} periodsWithData={periodsWithData} />
+        )}
+        {tab === "team" && isAdmin && (
+          <TeamTab session={session} />
+        )}
+        {tab === "audit" && isAdmin && (
+          <AuditTab session={session} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+function Header({ tab, setTab, session, onLogout, fetchError, isAdmin }) {
+  const tabs = [
+    { id: "entry", label: "Load Entry", Icon: TruckIcon },
+    { id: "drivers", label: "Drivers", Icon: UsersIcon },
+    { id: "routes", label: "Routes", Icon: RouteIcon },
+    { id: "stubs", label: "Pay Stubs", Icon: FileIcon },
+    { id: "history", label: "History", Icon: CalendarIcon },
+  ];
+  if (isAdmin) {
+    tabs.push({ id: "team", label: "Team", Icon: ShieldIcon });
+    tabs.push({ id: "audit", label: "Audit Log", Icon: LockIcon });
+  }
+  return (
+    <header>
+      <div className="header-top">
+        <div className="brand">
+          <div className="brand-icon"><TruckIcon size={17} color="#15171a" /></div>
+          <div>
+            <div className="brand-name">Bashka Express</div>
+            <div className="brand-sub">Payroll</div>
+          </div>
+        </div>
+        <div className="header-right">
+          {fetchError && <div className="save-error"><AlertIcon size={13} /><span>Sync issue</span></div>}
+          <div className="user-chip">
+            <span>{session.name}</span>
+            <span className={"role-badge" + (isAdmin ? " admin" : "")}>{session.role}</span>
+          </div>
+          <button className="logout-btn" onClick={onLogout}>Sign out</button>
+        </div>
+      </div>
+      <nav>
+        {tabs.map((t) => (
+          <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
+            <t.Icon size={14} />{t.label}
+          </button>
+        ))}
+      </nav>
+    </header>
+  );
+}
+
+function PeriodSwitcher({ periodIndex, setPeriodIndex }) {
+  return (
+    <div className="period-switch">
+      <button onClick={() => setPeriodIndex((p) => p - 1)} aria-label="Previous period"><ChevronLeftIcon size={16} /></button>
+      <div className="period-label tabular">{periodLabel(periodIndex)}</div>
+      <button onClick={() => setPeriodIndex((p) => p + 1)} aria-label="Next period"><ChevronRightIcon size={16} /></button>
+    </div>
+  );
+}
+
+function EmptyState({ Icon, title, body, compact }) {
+  return (
+    <div className={"empty" + (compact ? " compact" : "")}>
+      <Icon size={compact ? 20 : 26} color="#3a3e44" />
+      <div className="empty-title">{title}</div>
+      <div className="empty-body">{body}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// LOAD ENTRY (admin + staff)
+// ============================================================
+function EntryTab({ session, drivers, routes, loads, periodIndex, setPeriodIndex, refreshAll, isAdmin, totals }) {
+  const activeDrivers = drivers.filter((d) => d.active !== false);
+  const activeRoutes = routes.filter((r) => r.active !== false);
+  const [form, setForm] = useState({ driverId: "", date: new Date().toISOString().slice(0, 10), routeId: "", loadRef: "", rate: "", deduction: "", note: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+
+  useEffect(() => {
+    if (!form.driverId && activeDrivers.length > 0) setForm((f) => ({ ...f, driverId: activeDrivers[0].id }));
+  }, [activeDrivers, form.driverId]);
+  useEffect(() => {
+    if (!form.routeId && activeRoutes.length > 0 && !form.rate) {
+      const r = activeRoutes[0];
+      setForm((f) => ({ ...f, routeId: r.id, rate: String(r.price) }));
+    }
+  }, [activeRoutes]);
+
+  const onRouteChange = (id) => {
+    const r = routes.find((x) => x.id === id);
+    setForm((f) => ({ ...f, routeId: id, rate: r ? String(r.price) : f.rate }));
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.driverId || !form.date || !form.rate) return;
+    const route = routes.find((r) => r.id === form.routeId);
+    setSubmitting(true);
+    const { error } = await supabase.rpc("payroll_create_load", {
+      p_actor_id: session.id, p_driver_id: form.driverId, p_route_id: form.routeId || null,
+      p_route_name: route ? route.name : null, p_date: form.date, p_load_ref: form.loadRef.trim() || null,
+      p_rate: Number(form.rate), p_deduction: Number(form.deduction) || 0, p_note: form.note.trim() || null,
+    });
+    setSubmitting(false);
+    if (!error) {
+      setForm((f) => ({ ...f, loadRef: "", deduction: "", note: "" }));
+      refreshAll();
+    }
+  };
+
+  const removeLoad = async (id) => {
+    await supabase.rpc("payroll_delete_load", { p_actor_id: session.id, p_id: id });
+    setPendingDelete(null);
+    refreshAll();
+  };
+
+  const sortedLoads = [...loads].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const driverName = (id) => { const d = drivers.find((x) => x.id === id); return d ? d.name : "Unknown driver"; };
+  const periodGross = Object.values(totals).reduce((s, t) => s + t.gross, 0);
+
+  return (
+    <div>
+      <div className="row-between">
+        <h1>Log a load</h1>
+        <PeriodSwitcher periodIndex={periodIndex} setPeriodIndex={setPeriodIndex} />
+      </div>
+
+      {activeDrivers.length === 0 ? (
+        <EmptyState Icon={UsersIcon} title="No drivers yet" body="Ask an admin to add a driver first." />
+      ) : activeRoutes.length === 0 ? (
+        <EmptyState Icon={RouteIcon} title="No routes yet" body="Ask an admin to add a route with a price first." />
+      ) : (
+        <form onSubmit={submit} className="panel" style={{ marginBottom: 24 }}>
+          <div className="grid-form">
+            <div>
+              <label className="field-label">Driver</label>
+              <select value={form.driverId} onChange={(e) => setForm((f) => ({ ...f, driverId: e.target.value }))}>
+                {activeDrivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Route</label>
+              <select value={form.routeId} onChange={(e) => onRouteChange(e.target.value)}>
+                {activeRoutes.map((r) => <option key={r.id} value={r.id}>{r.name} \u2014 {money(r.price)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Date</label>
+              <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+            </div>
+            <div>
+              <label className="field-label">Load ref. (optional)</label>
+              <input type="text" value={form.loadRef} onChange={(e) => setForm((f) => ({ ...f, loadRef: e.target.value }))} placeholder="#1042" />
+            </div>
+            <div>
+              <label className="field-label">Pay for this load</label>
+              <input type="number" step="0.01" min="0" value={form.rate} onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="field-label">Deduction (optional)</label>
+              <input type="number" step="0.01" min="0" value={form.deduction} onChange={(e) => setForm((f) => ({ ...f, deduction: e.target.value }))} placeholder="0.00" />
+            </div>
+            <div className="span-full">
+              <label className="field-label">Note (optional)</label>
+              <input type="text" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} placeholder="Additional context" />
+            </div>
+          </div>
+          <button type="submit" className="btn" style={{ marginTop: 16 }} disabled={submitting}><PlusIcon size={15} />{submitting ? "Adding\u2026" : "Add load"}</button>
+        </form>
+      )}
+
+      <div className="row-between" style={{ marginBottom: 12 }}>
+        <span className="section-label">This period \u00b7 {loads.length} load{loads.length !== 1 ? "s" : ""}</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }} className="tabular">{money(periodGross)} gross</span>
+      </div>
+
+      {sortedLoads.length === 0 ? (
+        <EmptyState Icon={TruckIcon} title="No loads logged" body="Loads you add for this pay period will show up here." compact />
+      ) : (
+        <div className="list">
+          {sortedLoads.map((l) => (
+            <div key={l.id} className="list-row">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{driverName(l.driverId)}</span>
+                  {l.routeName && <span style={{ fontSize: 11, color: "var(--text-dim)" }}>{l.routeName}</span>}
+                  {l.loadRef && <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "monospace" }}>{l.loadRef}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>{fmtDate(l.date)}{l.note ? " \u00b7 " + l.note : ""}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div className="tabular" style={{ fontSize: 13, fontWeight: 600 }}>{money(l.rate)}</div>
+                {l.deduction > 0 && <div className="tabular" style={{ fontSize: 11, color: "var(--red)" }}>\u2212{money(l.deduction)}</div>}
+              </div>
+              {isAdmin && (
+                pendingDelete === l.id ? (
+                  <div className="confirm-group">
+                    <button className="icon-btn" style={{ color: "var(--red)" }} onClick={() => removeLoad(l.id)} aria-label="Confirm delete"><CheckIcon size={14} /></button>
+                    <button className="icon-btn" onClick={() => setPendingDelete(null)} aria-label="Cancel"><XIcon size={14} /></button>
+                  </div>
+                ) : (
+                  <button className="icon-btn" onClick={() => setPendingDelete(l.id)} aria-label="Remove load"><TrashIcon size={14} /></button>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// DRIVERS (admin only edits, read for all who land here)
+// ============================================================
+function DriversTab({ session, drivers, refreshAll, isAdmin }) {
+  const [name, setName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    await supabase.rpc("payroll_upsert_driver", { p_actor_id: session.id, p_id: null, p_name: name.trim(), p_active: true });
+    setName("");
+    setBusy(false);
+    refreshAll();
+  };
+  const rename = async (id, newName) => {
+    const d = drivers.find((x) => x.id === id);
+    await supabase.rpc("payroll_upsert_driver", { p_actor_id: session.id, p_id: id, p_name: newName, p_active: d.active });
+    refreshAll();
+  };
+  const toggleActive = async (id) => {
+    const d = drivers.find((x) => x.id === id);
+    await supabase.rpc("payroll_upsert_driver", { p_actor_id: session.id, p_id: id, p_name: d.name, p_active: d.active === false ? true : false });
+    refreshAll();
+  };
+  const remove = async (id) => {
+    await supabase.rpc("payroll_delete_driver", { p_actor_id: session.id, p_id: id });
+    setConfirmDelete(null);
+    refreshAll();
+  };
+
+  return (
+    <div>
+      <h1 style={{ marginBottom: 20 }}>Drivers</h1>
+      {isAdmin && (
+        <form onSubmit={submit} className="panel" style={{ marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12 }}>
+            <div>
+              <label className="field-label">Name</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Driver name" />
+            </div>
+            <button type="submit" className="btn" style={{ alignSelf: "end" }} disabled={busy}><PlusIcon size={15} />Add</button>
+          </div>
+        </form>
+      )}
+
+      {drivers.length === 0 ? (
+        <EmptyState Icon={UsersIcon} title="No drivers yet" body={isAdmin ? "Add your first driver above." : "Ask an admin to add drivers."} />
+      ) : (
+        <div className="list">
+          {drivers.map((d) => (
+            <div key={d.id} className="list-row">
+              <div className="avatar">{d.name.slice(0, 1).toUpperCase()}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <input className="driver-name-input" value={d.name} disabled={!isAdmin} onChange={(e) => isAdmin && rename(d.id, e.target.value)} />
+              </div>
+              <button className={"pill " + (d.active === false ? "inactive" : "active")} disabled={!isAdmin} onClick={() => isAdmin && toggleActive(d.id)}>
+                {d.active === false ? "Inactive" : "Active"}
+              </button>
+              {isAdmin && (
+                confirmDelete === d.id ? (
+                  <div className="confirm-group">
+                    <button className="icon-btn" style={{ color: "var(--red)" }} onClick={() => remove(d.id)} aria-label="Confirm delete"><CheckIcon size={14} /></button>
+                    <button className="icon-btn" onClick={() => setConfirmDelete(null)} aria-label="Cancel"><XIcon size={14} /></button>
+                  </div>
+                ) : (
+                  <button className="icon-btn" onClick={() => setConfirmDelete(d.id)} aria-label="Delete driver"><TrashIcon size={14} /></button>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {isAdmin && <p className="help-text">Deleting a driver does not delete their logged loads, but they'll show as "Unknown driver" in history.</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// ROUTES (admin only edits)
+// ============================================================
+function RoutesTab({ session, routes, refreshAll, isAdmin }) {
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    await supabase.rpc("payroll_upsert_route", { p_actor_id: session.id, p_id: null, p_name: name.trim(), p_price: Number(price) || 0, p_active: true });
+    setName(""); setPrice("");
+    setBusy(false);
+    refreshAll();
+  };
+  const update = async (id, patch) => {
+    const r = routes.find((x) => x.id === id);
+    await supabase.rpc("payroll_upsert_route", { p_actor_id: session.id, p_id: id, p_name: patch.name ?? r.name, p_price: patch.price ?? r.price, p_active: patch.active ?? r.active });
+    refreshAll();
+  };
+  const toggleActive = (id) => { const r = routes.find((x) => x.id === id); update(id, { active: r.active === false ? true : false }); };
+  const remove = async (id) => {
+    await supabase.rpc("payroll_delete_route", { p_actor_id: session.id, p_id: id });
+    setConfirmDelete(null);
+    refreshAll();
+  };
+
+  return (
+    <div>
+      <h1 style={{ marginBottom: 20 }}>Routes</h1>
+      {isAdmin && (
+        <form onSubmit={submit} className="panel" style={{ marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 12 }}>
+              <div>
+                <label className="field-label">Route name</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Eagan to Duluth" />
+              </div>
+              <div>
+                <label className="field-label">Price</label>
+                <input type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+              </div>
+            </div>
+            <button type="submit" className="btn" style={{ justifyContent: "center" }} disabled={busy}><PlusIcon size={15} />Add route</button>
+          </div>
+        </form>
+      )}
+
+      {routes.length === 0 ? (
+        <EmptyState Icon={RouteIcon} title="No routes yet" body={isAdmin ? "Add your routes above with a price." : "Ask an admin to add routes."} />
+      ) : (
+        <div className="list">
+          {routes.map((r) => (
+            <div key={r.id} className="list-row">
+              <div className="avatar"><RouteIcon size={14} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <input className="driver-name-input" value={r.name} disabled={!isAdmin} onChange={(e) => isAdmin && update(r.id, { name: e.target.value })} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                <span style={{ color: "var(--text-faint)", fontSize: 13 }}>$</span>
+                <input className="rate-input tabular" type="number" step="0.01" min="0" value={r.price || ""} disabled={!isAdmin} onChange={(e) => isAdmin && update(r.id, { price: Number(e.target.value) || 0 })} />
+              </div>
+              <button className={"pill " + (r.active === false ? "inactive" : "active")} disabled={!isAdmin} onClick={() => isAdmin && toggleActive(r.id)}>
+                {r.active === false ? "Inactive" : "Active"}
+              </button>
+              {isAdmin && (
+                confirmDelete === r.id ? (
+                  <div className="confirm-group">
+                    <button className="icon-btn" style={{ color: "var(--red)" }} onClick={() => remove(r.id)} aria-label="Confirm delete"><CheckIcon size={14} /></button>
+                    <button className="icon-btn" onClick={() => setConfirmDelete(null)} aria-label="Cancel"><XIcon size={14} /></button>
+                  </div>
+                ) : (
+                  <button className="icon-btn" onClick={() => setConfirmDelete(r.id)} aria-label="Delete route"><TrashIcon size={14} /></button>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {isAdmin && <p className="help-text">Deleting a route does not change pay on loads already logged against it.</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// PAY STUBS
+// ============================================================
+function StubsTab({ drivers, periodIndex, setPeriodIndex, loadsInPeriod, totals }) {
+  const driversWithActivity = drivers.filter((d) => totals[d.id]);
+  const [openId, setOpenId] = useState(null);
+  const driverName = (id) => { const d = drivers.find((x) => x.id === id); return d ? d.name : "Unknown driver"; };
+
+  const exportPeriodCSV = () => {
+    const rows = [["Driver", "Date", "Route", "Load #", "Note", "Pay", "Deduction"]];
+    const sorted = [...loadsInPeriod].sort((a, b) => (a.date < b.date ? -1 : 1));
+    for (const l of sorted) rows.push([driverName(l.driverId), l.date, l.routeName || "", l.loadRef || "", l.note || "", Number(l.rate).toFixed(2), Number(l.deduction || 0).toFixed(2)]);
+    rows.push([]);
+    rows.push(["Driver", "Loads", "Gross", "Deductions", "Net"]);
+    for (const d of driversWithActivity) {
+      const t = totals[d.id];
+      rows.push([d.name, t.loadCount, t.gross.toFixed(2), t.deductions.toFixed(2), (t.gross - t.deductions).toFixed(2)]);
+    }
+    downloadCSV(`bashka-payroll_${periodKey(periodIndex)}.csv`, rows);
+  };
+
+  return (
+    <div>
+      <div className="row-between">
+        <h1>Pay stubs</h1>
+        <div style={{ display: "flex", gap: 8 }}>
+          <PeriodSwitcher periodIndex={periodIndex} setPeriodIndex={setPeriodIndex} />
+          {driversWithActivity.length > 0 && <button className="btn-ghost" onClick={exportPeriodCSV}><DownloadIcon size={13} /><span>Export CSV</span></button>}
+        </div>
+      </div>
+
+      {driversWithActivity.length === 0 ? (
+        <EmptyState Icon={FileIcon} title="Nothing to pay out" body="No loads logged for any driver in this pay period yet." />
+      ) : (
+        <div className="list">
+          {driversWithActivity.map((d) => {
+            const t = totals[d.id];
+            const net = t.gross - t.deductions;
+            const open = openId === d.id;
+            return (
+              <div key={d.id} className="stub-card">
+                <button className="stub-summary" onClick={() => setOpenId(open ? null : d.id)}>
+                  <div className="avatar">{d.name.slice(0, 1).toUpperCase()}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{d.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{t.loadCount} load{t.loadCount !== 1 ? "s" : ""}</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div className="tabular" style={{ fontSize: 15, fontWeight: 700, color: "var(--accent)" }}>{money(net)}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-dim)" }}>net pay</div>
+                  </div>
+                </button>
+                {open && <StubDetail driver={d} loads={loadsInPeriod.filter((l) => l.driverId === d.id)} periodIndex={periodIndex} totals={t} />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StubDetail({ driver, loads, periodIndex, totals }) {
+  const sorted = [...loads].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const net = totals.gross - totals.deductions;
+  const printStub = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const rows = sorted.map((l) =>
+      `<tr><td>${fmtDate(l.date)}</td><td>${l.routeName || "\u2014"}</td><td>${l.loadRef || "\u2014"}</td><td>${l.note || "\u2014"}</td><td style="text-align:right">$${Number(l.rate).toFixed(2)}</td><td style="text-align:right;color:#b91c1c">${l.deduction ? "-$" + Number(l.deduction).toFixed(2) : "\u2014"}</td></tr>`
+    ).join("");
+    win.document.write(`
+      <html><head><title>Pay stub - ${driver.name}</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:640px;margin:40px auto;padding:0 20px;}
+        h1{font-size:18px;margin-bottom:0;}
+        .sub{color:#666;font-size:13px;margin-top:4px;margin-bottom:24px;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th{text-align:left;border-bottom:2px solid #333;padding:6px 8px;font-size:11px;text-transform:uppercase;color:#666;}
+        td{padding:6px 8px;border-bottom:1px solid #eee;}
+        .totals{margin-top:20px;width:280px;margin-left:auto;font-size:13px;}
+        .totals div{display:flex;justify-content:space-between;padding:4px 0;}
+        .net{font-weight:bold;font-size:16px;border-top:2px solid #333;margin-top:8px;padding-top:8px;}
+      </style></head>
+      <body>
+        <h1>Bashka Express LLC</h1>
+        <div class="sub">Pay stub \u2014 ${driver.name} \u2014 ${periodLabel(periodIndex)}</div>
+        <table><thead><tr><th>Date</th><th>Route</th><th>Load #</th><th>Note</th><th style="text-align:right">Pay</th><th style="text-align:right">Deduction</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="totals">
+          <div><span>Gross pay</span><span>$${totals.gross.toFixed(2)}</span></div>
+          <div><span>Deductions</span><span>-$${totals.deductions.toFixed(2)}</span></div>
+          <div class="net"><span>Net pay</span><span>$${net.toFixed(2)}</span></div>
+        </div>
+      </body></html>
+    `);
+    win.document.close();
+    win.print();
+  };
+
+  return (
+    <div className="stub-detail">
+      <div style={{ marginBottom: 12 }}>
+        {sorted.map((l) => (
+          <div key={l.id} className="stub-line">
+            <div style={{ color: "#c5c8cc" }}>
+              {fmtDate(l.date)}{l.routeName ? " \u00b7 " + l.routeName : ""}{l.loadRef ? " \u00b7 " + l.loadRef : ""}
+              {l.note && <span style={{ color: "var(--text-faint)" }}> \u2014 {l.note}</span>}
+            </div>
+            <div className="tabular" style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+              <span>{money(l.rate)}</span>
+              {l.deduction > 0 && <span style={{ color: "var(--red)" }}>\u2212{money(l.deduction)}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="stub-totals">
+        <div className="stub-totals-row"><span>Gross pay</span><span className="tabular">{money(totals.gross)}</span></div>
+        <div className="stub-totals-row"><span>Deductions</span><span className="tabular">\u2212{money(totals.deductions)}</span></div>
+        <div className="stub-net-row"><span>Net pay</span><span className="tabular" style={{ color: "var(--accent)" }}>{money(net)}</span></div>
+      </div>
+      <button onClick={printStub} style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+        <DownloadIcon size={13} />Print / save stub
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// HISTORY
+// ============================================================
+function HistoryTab({ drivers, loads, periodsWithData }) {
+  const driverName = (id) => { const d = drivers.find((x) => x.id === id); return d ? d.name : "Unknown driver"; };
+  const periodSummaries = periodsWithData.map((pIdx) => {
+    const periodLoads = loads.filter((l) => periodForDate(new Date(l.date + "T00:00:00")).periodIndex === pIdx);
+    const gross = periodLoads.reduce((s, l) => s + (Number(l.rate) || 0), 0);
+    const deductions = periodLoads.reduce((s, l) => s + (Number(l.deduction) || 0), 0);
+    const byDriver = {};
+    for (const l of periodLoads) byDriver[l.driverId] = (byDriver[l.driverId] || 0) + 1;
+    return { pIdx, gross, deductions, net: gross - deductions, loadCount: periodLoads.length, driverCount: Object.keys(byDriver).length };
+  });
+  const allTimeGross = periodSummaries.reduce((s, p) => s + p.gross, 0);
+  const allTimeNet = periodSummaries.reduce((s, p) => s + p.net, 0);
+
+  const exportHistoryCSV = () => {
+    const rows = [["Pay Period", "Driver", "Loads", "Gross", "Deductions", "Net"]];
+    for (const p of [...periodSummaries].sort((a, b) => a.pIdx - b.pIdx)) {
+      const byDriver = loads.filter((l) => periodForDate(new Date(l.date + "T00:00:00")).periodIndex === p.pIdx)
+        .reduce((acc, l) => {
+          if (!acc[l.driverId]) acc[l.driverId] = { gross: 0, deductions: 0, count: 0 };
+          acc[l.driverId].gross += Number(l.rate) || 0;
+          acc[l.driverId].deductions += Number(l.deduction) || 0;
+          acc[l.driverId].count += 1;
+          return acc;
+        }, {});
+      for (const [driverId, t] of Object.entries(byDriver)) {
+        rows.push([periodLabel(p.pIdx), driverName(driverId), t.count, t.gross.toFixed(2), t.deductions.toFixed(2), (t.gross - t.deductions).toFixed(2)]);
+      }
+    }
+    rows.push([]);
+    rows.push(["All-time total", "", "", allTimeGross.toFixed(2), (allTimeGross - allTimeNet).toFixed(2), allTimeNet.toFixed(2)]);
+    downloadCSV("bashka-payroll_history.csv", rows);
+  };
+
+  return (
+    <div>
+      <div className="row-between">
+        <h1>Payroll history</h1>
+        {periodSummaries.length > 0 && <button className="btn-ghost" onClick={exportHistoryCSV}><DownloadIcon size={13} />Export CSV</button>}
+      </div>
+      {periodSummaries.length === 0 ? (
+        <EmptyState Icon={CalendarIcon} title="No history yet" body="Once you've logged loads across pay periods, they'll be summarized here." />
+      ) : (
+        <React.Fragment>
+          <div className="stat-grid">
+            <div className="stat-card"><div className="stat-label">All-time gross</div><div className="stat-value tabular">{money(allTimeGross)}</div></div>
+            <div className="stat-card"><div className="stat-label">All-time net</div><div className="stat-value tabular" style={{ color: "var(--accent)" }}>{money(allTimeNet)}</div></div>
+          </div>
+          <div className="list">
+            {periodSummaries.map((p) => {
+              const byDriver = loads.filter((l) => periodForDate(new Date(l.date + "T00:00:00")).periodIndex === p.pIdx)
+                .reduce((acc, l) => {
+                  if (!acc[l.driverId]) acc[l.driverId] = { gross: 0, deductions: 0, count: 0 };
+                  acc[l.driverId].gross += Number(l.rate) || 0;
+                  acc[l.driverId].deductions += Number(l.deduction) || 0;
+                  acc[l.driverId].count += 1;
+                  return acc;
+                }, {});
+              return (
+                <details key={p.pIdx} className="history-item">
+                  <summary>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{periodLabel(p.pIdx)}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{p.loadCount} loads \u00b7 {p.driverCount} driver{p.driverCount !== 1 ? "s" : ""}</div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div className="tabular" style={{ fontSize: 14, fontWeight: 700 }}>{money(p.net)}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)" }}>net</div>
+                    </div>
+                    <ChevronRightIcon size={15} className="chevron" />
+                  </summary>
+                  <div className="history-detail">
+                    {Object.entries(byDriver).map(([driverId, t]) => (
+                      <div key={driverId} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                        <span style={{ color: "#c5c8cc" }}>{driverName(driverId)} <span style={{ color: "var(--text-faint)" }}>\u00b7 {t.count} loads</span></span>
+                        <span className="tabular" style={{ fontWeight: 500 }}>{money(t.gross - t.deductions)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// TEAM (admin only) \u2014 create/manage accounts
+// ============================================================
+function TeamTab({ session }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "staff" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error: err } = await supabase.rpc("payroll_list_users", { p_actor_id: session.id });
+    if (!err) setUsers(data || []);
+    setLoading(false);
+  }, [session.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!form.name.trim() || !form.email.trim() || form.password.length < 8) {
+      setError("Name, email, and a password of at least 8 characters are required.");
+      return;
+    }
+    setBusy(true);
+    const { error: err } = await supabase.rpc("payroll_create_user", {
+      p_actor_id: session.id, p_name: form.name.trim(), p_email: form.email.trim(), p_password: form.password, p_role: form.role,
+    });
+    setBusy(false);
+    if (err) {
+      setError(err.message && err.message.includes("duplicate") ? "That email is already in use." : "Couldn't create the account.");
+      return;
+    }
+    setForm({ name: "", email: "", password: "", role: "staff" });
+    load();
+  };
+
+  const toggleActive = async (u) => {
+    await supabase.rpc("payroll_set_user_active", { p_actor_id: session.id, p_user_id: u.id, p_active: !u.active });
+    load();
+  };
+
+  return (
+    <div>
+      <h1 style={{ marginBottom: 20 }}>Team</h1>
+      <form onSubmit={submit} className="panel" style={{ marginBottom: 24 }}>
+        {error && <div className="login-error"><AlertIcon size={14} />{error}</div>}
+        <div className="grid-form">
+          <div>
+            <label className="field-label">Name</label>
+            <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Full name" />
+          </div>
+          <div>
+            <label className="field-label">Email</label>
+            <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="name@bashkaexpress.com" />
+          </div>
+          <div>
+            <label className="field-label">Role</label>
+            <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div className="span-full">
+            <label className="field-label">Temporary password (8+ characters \u2014 share with them securely, e.g. in person or a phone call)</label>
+            <input type="text" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder="At least 8 characters" />
+          </div>
+        </div>
+        <button type="submit" className="btn" style={{ marginTop: 16 }} disabled={busy}><PlusIcon size={15} />{busy ? "Creating\u2026" : "Create account"}</button>
+      </form>
+
+      {loading ? (
+        <div className="help-text">Loading team\u2026</div>
+      ) : users.length === 0 ? (
+        <EmptyState Icon={ShieldIcon} title="No accounts yet" body="Create the first team account above." />
+      ) : (
+        <div className="list">
+          {users.map((u) => (
+            <div key={u.id} className="list-row">
+              <div className="avatar">{u.name.slice(0, 1).toUpperCase()}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{u.name}{u.id === session.id ? " (you)" : ""}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{u.email}</div>
+              </div>
+              <span className={"role-badge" + (u.role === "admin" ? " admin" : "")}>{u.role}</span>
+              <button className={"pill " + (u.active === false ? "inactive" : "active")} disabled={u.id === session.id} onClick={() => toggleActive(u)}>
+                {u.active === false ? "Inactive" : "Active"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="help-text">New teammates sign in with the email and temporary password you set here. There's no self-serve password reset yet \u2014 to change someone's password, deactivate the account and create a new one, or ask Claude to add a reset flow.</p>
+    </div>
+  );
+}
+
+// ============================================================
+// AUDIT LOG (admin only)
+// ============================================================
+function AuditTab({ session }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc("payroll_list_audit_log", { p_actor_id: session.id, p_limit: 300 });
+      if (!error) setEntries(data || []);
+      setLoading(false);
+    })();
+  }, [session.id]);
+
+  const describe = (e) => {
+    const map = {
+      create_load: "logged a load",
+      delete_load: "deleted a load",
+      create_driver: "added a driver",
+      update_driver: "updated a driver",
+      delete_driver: "deleted a driver",
+      create_route: "added a route",
+      update_route: "updated a route",
+      delete_route: "deleted a route",
+      create_user: "created an account for " + (e.details && e.details.name ? e.details.name : "someone"),
+      deactivate_user: "deactivated an account",
+      reactivate_user: "reactivated an account",
+    };
+    return map[e.action] || e.action;
+  };
+
+  return (
+    <div>
+      <h1 style={{ marginBottom: 20 }}>Audit log</h1>
+      <div className="panel">
+        {loading ? (
+          <div className="help-text">Loading\u2026</div>
+        ) : entries.length === 0 ? (
+          <div className="help-text">No activity recorded yet.</div>
+        ) : (
+          entries.map((e) => (
+            <div key={e.id} className="audit-row">
+              <span className="audit-time">{fmtDateTime(e.created_at)}</span>
+              <span><span className="audit-actor">{e.user_name}</span> <span className="audit-action">{describe(e)}</span></span>
+            </div>
+          ))
+        )}
+      </div>
+      <p className="help-text">Showing the most recent 300 actions across drivers, routes, loads, and team accounts.</p>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
