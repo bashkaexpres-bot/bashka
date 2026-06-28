@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/bashka-payroll-v3_14.html" }
+  ]
+}
