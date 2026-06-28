@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bashka Express Payroll</title>
+<style>
+:root {
+  --bg:#15171a; --panel:#1c1f23; --border:#26292e;
+  --text:#e8e6e1; --dim:#8a8f98; --faint:#5a5e64;
+  --accent:#e8732c; --ah:#f3833d; --red:#d65f5f;
+  --gbg:#1e3a2a; --green:#5fb87a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+input,select,button{font-family:inherit;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:28px 24px;}
+.login-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:24px;}
+.brand-icon{width:44px;height:44px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;}
+.login-title{font-size:17px;font-weight:700;}
+.login-sub{font-size:12px;color:var(--dim);}
+.login-error{background:rgba(214,95,95,.12);border:1px solid rgba(214,95,95,.3);color:#f0a3a3;font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:14px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;color:var(--dim);font-weight:500;margin-bottom:4px;}
+.field input{width:100%;background:var(--bg);border:1px solid #2e3238;border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,115,44,.2);}
+.field input::placeholder{color:var(--faint);}
+header{position:sticky;top:0;z-index:10;background:rgba(21,23,26,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);}
+.header-top{max-width:880px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-icon-sm{width:32px;height:32px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:-.01em;}
+.brand-sub{font-size:11px;color:var(--dim);}
+.hright{display:flex;align-items:center;gap:10px;font-size:12px;}
+.role-badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--border);color:#c5c8cc;}
+.role-badge.admin{background:var(--gbg);color:var(--green);}
+.signout-btn{background:none;border:none;color:var(--faint);cursor:pointer;font-size:12px;padding:4px;}
+nav{max-width:880px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;}
+nav::-webkit-scrollbar{display:none;}
+.nav-btn{display:flex;align-items:center;gap:5px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;padding:9px 10px;font-size:13px;font-weight:500;color:var(--dim);white-space:nowrap;}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+.nav-btn:hover:not(.active){color:#c5c8cc;}
+main{max-width:880px;margin:0 auto;padding:22px 16px 80px;}
+h1{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.period-sw{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:5px 8px;}
+.period-sw button{background:none;border:none;cursor:pointer;color:var(--dim);padding:3px;display:flex;align-items:center;}
+.period-sw button:hover{color:var(--text);}
+.period-label{font-size:12px;font-weight:500;min-width:140px;text-align:center;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(min-width:520px){.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.span2{grid-column:1/-1;}
+label.lbl{display:block;font-size:11px;color:var(--dim);font-weight:500;margin-bottom:4px;}
+input.inp,select.inp{width:100%;background:var(--bg);border:1px solid #2e3238;border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;}
+input.inp:focus,select.inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,115,44,.2);}
+input.inp::placeholder{color:var(--faint);}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#15171a;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;}
+.btn:hover{background:var(--ah);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{display:inline-flex;align-items:center;gap:6px;background:var(--panel);color:#c5c8cc;font-weight:500;font-size:12px;padding:7px 11px;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
+.btn-ghost:hover{border-color:#3a3e44;}
+.btn-sm{background:none;border:none;cursor:pointer;padding:5px;color:var(--faint);display:flex;align-items:center;}
+.btn-sm:hover{color:var(--red);}
+.btn-sm.ok:hover{color:var(--green);}
+.list{display:flex;flex-direction:column;gap:6px;}
+.list-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#c5c8cc;flex-shrink:0;}
+.pill{font-size:11px;font-weight:500;padding:3px 8px;border-radius:5px;border:none;cursor:pointer;flex-shrink:0;}
+.pill.on{background:var(--gbg);color:var(--green);}
+.pill.off{background:var(--border);color:var(--dim);}
+.inline-input{background:transparent;border:none;font-size:13px;font-weight:500;color:var(--text);padding:2px 4px;width:100%;outline:none;}
+.inline-input:focus{background:var(--bg);border-radius:4px;}
+.inline-input:disabled{opacity:1;-webkit-text-fill-color:var(--text);}
+.rate-input{background:transparent;border:none;font-size:13px;color:var(--text);width:56px;text-align:right;outline:none;}
+.rate-input:focus{background:var(--bg);border-radius:4px;}
+.stub-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:6px;}
+.stub-head{display:flex;align-items:center;gap:10px;padding:13px 15px;cursor:pointer;width:100%;background:none;border:none;color:var(--text);}
+.stub-body{border-top:1px solid var(--border);padding:13px 15px;}
+.stub-line{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:#c5c8cc;}
+.stub-totals{border-top:1px solid var(--border);padding-top:10px;margin-top:6px;}
+.trow{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);padding:2px 0;}
+.trow.net{font-weight:700;font-size:14px;color:var(--text);border-top:1px solid var(--border);margin-top:6px;padding-top:8px;}
+details.hist{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;}
+details.hist summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;align-items:center;gap:10px;}
+details.hist summary::-webkit-details-marker{display:none;}
+.hist-body{border-top:1px solid var(--border);padding:10px 15px;display:flex;flex-direction:column;gap:5px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.stat-lbl{font-size:11px;color:var(--dim);font-weight:500;margin-bottom:4px;}
+.stat-val{font-size:19px;font-weight:700;}
+.audit-row{display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--border);}
+.audit-row:last-child{border:none;}
+.audit-time{color:var(--faint);white-space:nowrap;font-size:11px;min-width:110px;}
+.audit-actor{color:var(--accent);font-weight:600;}
+.empty{text-align:center;border:1px dashed #2e3238;border-radius:12px;padding:40px 20px;}
+.empty.sm{padding:24px 20px;}
+.empty p{font-size:13px;font-weight:500;color:#c5c8cc;margin-top:10px;}
+.empty small{font-size:12px;color:var(--faint);}
+.help{font-size:11px;color:var(--faint);margin-top:10px;}
+.err-box{background:rgba(214,95,95,.1);border:1px solid rgba(214,95,95,.3);color:#f0a3a3;font-size:12px;padding:10px;border-radius:8px;margin-bottom:12px;}
+.section-lbl{font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.03em;}
+</style>
+</head>
+<body>
+<script>
+const SUPA_URL = "https://ghrbrwusfyjprxhivxfo.supabase.co";
+const SUPA_KEY = "sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES";
+
+// ── FIXED: pass key as both apikey header AND Authorization Bearer ──
+async function rpc(fn, params={}) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.hint || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+const $ = (s, ctx) => (ctx || document).querySelector(s);
+const $$ = (s, ctx) => [...(ctx || document).querySelectorAll(s)];
+const money = n => (Number(n)||0).toLocaleString("en-US",{style:"currency",currency:"USD"});
+const fmtD = iso => { if(!iso) return ""; const d = new Date(iso+"T00:00:00"); return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); };
+const fmtDT = iso => { if(!iso) return ""; const d = new Date(iso); return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); };
+const svg = (d,s=16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const icons = {
+  truck: svg('<path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  trash: svg('<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>'),
+  users: svg('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'),
+  file: svg('<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>'),
+  cal: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+  chL: svg('<polyline points="15 18 9 12 15 6"/>'),
+  chR: svg('<polyline points="9 18 15 12 9 6"/>'),
+  x: svg('<path d="M18 6L6 18M6 6l12 12"/>'),
+  check: svg('<polyline points="20 6 9 17 4 12"/>'),
+  route: svg('<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8a3 3 0 003-3v-1a3 3 0 00-3-3H7a3 3 0 01-3-3V8a3 3 0 013-3h2"/>'),
+  shield: svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+  lock: svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'),
+  dl: svg('<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>'),
+  alert: svg('<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>'),
+};
+
+const ANCHOR = new Date("2026-01-05T00:00:00"), MS14 = 14*86400000;
+const pidx = d => Math.floor((d - ANCHOR) / 86400000 / 14);
+const pStart = i => new Date(ANCHOR.getTime() + i*MS14);
+const pLabel = i => { const s=pStart(i), e=new Date(s.getTime()+13*86400000); return fmtD(s.toISOString().slice(0,10))+" \u2013 "+fmtD(e.toISOString().slice(0,10)); };
+const pKey = i => pStart(i).toISOString().slice(0,10);
+const todayIdx = () => pidx(new Date());
+
+let session=null, tab="entry", pIndex=todayIdx();
+let drivers=[], routes=[], loads=[];
+let openStub=null;
+
+const csvE = v => { const s=String(v??""); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; };
+function dlCSV(name, rows){ const csv=rows.map(r=>r.map(csvE).join(",")).join("\n"),b=new Blob([csv],{type:"text/csv"}),u=URL.createObjectURL(b),a=document.createElement("a"); a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u); }
+
+async function loadAll(){
+  if(!session) return;
+  const [d,r,l] = await Promise.all([
+    rpc("payroll_list_drivers",{p_actor_id:session.id}),
+    rpc("payroll_list_routes",{p_actor_id:session.id}),
+    rpc("payroll_list_loads",{p_actor_id:session.id}),
+  ]);
+  drivers=d; routes=r;
+  loads=l.map(x=>({...x,driverId:x.driver_id,routeId:x.route_id,routeName:x.route_name,loadRef:x.load_ref}));
+  render();
+}
+
+function saveSession(u){ session=u; try{sessionStorage.setItem("bx-pay",JSON.stringify(u));}catch(e){} }
+function clearSession(){ session=null; try{sessionStorage.removeItem("bx-pay");}catch(e){} }
+
+function render(){
+  document.body.innerHTML = session ? renderApp() : renderLogin();
+  bindEvents();
+}
+
+function renderLogin(err=""){
+  return `<div class="login-wrap"><div class="login-card">
+    <div class="login-brand">
+      <div class="brand-icon">${icons.truck.replace('stroke="currentColor"','stroke="#15171a"')}</div>
+      <div class="login-title">Bashka Express</div>
+      <div class="login-sub">Sign in to Payroll</div>
+    </div>
+    ${err?`<div class="login-error">${icons.alert} ${err}</div>`:""}
+    <div class="field"><label>Email</label><input class="inp" id="em" type="email" placeholder="you@bashkaexpress.com" autocomplete="username"/></div>
+    <div class="field"><label>Password</label><input class="inp" id="pw" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button class="btn" id="loginBtn" style="width:100%;justify-content:center;">Sign in</button>
+    <p class="help" style="text-align:center;margin-top:14px;">Need an account? Ask an admin to add you from the Team tab.</p>
+  </div></div>`;
+}
+
+function clearLoginForm(){ try{ const e=document.getElementById("em"),p=document.getElementById("pw"); if(e) e.value=""; if(p) p.value=""; }catch(x){} }
+
+async function doLogin(){
+  const em=$("#em").value.trim(), pw=$("#pw").value;
+  if(!em||!pw) return;
+  $("#loginBtn").textContent="Signing in…"; $("#loginBtn").disabled=true;
+  try {
+    const data = await rpc("payroll_login",{p_email:em,p_password:pw});
+    if(!data||!data.length){ document.body.innerHTML=renderLogin("Incorrect email or password."); bindEvents(); return; }
+    const r=data[0]; saveSession({id:r.user_id,name:r.user_name,email:r.user_email,role:r.user_role});
+    await loadAll();
+  } catch(e) {
+    const msg = e?.message || e?.toString() || "Unknown error";
+    document.body.innerHTML=renderLogin("Error: "+msg); bindEvents();
+  }
+}
+
+function renderApp(){
+  const isAdmin=session.role==="admin";
+  const tabs=[
+    {id:"entry",label:"Load Entry",icon:icons.truck},
+    {id:"drivers",label:"Drivers",icon:icons.users},
+    {id:"routes",label:"Routes",icon:icons.route},
+    {id:"stubs",label:"Pay Stubs",icon:icons.file},
+    {id:"history",label:"History",icon:icons.cal},
+    ...(isAdmin?[{id:"team",label:"Team",icon:icons.shield},{id:"audit",label:"Audit Log",icon:icons.lock}]:[]),
+  ];
+  const navBtns = tabs.map(t=>`<button class="nav-btn ${tab===t.id?"active":""}" data-tab="${t.id}">${t.icon} ${t.label}</button>`).join("");
+  const content = {entry:renderEntry,drivers:renderDrivers,routes:renderRoutes,stubs:renderStubs,history:renderHistory,team:renderTeam,audit:renderAudit}[tab]?.() ?? "";
+  return `
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon-sm">${icons.truck.replace('stroke="currentColor"','stroke="#15171a"')}</div>
+        <div><div class="brand-name">Bashka Express</div><div class="brand-sub">Payroll</div></div>
+      </div>
+      <div class="hright">
+        <span style="color:var(--dim)">${session.name}</span>
+        <span class="role-badge ${isAdmin?"admin":""}">${session.role}</span>
+        <button class="signout-btn" id="signoutBtn">Sign out</button>
+      </div>
+    </div>
+    <nav>${navBtns}</nav>
+  </header>
+  <main>${content}</main>`;
+}
+
+function renderEntry(){
+  const isAdmin=session.role==="admin";
+  const activeD=drivers.filter(d=>d.active!==false);
+  const activeR=routes.filter(r=>r.active!==false);
+  const inPeriod=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pIndex);
+  const gross=inPeriod.reduce((s,l)=>s+(Number(l.rate)||0),0);
+  const sorted=[...inPeriod].sort((a,b)=>a.date<b.date?1:-1);
+  const dName=id=>{const d=drivers.find(x=>x.id===id);return d?d.name:"Unknown";};
+  const rows=sorted.map(l=>`
+    <div class="list-row" id="lr-${l.id}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;display:flex;gap:8px;flex-wrap:wrap">
+          ${dName(l.driverId)}
+          ${l.routeName?`<span style="font-size:11px;color:var(--dim)">${l.routeName}</span>`:""}
+          ${l.loadRef?`<span style="font-size:11px;color:var(--dim);font-family:monospace">${l.loadRef}</span>`:""}
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${fmtD(l.date)}${l.note?" · "+l.note:""}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:600">${money(l.rate)}</div>
+        ${l.deduction>0?`<div style="font-size:11px;color:var(--red)">−${money(l.deduction)}</div>`:""}
+      </div>
+      ${isAdmin?`<button class="btn-sm del-load" data-id="${l.id}">${icons.trash}</button>`:""}
+    </div>`).join("");
+
+  return `
+  <div class="row">
+    <h1>Log a load</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="period-sw">
+        <button id="prevP">${icons.chL}</button>
+        <span class="period-label">${pLabel(pIndex)}</span>
+        <button id="nextP">${icons.chR}</button>
+      </div>
+    </div>
+  </div>
+  ${activeD.length===0?`<div class="empty"><p>No drivers yet</p><small>Ask an admin to add drivers first.</small></div>`:
+    activeR.length===0?`<div class="empty"><p>No routes yet</p><small>Ask an admin to add a route with a price first.</small></div>`:`
+  <div class="panel">
+    <div class="grid3">
+      <div><label class="lbl">Driver</label><select class="inp" id="sel-drv">${activeD.map(d=>`<option value="${d.id}">${d.name}</option>`).join("")}</select></div>
+      <div><label class="lbl">Route</label><select class="inp" id="sel-rte">${activeR.map(r=>`<option value="${r.id}" data-price="${r.price}">${r.name} — ${money(r.price)}</option>`).join("")}</select></div>
+      <div><label class="lbl">Date</label><input class="inp" type="date" id="inp-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+      <div><label class="lbl">Load ref. (optional)</label><input class="inp" type="text" id="inp-ref" placeholder="#1042"/></div>
+      <div><label class="lbl">Pay for this load</label><input class="inp" type="number" id="inp-rate" step="0.01" min="0"/></div>
+      <div><label class="lbl">Deduction (optional)</label><input class="inp" type="number" id="inp-ded" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="span2"><label class="lbl">Note (optional)</label><input class="inp" type="text" id="inp-note" placeholder="Route details, reason, etc."/></div>
+    </div>
+    <button class="btn" id="addLoadBtn" style="margin-top:14px">${icons.plus} Add load</button>
+  </div>`}
+  <div class="row" style="margin-bottom:10px">
+    <span class="section-lbl">This period · ${inPeriod.length} load${inPeriod.length!==1?"s":""}</span>
+    <span style="font-size:13px;font-weight:600">${money(gross)} gross</span>
+  </div>
+  ${sorted.length===0?`<div class="empty sm"><p>No loads logged</p><small>Loads you add will show here.</small></div>`:`<div class="list">${rows}</div>`}`;
+}
+
+function renderDrivers(){
+  const isAdmin=session.role==="admin";
+  const rows=drivers.map(d=>`
+    <div class="list-row">
+      <div class="avatar">${d.name[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0"><input class="inline-input" value="${d.name}" ${isAdmin?"":"disabled"} data-drvid="${d.id}" onchange="updateDriverName(this)"/></div>
+      <button class="pill ${d.active===false?"off":"on"}" ${isAdmin?"":"disabled"} onclick="toggleDriver('${d.id}')">${d.active===false?"Inactive":"Active"}</button>
+      ${isAdmin?`<button class="btn-sm del-drv" data-id="${d.id}">${icons.trash}</button>`:""}
+    </div>`).join("");
+  return `
+  <h1 style="margin-bottom:18px">Drivers</h1>
+  ${isAdmin?`<div class="panel"><div class="grid2">
+    <div><label class="lbl">Name</label><input class="inp" id="drv-name" placeholder="Driver name"/></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" id="addDrvBtn" style="width:100%;justify-content:center">${icons.plus} Add driver</button></div>
+  </div></div>`:""}
+  ${drivers.length===0?`<div class="empty"><p>No drivers yet</p><small>${isAdmin?"Add above.":"Ask an admin."}</small></div>`:`<div class="list">${rows}</div>`}
+  ${isAdmin?`<p class="help">Deleting a driver does not remove their logged loads. Mark inactive instead if they have left.</p>`:""}`;
+}
+
+function renderRoutes(){
+  const isAdmin=session.role==="admin";
+  const rows=routes.map(r=>`
+    <div class="list-row">
+      <div class="avatar" style="font-size:10px">${icons.route}</div>
+      <div style="flex:1;min-width:0"><input class="inline-input" value="${r.name}" ${isAdmin?"":"disabled"} data-rteid="${r.id}" onchange="updateRouteName(this)"/></div>
+      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+        <span style="color:var(--faint);font-size:13px">$</span>
+        <input class="rate-input" type="number" value="${r.price||""}" step="0.01" min="0" ${isAdmin?"":"disabled"} data-rteid="${r.id}" onchange="updateRoutePrice(this)"/>
+      </div>
+      <button class="pill ${r.active===false?"off":"on"}" ${isAdmin?"":"disabled"} onclick="toggleRoute('${r.id}')">${r.active===false?"Inactive":"Active"}</button>
+      ${isAdmin?`<button class="btn-sm del-rte" data-id="${r.id}">${icons.trash}</button>`:""}
+    </div>`).join("");
+  return `
+  <h1 style="margin-bottom:18px">Routes</h1>
+  ${isAdmin?`<div class="panel"><div class="grid3">
+    <div><label class="lbl">Route name</label><input class="inp" id="rte-name" placeholder="e.g. Eagan to Duluth"/></div>
+    <div><label class="lbl">Price</label><input class="inp" type="number" id="rte-price" step="0.01" min="0" placeholder="0.00"/></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" id="addRteBtn" style="width:100%;justify-content:center">${icons.plus} Add route</button></div>
+  </div></div>`:""}
+  ${routes.length===0?`<div class="empty"><p>No routes yet</p><small>${isAdmin?"Add above.":"Ask an admin."}</small></div>`:`<div class="list">${rows}</div>`}
+  ${isAdmin?`<p class="help">Deleting a route does not change pay on loads already logged against it.</p>`:""}`;
+}
+
+function renderStubs(){
+  const inPeriod=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pIndex);
+  const totals={};
+  for(const l of inPeriod){
+    if(!totals[l.driverId]) totals[l.driverId]={count:0,gross:0,ded:0};
+    totals[l.driverId].count++; totals[l.driverId].gross+=Number(l.rate)||0; totals[l.driverId].ded+=Number(l.deduction)||0;
+  }
+  const active=drivers.filter(d=>totals[d.id]);
+  const dName=id=>{const d=drivers.find(x=>x.id===id);return d?d.name:"Unknown";};
+  const cards=active.map(d=>{
+    const t=totals[d.id], net=t.gross-t.ded;
+    const isOpen=openStub===d.id;
+    const dLoads=[...inPeriod.filter(l=>l.driverId===d.id)].sort((a,b)=>a.date<b.date?-1:1);
+    const lines=dLoads.map(l=>`
+      <div class="stub-line">
+        <span>${fmtD(l.date)}${l.routeName?" · "+l.routeName:""}${l.loadRef?" · "+l.loadRef:""}${l.note?` <span style="color:var(--faint)">— ${l.note}</span>`:""}</span>
+        <span>${money(l.rate)}${l.deduction>0?` <span style="color:var(--red)">−${money(l.deduction)}</span>`:""}</span>
+      </div>`).join("");
+    return `
+    <div class="stub-card">
+      <button class="stub-head" data-stubid="${d.id}">
+        <div class="avatar">${d.name[0].toUpperCase()}</div>
+        <div style="flex:1;text-align:left"><div style="font-size:14px;font-weight:500">${d.name}</div><div style="font-size:11px;color:var(--dim)">${t.count} load${t.count!==1?"s":""}</div></div>
+        <div style="text-align:right"><div style="font-size:15px;font-weight:700;color:var(--accent)">${money(net)}</div><div style="font-size:11px;color:var(--dim)">net pay</div></div>
+      </button>
+      ${isOpen?`<div class="stub-body">
+        ${lines}
+        <div class="stub-totals">
+          <div class="trow"><span>Gross pay</span><span>${money(t.gross)}</span></div>
+          <div class="trow"><span>Deductions</span><span>−${money(t.ded)}</span></div>
+          <div class="trow net"><span>Net pay</span><span style="color:var(--accent)">${money(net)}</span></div>
+        </div>
+        <button class="btn-ghost" style="margin-top:10px" onclick="printStub('${d.id}',${pIndex})">${icons.dl} Print / save stub</button>
+      </div>`:""}
+    </div>`;
+  }).join("");
+  return `
+  <div class="row">
+    <h1>Pay stubs</h1>
+    <div style="display:flex;gap:8px">
+      <div class="period-sw">
+        <button id="prevP">${icons.chL}</button>
+        <span class="period-label">${pLabel(pIndex)}</span>
+        <button id="nextP">${icons.chR}</button>
+      </div>
+      ${active.length>0?`<button class="btn-ghost" id="exportStubCSV">${icons.dl} CSV</button>`:""}
+    </div>
+  </div>
+  ${active.length===0?`<div class="empty"><p>Nothing to pay out</p><small>No loads logged for this period.</small></div>`:cards}`;
+}
+
+function printStub(driverId, pi){
+  const d=drivers.find(x=>x.id===driverId); if(!d) return;
+  const inPeriod=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pi&&l.driverId===driverId);
+  const gross=inPeriod.reduce((s,l)=>s+(Number(l.rate)||0),0);
+  const ded=inPeriod.reduce((s,l)=>s+(Number(l.deduction)||0),0);
+  const rows=inPeriod.sort((a,b)=>a.date<b.date?-1:1).map(l=>`<tr><td>${fmtD(l.date)}</td><td>${l.routeName||"—"}</td><td>${l.loadRef||"—"}</td><td>${l.note||"—"}</td><td align="right">$${Number(l.rate).toFixed(2)}</td><td align="right" style="color:#b91c1c">${l.deduction?"-$"+Number(l.deduction).toFixed(2):"—"}</td></tr>`).join("");
+  const w=window.open("","_blank");
+  w.document.write(`<html><head><title>Pay stub - ${d.name}</title><style>body{font-family:Arial,sans-serif;color:#111;max-width:640px;margin:40px auto;padding:0 20px}h1{font-size:18px}p{font-size:13px;color:#666;margin:4px 0 24px}table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;border-bottom:2px solid #333;padding:6px 8px;font-size:11px;text-transform:uppercase;color:#666}td{padding:6px 8px;border-bottom:1px solid #eee}.tot{width:280px;margin:20px 0 0 auto;font-size:13px}.tot div{display:flex;justify-content:space-between;padding:4px 0}.net{font-weight:bold;font-size:16px;border-top:2px solid #333;margin-top:8px;padding-top:8px}</style></head><body><h1>Bashka Express LLC</h1><p>Pay stub — ${d.name} — ${pLabel(pi)}</p><table><thead><tr><th>Date</th><th>Route</th><th>Load #</th><th>Note</th><th align="right">Pay</th><th align="right">Deduction</th></tr></thead><tbody>${rows}</tbody></table><div class="tot"><div><span>Gross pay</span><span>$${gross.toFixed(2)}</span></div><div><span>Deductions</span><span>-$${ded.toFixed(2)}</span></div><div class="net"><span>Net pay</span><span>$${(gross-ded).toFixed(2)}</span></div></div></body></html>`);
+  w.document.close(); w.print();
+}
+
+function renderHistory(){
+  const dName=id=>{const d=drivers.find(x=>x.id===id);return d?d.name:"Unknown";};
+  const pSet=new Set(loads.map(l=>pidx(new Date(l.date+"T00:00:00"))));
+  const periods=[...pSet].sort((a,b)=>b-a);
+  const summaries=periods.map(pi=>{
+    const pl=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pi);
+    const gross=pl.reduce((s,l)=>s+(Number(l.rate)||0),0);
+    const ded=pl.reduce((s,l)=>s+(Number(l.deduction)||0),0);
+    const byD={};
+    for(const l of pl){ if(!byD[l.driverId]) byD[l.driverId]={g:0,d:0,c:0}; byD[l.driverId].g+=Number(l.rate)||0; byD[l.driverId].d+=Number(l.deduction)||0; byD[l.driverId].c++; }
+    const dRows=Object.entries(byD).map(([id,t])=>`<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#c5c8cc">${dName(id)} <span style="color:var(--faint)">· ${t.c} loads</span></span><span style="font-weight:500">${money(t.g-t.d)}</span></div>`).join("");
+    return {pi,gross,ded,net:gross-ded,count:pl.length,dCount:Object.keys(byD).length,dRows};
+  });
+  const allG=summaries.reduce((s,p)=>s+p.gross,0);
+  const allN=summaries.reduce((s,p)=>s+p.net,0);
+  const items=summaries.map(p=>`
+    <details class="hist">
+      <summary>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500">${pLabel(p.pi)}</div><div style="font-size:11px;color:var(--dim)">${p.count} loads · ${p.dCount} driver${p.dCount!==1?"s":""}</div></div>
+        <div style="text-align:right"><div style="font-size:14px;font-weight:700">${money(p.net)}</div><div style="font-size:11px;color:var(--dim)">net</div></div>
+        ${icons.chR}
+      </summary>
+      <div class="hist-body">${p.dRows}</div>
+    </details>`).join("");
+  return `
+  <div class="row">
+    <h1>Payroll history</h1>
+    ${periods.length>0?`<button class="btn-ghost" id="exportHistCSV">${icons.dl} Export CSV</button>`:""}
+  </div>
+  ${periods.length===0?`<div class="empty"><p>No history yet</p><small>Pay periods with logged loads appear here.</small></div>`:`
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-lbl">All-time gross</div><div class="stat-val">${money(allG)}</div></div>
+    <div class="stat-card"><div class="stat-lbl">All-time net</div><div class="stat-val" style="color:var(--accent)">${money(allN)}</div></div>
+  </div>
+  <div>${items}</div>`}`;
+}
+
+let teamUsers=[], teamErr="", teamBusy=false;
+async function loadTeam(){ const data=await rpc("payroll_list_users",{p_actor_id:session.id}); teamUsers=data; renderTeamSection(); }
+function renderTeamSection(){ const el=$("#team-list"); if(el) el.innerHTML=teamUsersHTML(); }
+function teamUsersHTML(){
+  return teamUsers.map(u=>`
+    <div class="list-row">
+      <div class="avatar">${u.name[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${u.name}${u.id===session.id?" (you)":""}</div><div style="font-size:11px;color:var(--dim)">${u.email}</div></div>
+      <span class="role-badge ${u.role==="admin"?"admin":""}">${u.role}</span>
+      <button class="pill ${u.active===false?"off":"on"}" ${u.id===session.id?"disabled":""} onclick="toggleUser('${u.id}',${!u.active})">${u.active===false?"Inactive":"Active"}</button>
+    </div>`).join("");
+}
+function renderTeam(){
+  return `
+  <h1 style="margin-bottom:18px">Team</h1>
+  <div class="panel">
+    ${teamErr?`<div class="err-box">${teamErr}</div>`:""}
+    <div class="grid3">
+      <div><label class="lbl">Name</label><input class="inp" id="tm-name" placeholder="Full name"/></div>
+      <div><label class="lbl">Email</label><input class="inp" id="tm-email" type="email" placeholder="name@bashkaexpress.com"/></div>
+      <div><label class="lbl">Role</label><select class="inp" id="tm-role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+      <div class="span2"><label class="lbl">Temporary password (8+ chars — share in person)</label><input class="inp" id="tm-pass" type="text" placeholder="At least 8 characters"/></div>
+    </div>
+    <button class="btn" id="addTeamBtn" style="margin-top:14px" ${teamBusy?"disabled":""}>${icons.plus} ${teamBusy?"Creating…":"Create account"}</button>
+  </div>
+  <div id="team-list" class="list">${teamUsersHTML()}</div>
+  <p class="help">Staff can log loads and view stubs. Admins have full access including team and audit log.</p>`;
+}
+
+let auditLog=[];
+async function loadAudit(){ const data=await rpc("payroll_list_audit_log",{p_actor_id:session.id,p_limit:300}); auditLog=data; renderAuditSection(); }
+function renderAuditSection(){ const el=$("#audit-list"); if(el) el.innerHTML=auditHTML(); }
+function auditHTML(){
+  const map={create_load:"logged a load",delete_load:"deleted a load",create_driver:"added a driver",update_driver:"updated a driver",delete_driver:"deleted a driver",create_route:"added a route",update_route:"updated a route",delete_route:"deleted a route",create_user:"created an account",deactivate_user:"deactivated an account",reactivate_user:"reactivated an account"};
+  return auditLog.map(e=>`<div class="audit-row"><span class="audit-time">${fmtDT(e.created_at)}</span><span><span class="audit-actor">${e.user_name}</span> ${map[e.action]||e.action}</span></div>`).join("");
+}
+function renderAudit(){
+  return `<h1 style="margin-bottom:18px">Audit log</h1><div class="panel" id="audit-list">${auditHTML()}</div><p class="help">Showing up to 300 recent actions.</p>`;
+}
+
+function bindEvents(){
+  if(!session){
+    const login=()=>doLogin();
+    $("#loginBtn")?.addEventListener("click",login);
+    $("#pw")?.addEventListener("keydown",e=>e.key==="Enter"&&login());
+    setTimeout(clearLoginForm, 50);
+    return;
+  }
+  $$(".nav-btn").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; openStub=null; render(); if(tab==="team") loadTeam(); if(tab==="audit") loadAudit(); }));
+  $("#signoutBtn")?.addEventListener("click",()=>{ clearSession(); render(); });
+  $("#prevP")?.addEventListener("click",()=>{ pIndex--; render(); });
+  $("#nextP")?.addEventListener("click",()=>{ pIndex++; render(); });
+  const rteSelect=$("#sel-rte");
+  if(rteSelect){
+    const setRate=()=>{ const opt=rteSelect.options[rteSelect.selectedIndex]; if(opt) $("#inp-rate").value=opt.dataset.price||""; };
+    setRate(); rteSelect.addEventListener("change",setRate);
+  }
+  $("#addLoadBtn")?.addEventListener("click",async()=>{
+    const drvId=$("#sel-drv").value, rteId=$("#sel-rte").value, date=$("#inp-date").value, rate=$("#inp-rate").value;
+    if(!drvId||!date||!rate) return;
+    const rte=routes.find(r=>r.id===rteId);
+    const btn=$("#addLoadBtn"); btn.disabled=true; btn.innerHTML=icons.plus+" Adding…";
+    try{
+      await rpc("payroll_create_load",{p_actor_id:session.id,p_driver_id:drvId,p_route_id:rteId||null,p_route_name:rte?.name||null,p_date:date,p_load_ref:$("#inp-ref").value.trim()||null,p_rate:Number(rate),p_deduction:Number($("#inp-ded").value)||0,p_note:$("#inp-note").value.trim()||null});
+      await loadAll();
+    }catch(e){ btn.disabled=false; btn.innerHTML=icons.plus+" Add load"; }
+  });
+  $$(".del-load").forEach(b=>b.addEventListener("click",async()=>{
+    if(!confirm("Remove this load?")) return;
+    await rpc("payroll_delete_load",{p_actor_id:session.id,p_id:b.dataset.id});
+    await loadAll();
+  }));
+  $("#addDrvBtn")?.addEventListener("click",async()=>{
+    const n=$("#drv-name").value.trim(); if(!n) return;
+    await rpc("payroll_upsert_driver",{p_actor_id:session.id,p_id:null,p_name:n,p_active:true});
+    await loadAll();
+  });
+  $$(".del-drv").forEach(b=>b.addEventListener("click",async()=>{
+    if(!confirm("Delete this driver?")) return;
+    await rpc("payroll_delete_driver",{p_actor_id:session.id,p_id:b.dataset.id});
+    await loadAll();
+  }));
+  $("#addRteBtn")?.addEventListener("click",async()=>{
+    const n=$("#rte-name").value.trim(), p=Number($("#rte-price").value)||0; if(!n) return;
+    await rpc("payroll_upsert_route",{p_actor_id:session.id,p_id:null,p_name:n,p_price:p,p_active:true});
+    await loadAll();
+  });
+  $$(".del-rte").forEach(b=>b.addEventListener("click",async()=>{
+    if(!confirm("Delete this route?")) return;
+    await rpc("payroll_delete_route",{p_actor_id:session.id,p_id:b.dataset.id});
+    await loadAll();
+  }));
+  $$(".stub-head").forEach(b=>b.addEventListener("click",()=>{ openStub=openStub===b.dataset.stubid?null:b.dataset.stubid; render(); }));
+  $("#exportStubCSV")?.addEventListener("click",()=>{
+    const inP=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pIndex);
+    const dName=id=>{const d=drivers.find(x=>x.id===id);return d?d.name:"Unknown";};
+    const rows=[["Driver","Date","Route","Load #","Note","Pay","Deduction"],...inP.sort((a,b)=>a.date<b.date?-1:1).map(l=>[dName(l.driverId),l.date,l.routeName||"",l.loadRef||"",l.note||"",Number(l.rate).toFixed(2),Number(l.deduction||0).toFixed(2)])];
+    dlCSV(`bashka-payroll_${pKey(pIndex)}.csv`,rows);
+  });
+  $("#exportHistCSV")?.addEventListener("click",()=>{
+    const rows=[["Pay Period","Driver","Loads","Gross","Deductions","Net"]];
+    const dName=id=>{const d=drivers.find(x=>x.id===id);return d?d.name:"Unknown";};
+    const pSet=new Set(loads.map(l=>pidx(new Date(l.date+"T00:00:00"))));
+    [...pSet].sort().forEach(pi=>{
+      const pl=loads.filter(l=>pidx(new Date(l.date+"T00:00:00"))===pi);
+      const byD=pl.reduce((a,l)=>{if(!a[l.driverId])a[l.driverId]={g:0,d:0,c:0};a[l.driverId].g+=Number(l.rate)||0;a[l.driverId].d+=Number(l.deduction)||0;a[l.driverId].c++;return a;},{});
+      Object.entries(byD).forEach(([id,t])=>rows.push([pLabel(pi),dName(id),t.c,t.g.toFixed(2),t.d.toFixed(2),(t.g-t.d).toFixed(2)]));
+    });
+    dlCSV("bashka-payroll_history.csv",rows);
+  });
+  $("#addTeamBtn")?.addEventListener("click",async()=>{
+    const n=$("#tm-name").value.trim(), em=$("#tm-email").value.trim(), pw=$("#tm-pass").value, role=$("#tm-role").value;
+    if(!n||!em||pw.length<8){ teamErr="Name, email, and a password of at least 8 characters are required."; render(); if(tab==="team") loadTeam(); return; }
+    teamBusy=true; teamErr=""; render(); if(tab==="team") await loadTeam();
+    try{
+      await rpc("payroll_create_user",{p_actor_id:session.id,p_name:n,p_email:em,p_password:pw,p_role:role});
+      teamBusy=false; teamErr=""; render(); if(tab==="team") loadTeam();
+    }catch(e){
+      teamBusy=false; teamErr=e.message?.includes("duplicate")?"That email is already in use.":"Couldn't create the account.";
+      render(); if(tab==="team") loadTeam();
+    }
+  });
+}
+
+async function updateDriverName(el){ const d=drivers.find(x=>x.id===el.dataset.drvid); if(!d) return; await rpc("payroll_upsert_driver",{p_actor_id:session.id,p_id:d.id,p_name:el.value,p_active:d.active}); await loadAll(); }
+async function updateRouteName(el){ const r=routes.find(x=>x.id===el.dataset.rteid); if(!r) return; await rpc("payroll_upsert_route",{p_actor_id:session.id,p_id:r.id,p_name:el.value,p_price:r.price,p_active:r.active}); await loadAll(); }
+async function updateRoutePrice(el){ const r=routes.find(x=>x.id===el.dataset.rteid); if(!r) return; await rpc("payroll_upsert_route",{p_actor_id:session.id,p_id:r.id,p_name:r.name,p_price:Number(el.value)||0,p_active:r.active}); await loadAll(); }
+async function toggleDriver(id){ const d=drivers.find(x=>x.id===id); if(!d) return; await rpc("payroll_upsert_driver",{p_actor_id:session.id,p_id:id,p_name:d.name,p_active:d.active===false?true:false}); await loadAll(); }
+async function toggleRoute(id){ const r=routes.find(x=>x.id===id); if(!r) return; await rpc("payroll_upsert_route",{p_actor_id:session.id,p_id:id,p_name:r.name,p_price:r.price,p_active:r.active===false?true:false}); await loadAll(); }
+async function toggleUser(id,active){ await rpc("payroll_set_user_active",{p_actor_id:session.id,p_user_id:id,p_active:active}); loadTeam(); }
+
+try{ const s=sessionStorage.getItem("bx-pay"); if(s) session=JSON.parse(s); }catch(e){ sessionStorage.removeItem("bx-pay"); }
+sessionStorage.removeItem("bx-pay-err");
+if(session){ render(); loadAll(); } else render();
+</script>
+</body>
+</html>
