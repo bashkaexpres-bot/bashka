@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0045)file:///C:/Users/bashk/Downloads/index_3.html -->
+<!-- saved from url=(0045)file:///C:/Users/bashk/Downloads/index_5.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -275,14 +275,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <!-- INSPECTION -->
     <div class="tab-panel" id="tab-inspection">
       <div class="section-header">
-        <div><div class="section-title">Route return inspection</div><div class="section-sub">Photo walkaround when truck returns</div></div>
+        <div><div class="section-title">Truck inspection</div><div class="section-sub">Pre-trip pickup or post-trip return</div></div>
       </div>
+
+      <!-- Type toggle -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:0.5px solid var(--gray-200);width:fit-content">
+        <button id="btn-pretrip" onclick="setInspType(&#39;pre-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
+        <button id="btn-posttrip" onclick="setInspType(&#39;post-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
+      </div>
+
       <div class="inspection-form">
+        <div style="background:var(--orange-light);border:0.5px solid var(--orange);border-radius:var(--radius);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--orange);font-weight:500" id="insp-type-label">🚀 Pre-trip inspection — Driver picking up truck</div>
         <div class="form-grid">
           <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="insp-truck"></select></div>
-          <div class="form-group"><div class="form-label">Driver</div><select class="form-select" id="insp-driver"><option>Said Mohamud</option><option>Alisaid Alisaid</option><option>Ali Ibrahim</option><option>Other</option></select></div>
+          <div class="form-group"><div class="form-label">Driver</div><select class="form-select" id="insp-driver"><option>Said Mohamud</option><option>Alisaid Alisaid</option><option>Ali Ibrahim</option><option>Samir</option><option>Other</option></select></div>
           <div class="form-group"><div class="form-label">Odometer reading</div><input type="number" class="form-input" id="insp-odo" placeholder="e.g. 284210"></div>
-          <div class="form-group"><div class="form-label">Route completed</div><input type="text" class="form-input" id="insp-route" placeholder="e.g. Minneapolis → Chicago"></div>
+          <div class="form-group"><div class="form-label" id="route-label">Planned route</div><input type="text" class="form-input" id="insp-route" placeholder="e.g. Minneapolis → Chicago"></div>
         </div>
         <div class="form-label" style="margin-bottom:8px">Photo walkaround — tap each zone</div>
         <div class="photo-zones">
@@ -297,14 +305,24 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         </div>
         <div class="form-label" style="margin-bottom:8px">Condition checklist</div>
         <div class="checklist" id="checklist">
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No visible body damage</span><span class="check-flag">Required</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Tires inflated, no flats or bulges</span><span class="check-flag">Required</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">All lights functional</span><span class="check-flag">Required</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No fluid leaks under truck</span><span class="check-flag">Required</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Mirrors and windows intact</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Cargo tie-downs returned and stowed</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Fuel level logged</span></div>
-          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Cab clean, no trash or personal items</span></div>
+          <!-- Pre-trip items (shown by default) -->
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Fuel level adequate for route</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Tires inflated, no visible damage</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">All lights functional</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No fluid leaks under truck</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Mirrors adjusted and clean</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Registration and insurance in cab</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No existing damage noted (or documented)</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Cargo secured properly</span></div>
+          <!-- Post-trip items (hidden by default) -->
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">No new body damage</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Tires still good, no flats or bulges</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">All lights still functional</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">No fluid leaks under truck</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cargo area cleared and clean</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cargo tie-downs returned and stowed</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Fuel level logged</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cab clean, no trash or personal items</span></div>
         </div>
         <div class="form-group" style="margin-bottom:14px">
           <div class="form-label">Damage / issues noted</div>
@@ -605,13 +623,14 @@ function renderRecords(){
 function renderInspHistory(){
   const list=document.getElementById('insp-history');
   if(!inspections.length){list.innerHTML='<div class="empty">No inspections yet</div>';return;}
-  list.innerHTML=inspections.slice(0,10).map(i=>`
-    <div class="history-item">
-      <div class="history-icon hi-insp">📷</div>
-      <div><div class="history-title">${i.truck_id} — Route return inspection</div>
+  list.innerHTML=inspections.slice(0,10).map(i=>{
+    const isPost=i.inspection_type==='post-trip';
+    return`<div class="history-item">
+      <div class="history-icon hi-insp">${isPost?'🏁':'🚀'}</div>
+      <div><div class="history-title">${i.truck_id} — ${isPost?'Post-trip':'Pre-trip'} inspection</div>
       <div class="history-meta">Driver: ${i.driver||'—'} · ${i.route||'—'} · ${i.photos_captured}/8 photos · ${i.issues||'No issues'}</div></div>
       <div class="history-right"><div class="history-date">${fmt(i.inspection_date)}</div></div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 function renderHistory(){
@@ -732,6 +751,30 @@ async function saveUser(){
   btn.disabled=false;btn.textContent='Add member';
 }
 
+// --- INSPECTION TYPE TOGGLE ---
+let currentInspType='pre-trip';
+function setInspType(type){
+  currentInspType=type;
+  const pre=type==='pre-trip';
+  document.getElementById('btn-pretrip').style.background=pre?'var(--orange)':'#fff';
+  document.getElementById('btn-pretrip').style.color=pre?'#fff':'var(--gray-600)';
+  document.getElementById('btn-posttrip').style.background=pre?'#fff':'var(--steel)';
+  document.getElementById('btn-posttrip').style.color=pre?'var(--gray-600)':'#fff';
+  const lbl=document.getElementById('insp-type-label');
+  lbl.textContent=pre?'🚀 Pre-trip inspection — Driver picking up truck':'🏁 Post-trip inspection — Driver returning truck';
+  lbl.style.background=pre?'var(--orange-light)':'var(--green-bg)';
+  lbl.style.borderColor=pre?'var(--orange)':'var(--green)';
+  lbl.style.color=pre?'var(--orange)':'var(--green)';
+  document.getElementById('route-label').textContent=pre?'Planned route':'Route completed';
+  document.getElementById('insp-route').placeholder=pre?'e.g. Minneapolis → Chicago':'e.g. Minneapolis → Chicago (completed)';
+  document.querySelectorAll('.pre-item').forEach(el=>el.style.display=pre?'':'none');
+  document.querySelectorAll('.post-item').forEach(el=>el.style.display=pre?'none':'');
+  document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
+  document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
+  photoCaptured.clear();
+  document.getElementById('photo-status').textContent='0 of 8 photos captured';
+}
+
 let photoCaptured=new Set();
 function togglePhoto(el,label){
   if(photoCaptured.has(label)){photoCaptured.delete(label);el.classList.remove('has-photo');el.querySelector('span').textContent='📷';}
@@ -750,8 +793,8 @@ async function submitInspection(){
   const btn=document.getElementById('submit-insp-btn');
   btn.disabled=true;btn.textContent='Submitting...';
   try{
-    await rpc('submit_inspection',{p_truck_id:truck,p_driver:driver,p_route:route,p_odometer:odo,p_photos_captured:photoCaptured.size,p_photo_zones:JSON.stringify([...photoCaptured]),p_checklist:JSON.stringify(checklist),p_issues:issues});
-    await logAction('Submitted inspection',`${truck} — ${route} — ${photoCaptured.size}/8 photos — ${issues}`,truck);
+    await rpc('submit_inspection',{p_truck_id:truck,p_driver:driver,p_route:route,p_odometer:odo,p_photos_captured:photoCaptured.size,p_photo_zones:JSON.stringify([...photoCaptured]),p_checklist:JSON.stringify(checklist),p_issues:issues,p_inspection_type:currentInspType});
+    await logAction(`Submitted ${currentInspType} inspection`,`${truck} — ${route} — ${photoCaptured.size}/8 photos`,truck);
     document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
     document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
     document.getElementById('insp-odo').value='';
@@ -759,7 +802,7 @@ async function submitInspection(){
     document.getElementById('insp-issues').value='';
     photoCaptured.clear();
     document.getElementById('photo-status').textContent='0 of 8 photos captured';
-    showToast('Inspection submitted ✓');await loadAll();
+    showToast(`${currentInspType==='pre-trip'?'Pre-trip':'Post-trip'} inspection submitted ✓`);await loadAll();
   }catch(e){showToast('Error submitting');console.error(e);}
   btn.disabled=false;btn.textContent='✓ Submit inspection';
 }
