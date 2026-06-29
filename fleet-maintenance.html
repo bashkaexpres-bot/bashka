@@ -739,4 +739,79 @@ async function saveUser(){
   const name=document.getElementById('new-name').value.trim();
   const username=document.getElementById('new-username').value.trim();
   const password=document.getElementById('new-password').value;
-  const role=document.getEl
+  const role=document.getElementById('new-role').value;
+  if(!name||!username||!password){showToast('Fill in all fields');return;}
+  const btn=document.getElementById('save-user-btn');
+  btn.disabled=true;btn.textContent='Adding...';
+  try{
+    await rpc('fleet_add_user',{p_name:name,p_username:username,p_password:password,p_role:role});
+    await logAction('Added team member',`${name} (@${username}) as ${role}`);
+    closeModal('modal-adduser');showToast(`${name} added ✓`);await loadAll();
+  }catch(e){showToast('Error — username may already exist');console.error(e);}
+  btn.disabled=false;btn.textContent='Add member';
+}
+
+// --- INSPECTION TYPE TOGGLE ---
+let currentInspType='pre-trip';
+function setInspType(type){
+  currentInspType=type;
+  const pre=type==='pre-trip';
+  document.getElementById('btn-pretrip').style.background=pre?'var(--orange)':'#fff';
+  document.getElementById('btn-pretrip').style.color=pre?'#fff':'var(--gray-600)';
+  document.getElementById('btn-posttrip').style.background=pre?'#fff':'var(--steel)';
+  document.getElementById('btn-posttrip').style.color=pre?'var(--gray-600)':'#fff';
+  const lbl=document.getElementById('insp-type-label');
+  lbl.textContent=pre?'🚀 Pre-trip inspection — Driver picking up truck':'🏁 Post-trip inspection — Driver returning truck';
+  lbl.style.background=pre?'var(--orange-light)':'var(--green-bg)';
+  lbl.style.borderColor=pre?'var(--orange)':'var(--green)';
+  lbl.style.color=pre?'var(--orange)':'var(--green)';
+  document.getElementById('route-label').textContent=pre?'Planned route':'Route completed';
+  document.getElementById('insp-route').placeholder=pre?'e.g. Minneapolis → Chicago':'e.g. Minneapolis → Chicago (completed)';
+  document.querySelectorAll('.pre-item').forEach(el=>el.style.display=pre?'':'none');
+  document.querySelectorAll('.post-item').forEach(el=>el.style.display=pre?'none':'');
+  document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
+  document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
+  photoCaptured.clear();
+  document.getElementById('photo-status').textContent='0 of 8 photos captured';
+}
+
+let photoCaptured=new Set();
+function togglePhoto(el,label){
+  if(photoCaptured.has(label)){photoCaptured.delete(label);el.classList.remove('has-photo');el.querySelector('span').textContent='📷';}
+  else{photoCaptured.add(label);el.classList.add('has-photo');el.querySelector('span').textContent='✅';}
+  document.getElementById('photo-status').textContent=`${photoCaptured.size} of 8 photos captured`;
+}
+function toggleCheck(el){el.classList.toggle('checked');}
+
+async function submitInspection(){
+  const truck=document.getElementById('insp-truck').value;
+  const odo=parseInt(document.getElementById('insp-odo').value)||0;
+  const route=document.getElementById('insp-route').value;
+  const driver=document.getElementById('insp-driver').value;
+  const issues=document.getElementById('insp-issues').value||'None';
+  const checklist=Array.from(document.querySelectorAll('#checklist .check-item.checked')).map(el=>el.querySelector('.check-label').textContent);
+  const btn=document.getElementById('submit-insp-btn');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    await rpc('submit_inspection',{p_truck_id:truck,p_driver:driver,p_route:route,p_odometer:odo,p_photos_captured:photoCaptured.size,p_photo_zones:JSON.stringify([...photoCaptured]),p_checklist:JSON.stringify(checklist),p_issues:issues,p_inspection_type:currentInspType});
+    await logAction(`Submitted ${currentInspType} inspection`,`${truck} — ${route} — ${photoCaptured.size}/8 photos`,truck);
+    document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
+    document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
+    document.getElementById('insp-odo').value='';
+    document.getElementById('insp-route').value='';
+    document.getElementById('insp-issues').value='';
+    photoCaptured.clear();
+    document.getElementById('photo-status').textContent='0 of 8 photos captured';
+    showToast(`${currentInspType==='pre-trip'?'Pre-trip':'Post-trip'} inspection submitted ✓`);await loadAll();
+  }catch(e){showToast('Error submitting');console.error(e);}
+  btn.disabled=false;btn.textContent='✓ Submit inspection';
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// Always show login on fresh load
+clearSession();
+</script>
+
+
+</body></html>
