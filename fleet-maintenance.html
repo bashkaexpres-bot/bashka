@@ -470,7 +470,8 @@ function clearSession(){sessionStorage.removeItem(SESSION_KEY);}
 async function rpc(fn,params={}){
   const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:H,body:JSON.stringify(params)});
   if(!res.ok){const e=await res.text();throw new Error(e);}
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 function showToast(msg){
