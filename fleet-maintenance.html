@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0057)file:///C:/Users/bashk/Downloads/fleet-maintenance_2.html -->
+<!-- saved from url=(0045)file:///C:/Users/bashk/Downloads/index_6.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -226,14 +226,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 
   <nav class="nav">
-    <button class="nav-btn active" onclick="switchTab(&#39;dashboard&#39;,this)">📊 Dashboard</button>
-    <button class="nav-btn" onclick="switchTab(&#39;reminders&#39;,this)">🔔 Reminders <span class="badge" id="reminder-count">0</span></button>
-    <button class="nav-btn" onclick="switchTab(&#39;records&#39;,this)">📋 Records</button>
-    <button class="nav-btn" onclick="switchTab(&#39;inspection&#39;,this)">📷 Inspection</button>
-    <button class="nav-btn" onclick="switchTab(&#39;history&#39;,this)">🕐 History</button>
-    <button class="nav-btn hidden" id="nav-driverfiles" onclick="switchTab(&#39;driverfiles&#39;,this)">📁 Driver Files</button>
-    <button class="nav-btn hidden" id="nav-team" onclick="switchTab(&#39;team&#39;,this)">👥 Team</button>
-    <button class="nav-btn hidden" id="nav-audit" onclick="switchTab(&#39;audit&#39;,this)">🔍 Audit Log</button>
+    <button class="nav-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="switchTab('reminders',this)">🔔 Reminders <span class="badge" id="reminder-count">0</span></button>
+    <button class="nav-btn" onclick="switchTab('records',this)">📋 Records</button>
+    <button class="nav-btn" onclick="switchTab('inspection',this)">📷 Inspection</button>
+    <button class="nav-btn" onclick="switchTab('history',this)">🕐 History</button>
+    <button class="nav-btn hidden" id="nav-driverfiles" onclick="switchTab('driverfiles',this)">📁 Driver Files</button>
+    <button class="nav-btn hidden" id="nav-team" onclick="switchTab('team',this)">👥 Team</button>
+    <button class="nav-btn hidden" id="nav-audit" onclick="switchTab('audit',this)">🔍 Audit Log</button>
   </nav>
 
   <div class="main">
@@ -248,7 +248,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </div>
       <div class="section-header">
         <div><div class="section-title">Fleet status</div><div class="section-sub">Live from Supabase</div></div>
-        <button class="btn-primary" onclick="openModal(&#39;modal-service&#39;)">+ Log service</button>
+        <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
       </div>
       <div id="fleet-cards" class="cards-grid"><div class="loading">Loading fleet...</div></div>
     </div>
@@ -257,7 +257,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-reminders">
       <div class="section-header">
         <div><div class="section-title">Maintenance reminders</div></div>
-        <button class="btn-primary" onclick="openModal(&#39;modal-reminder&#39;)">+ Add reminder</button>
+        <button class="btn-primary" onclick="openModal('modal-reminder')">+ Add reminder</button>
       </div>
       <div id="alerts-list"><div class="loading">Loading...</div></div>
     </div>
@@ -266,7 +266,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-records">
       <div class="section-header">
         <div><div class="section-title">Maintenance records</div></div>
-        <button class="btn-primary" onclick="openModal(&#39;modal-service&#39;)">+ Log service</button>
+        <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
       </div>
       <div class="records-table">
         <div class="table-header"><div>Truck</div><div>Service</div><div>Notes</div><div>Miles</div><div>Cost</div><div>By</div><div>Date</div></div>
@@ -282,8 +282,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
       <!-- Type toggle -->
       <div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:0.5px solid var(--gray-200);width:fit-content">
-        <button id="btn-pretrip" onclick="setInspType(&#39;pre-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
-        <button id="btn-posttrip" onclick="setInspType(&#39;post-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
+        <button id="btn-pretrip" onclick="setInspType('pre-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
+        <button id="btn-posttrip" onclick="setInspType('post-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
       </div>
 
       <div class="inspection-form">
@@ -296,14 +296,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         </div>
         <div class="form-label" style="margin-bottom:8px">Photo walkaround — tap each zone</div>
         <div class="photo-zones">
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Front&#39;)"><span>📷</span><span class="photo-zone-label">Front</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Driver side&#39;)"><span>📷</span><span class="photo-zone-label">Driver side</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Passenger side&#39;)"><span>📷</span><span class="photo-zone-label">Passenger side</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Rear&#39;)"><span>📷</span><span class="photo-zone-label">Rear</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Tires&#39;)"><span>📷</span><span class="photo-zone-label">Tires</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Undercarriage&#39;)"><span>📷</span><span class="photo-zone-label">Undercarriage</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Interior cab&#39;)"><span>📷</span><span class="photo-zone-label">Interior cab</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,&#39;Cargo area&#39;)"><span>📷</span><span class="photo-zone-label">Cargo area</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Front')"><span>📷</span><span class="photo-zone-label">Front</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Driver side')"><span>📷</span><span class="photo-zone-label">Driver side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Passenger side')"><span>📷</span><span class="photo-zone-label">Passenger side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Rear')"><span>📷</span><span class="photo-zone-label">Rear</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Tires')"><span>📷</span><span class="photo-zone-label">Tires</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Undercarriage')"><span>📷</span><span class="photo-zone-label">Undercarriage</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Interior cab')"><span>📷</span><span class="photo-zone-label">Interior cab</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Cargo area')"><span>📷</span><span class="photo-zone-label">Cargo area</span></div>
         </div>
         <div class="form-label" style="margin-bottom:8px">Condition checklist</div>
         <div class="checklist" id="checklist">
@@ -352,7 +352,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-driverfiles">
       <div class="section-header">
         <div><div class="section-title">Driver files</div><div class="section-sub">DQF documents &amp; applications on record</div></div>
-        <button class="btn-primary" onclick="openModal(&#39;modal-grandfather&#39;)">+ Add existing driver</button>
+        <button class="btn-primary" onclick="openModal('modal-grandfather')">+ Add existing driver</button>
       </div>
       <div class="history-list" id="driverfiles-list"><div class="loading">Loading...</div></div>
     </div>
@@ -361,7 +361,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-team">
       <div class="section-header">
         <div><div class="section-title">Team members</div><div class="section-sub">Manage login access</div></div>
-        <button class="btn-primary" onclick="openModal(&#39;modal-adduser&#39;)">+ Add member</button>
+        <button class="btn-primary" onclick="openModal('modal-adduser')">+ Add member</button>
       </div>
       <div class="team-grid" id="team-grid"><div class="loading">Loading...</div></div>
     </div>
@@ -380,7 +380,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 <!-- Modal: Log service -->
 <div class="modal-overlay" id="modal-service">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal(&#39;modal-service&#39;)">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal('modal-service')">✕</button></div>
     <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="svc-truck"></select></div>
     <div class="form-group"><div class="form-label">Service type</div>
       <select class="form-select" id="svc-type">
@@ -394,7 +394,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="form-group"><div class="form-label">Cost ($)</div><input type="number" class="form-input" id="svc-cost"></div>
     <div class="form-group"><div class="form-label">Date</div><input type="date" class="form-input" id="svc-date"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal(&#39;modal-service&#39;)">Cancel</button>
+      <button class="btn-sm" onclick="closeModal('modal-service')">Cancel</button>
       <button class="btn-primary" id="save-svc-btn" onclick="saveService()">Save record</button>
     </div>
   </div>
@@ -403,13 +403,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 <!-- Modal: Add reminder -->
 <div class="modal-overlay" id="modal-reminder">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal(&#39;modal-reminder&#39;)">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal('modal-reminder')">✕</button></div>
     <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="rem-truck"></select></div>
     <div class="form-group"><div class="form-label">Service</div><input class="form-input" id="rem-service" placeholder="e.g. Oil change, DOT inspection..."></div>
     <div class="form-group"><div class="form-label">Due date</div><input type="date" class="form-input" id="rem-date"></div>
     <div class="form-group"><div class="form-label">Due mileage (optional)</div><input type="number" class="form-input" id="rem-miles" placeholder="e.g. 290000"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal(&#39;modal-reminder&#39;)">Cancel</button>
+      <button class="btn-sm" onclick="closeModal('modal-reminder')">Cancel</button>
       <button class="btn-primary" id="save-rem-btn" onclick="saveReminder()">Add reminder</button>
     </div>
   </div>
@@ -418,14 +418,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 <!-- Modal: Add existing driver's application (grandfather) -->
 <div class="modal-overlay" id="modal-grandfather">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add existing driver's application</div><button class="modal-close" onclick="closeModal(&#39;modal-grandfather&#39;)">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add existing driver's application</div><button class="modal-close" onclick="closeModal('modal-grandfather')">✕</button></div>
     <div class="form-group"><div class="form-label">Driver full name</div><input class="form-input" id="gf-name" placeholder="e.g. Omar Hassan"></div>
     <div class="form-group"><div class="form-label">Link to driver record (optional)</div><select class="form-select" id="gf-driver"><option value="">— Not linked yet —</option></select></div>
     <div class="form-group"><div class="form-label">Hire date</div><input type="date" class="form-input" id="gf-hire"></div>
     <div class="form-group"><div class="form-label">Date signed on paper application</div><input type="date" class="form-input" id="gf-signed"></div>
     <div class="form-group"><div class="form-label">Upload scanned application</div><input type="file" class="form-input" id="gf-file" accept=".pdf,.jpg,.jpeg,.png"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal(&#39;modal-grandfather&#39;)">Cancel</button>
+      <button class="btn-sm" onclick="closeModal('modal-grandfather')">Cancel</button>
       <button class="btn-primary" id="save-gf-btn" onclick="saveGrandfather()">Save</button>
     </div>
   </div>
@@ -434,7 +434,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 <!-- Modal: Add user (admin only) -->
 <div class="modal-overlay" id="modal-adduser">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal(&#39;modal-adduser&#39;)">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal('modal-adduser')">✕</button></div>
     <div class="form-group"><div class="form-label">Full name</div><input class="form-input" id="new-name" placeholder="e.g. Omar Hassan"></div>
     <div class="form-group"><div class="form-label">Username</div><input class="form-input" id="new-username" placeholder="e.g. omar"></div>
     <div class="form-group"><div class="form-label">Password</div><input type="password" class="form-input" id="new-password" placeholder="Temporary password"></div>
@@ -446,7 +446,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal(&#39;modal-adduser&#39;)">Cancel</button>
+      <button class="btn-sm" onclick="closeModal('modal-adduser')">Cancel</button>
       <button class="btn-primary" id="save-user-btn" onclick="saveUser()">Add member</button>
     </div>
   </div>
@@ -944,7 +944,6 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 
 clearSession();
 </script>
-
 
 
 </body></html>
