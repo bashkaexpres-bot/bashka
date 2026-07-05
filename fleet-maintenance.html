@@ -220,6 +220,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <span id="user-display">—</span>
         <span class="user-role" id="role-display">—</span>
       </div>
+      <button class="logout-btn" id="loc-toggle-btn" onclick="toggleMyLocationSharing()">📍 Share my location: off</button>
       <button class="logout-btn" id="quick-link-btn" style="display:none" onclick="generateApplicationLink()">🔗 New driver link</button>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
@@ -513,6 +514,7 @@ async function doLogin(){
 }
 
 function doLogout(){
+  stopLocationTracking();
   clearSession();
   currentUser=null;
   document.getElementById('app').style.display='none';
@@ -538,6 +540,8 @@ function showApp(){
   if(currentUser.can_generate_link){
     document.getElementById('quick-link-btn').style.display='inline-block';
   }
+  updateLocationToggleUI();
+  if(currentUser.location_sharing_enabled) startLocationTracking();
   loadAll();
 }
 
@@ -778,6 +782,8 @@ function renderTeam(){
           onclick="toggleUserActive('${u.id}', ${u.active===false})">
           ${u.active===false ? 'Reactivate' : 'Deactivate'}
         </button>
+        <button class="btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteTeamMember('${u.id}','${u.name.replace(/'/g,"\\'")}')">Delete</button>
+        ${u.location_sharing_enabled ? `<button class="btn-sm" onclick="viewMemberLocations('${u.id}','${u.name.replace(/'/g,"\\'")}')">📍 View location</button>` : ''}
         ${u.role==='manager' ? `
         <button class="btn-sm" onclick="toggleDqfAccess('${u.id}', ${!u.dqf_access})">
           DQF: ${u.dqf_access ? 'ON (click to turn off)' : 'OFF (click to turn on)'}
@@ -794,6 +800,18 @@ async function toggleUserActive(targetId, newActive){
     showToast(newActive ? 'User reactivated' : 'User deactivated');
     await loadAll();
   }catch(e){showToast('Error updating user');console.error(e);}
+}
+
+async function deleteTeamMember(targetId, name){
+  if(!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
+  try{
+    await rpc('fleet_delete_user',{p_admin_id:currentUser.id,p_target_user_id:targetId});
+    showToast(`${name} deleted`);
+    await loadAll();
+  }catch(e){
+    showToast('Error deleting user');
+    console.error(e);
+  }
 }
 
 async function toggleDqfAccess(targetId, newAccess){
@@ -816,6 +834,63 @@ function renderAudit(){
         <div class="audit-time">${fmtTime(a.created_at)}</div>
       </div>
     </div>`).join('');
+}
+
+// --- LOCATION SHARING (self-consent) ---
+let locationInterval = null;
+
+function updateLocationToggleUI(){
+  const btn = document.getElementById('loc-toggle-btn');
+  if(currentUser.location_sharing_enabled){
+    btn.textContent = '📍 Share my location: ON';
+    btn.style.color = '#4CAF50';
+  } else {
+    btn.textContent = '📍 Share my location: off';
+    btn.style.color = '#9AA3B8';
+  }
+}
+
+async function toggleMyLocationSharing(){
+  const newVal = !currentUser.location_sharing_enabled;
+  if(newVal && !confirm('Share your live location with your admin while this app is open in your browser? You can turn this off anytime.')) return;
+  try{
+    await rpc('fleet_set_own_location_sharing',{p_user_id:currentUser.id,p_enabled:newVal});
+    currentUser.location_sharing_enabled = newVal;
+    saveSession(currentUser);
+    updateLocationToggleUI();
+    if(newVal){ startLocationTracking(); showToast('Location sharing turned on'); }
+    else { stopLocationTracking(); showToast('Location sharing turned off'); }
+  }catch(e){showToast('Error updating setting');console.error(e);}
+}
+
+function captureAndLogLocation(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos => { rpc('fleet_log_location',{p_user_id:currentUser.id,p_lat:pos.coords.latitude,p_lng:pos.coords.longitude}).catch(e=>console.error(e)); },
+    err => console.error('Location error', err),
+    { enableHighAccuracy:false, timeout:10000 }
+  );
+}
+
+function startLocationTracking(){
+  captureAndLogLocation();
+  if(locationInterval) clearInterval(locationInterval);
+  locationInterval = setInterval(captureAndLogLocation, 5*60*1000);
+}
+
+function stopLocationTracking(){
+  if(locationInterval){ clearInterval(locationInterval); locationInterval = null; }
+}
+
+async function viewMemberLocations(targetId, name){
+  try{
+    const locs = await rpc('fleet_get_member_locations',{p_admin_id:currentUser.id,p_target_user_id:targetId});
+    if(!locs || !locs.length){ alert(`${name} hasn't shared any location data yet.`); return; }
+    const latest = locs[0];
+    const mapLink = `https://www.google.com/maps?q=${latest.lat},${latest.lng}`;
+    const historyLines = locs.slice(0,10).map(l => `${fmtTime(l.captured_at)} — ${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}`).join('\n');
+    alert(`${name} — last seen ${fmtTime(latest.captured_at)}\nOpen in Maps: ${mapLink}\n\nRecent history:\n${historyLines}`);
+  }catch(e){showToast('Error loading location');console.error(e);}
 }
 
 function switchTab(tab,btn){
