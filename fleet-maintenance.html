@@ -1,91 +1,836 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const MOTIVE_KEY = process.env.MOTIVE_API_KEY;
-  const SB_URL = 'https://ghrbrwusfyjprxhivxfo.supabase.co';
-  const SB_KEY = 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
-
-  try {
-    // Try vehicle locations endpoint which has odometer data
-    const motiveRes = await fetch('https://api.gomotive.com/v1/vehicle_locations?per_page=100', {
-      headers: {
-        'X-Api-Key': MOTIVE_KEY,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!motiveRes.ok) {
-      const err = await motiveRes.text();
-      // Try vehicles endpoint as fallback
-      const fallbackRes = await fetch('https://api.gomotive.com/v1/vehicles?per_page=100', {
-        headers: {
-          'X-Api-Key': MOTIVE_KEY,
-          'Content-Type': 'application/json'
-        }
-      });
-      const fallbackErr = await fallbackRes.text();
-      return res.status(500).json({ 
-        error: 'Motive API error', 
-        vehicle_locations_error: err,
-        vehicles_error: fallbackErr
-      });
-    }
-
-    const motiveData = await motiveRes.json();
-    const vehicles = motiveData.vehicles || motiveData.vehicle_locations || [];
-
-    const results = [];
-
-    for (const v of vehicles) {
-      const vehicle = v.vehicle || v;
-      const vehicleId = vehicle.id?.toString() || vehicle.vehicle_id?.toString();
-      
-      // Try different odometer fields
-      let odometer = null;
-      if (vehicle.current_meter_millimeters) {
-        odometer = Math.round(vehicle.current_meter_millimeters / 1609344);
-      } else if (vehicle.odometer) {
-        odometer = Math.round(vehicle.odometer);
-      } else if (vehicle.meter) {
-        odometer = Math.round(vehicle.meter / 1609.344);
-      }
-
-      if (!vehicleId) continue;
-
-      // Sync to Supabase
-      const syncRes = await fetch(`${SB_URL}/rest/v1/rpc/sync_motive_odometer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SB_KEY,
-          'Authorization': `Bearer ${SB_KEY}`
-        },
-        body: JSON.stringify({
-          p_truck_id: vehicleId,
-          p_motive_vehicle_id: vehicleId,
-          p_odometer_miles: odometer || 0
-        })
-      });
-
-      results.push({
-        vehicle_id: vehicleId,
-        odometer_miles: odometer,
-        synced: syncRes.ok
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      vehicles_found: vehicles.length,
-      synced: results.length,
-      results,
-      raw_sample: vehicles[0] || null
-    });
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bashka Express — Fleet Maintenance</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E85D04;--orange-dark:#9C4100;--orange-light:#FFF3E0;
+  --steel:#1A1F2E;--steel-mid:#2C3347;--steel-light:#3D4460;
+  --gray-100:#F5F5F5;--gray-200:#E8E8E8;--gray-400:#9E9E9E;--gray-600:#616161;--gray-800:#212121;
+  --green:#2E7D32;--green-bg:#E8F5E9;--red:#C62828;--red-bg:#FFEBEE;--amber:#E65100;--amber-bg:#FFF3E0;
+  --radius:6px;
 }
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);color:var(--gray-800);font-size:14px;min-height:100vh}
+
+/* LOGIN */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--steel)}
+.login-box{background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.login-logo-icon{width:40px;height:40px;background:var(--orange);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.login-title{font-size:17px;font-weight:500}
+.login-sub{font-size:12px;color:var(--gray-400)}
+.login-field{margin-bottom:14px}
+.login-label{font-size:11px;color:var(--gray-600);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;display:block}
+.login-input{width:100%;border:0.5px solid var(--gray-200);border-radius:var(--radius);padding:10px 12px;font-size:14px;font-family:inherit;outline:none;transition:border 0.15s}
+.login-input:focus{border-color:var(--orange)}
+.login-btn{width:100%;background:var(--orange);border:none;border-radius:var(--radius);padding:11px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:#fff;margin-top:4px}
+.login-btn:hover{background:var(--orange-dark)}
+.login-btn:disabled{opacity:0.6;cursor:not-allowed}
+.login-error{color:var(--red);font-size:12px;margin-top:8px;display:none}
+
+/* APP */
+.app{display:none}
+.header{background:var(--steel);padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--orange)}
+.logo-icon{width:32px;height:32px;background:var(--orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{color:#fff;font-size:16px;font-weight:500}
+.logo-sub{color:#9AA3B8;font-size:11px}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.user-badge{background:var(--steel-mid);border:0.5px solid var(--steel-light);border-radius:var(--radius);padding:5px 12px;color:#CBD3E8;font-size:12px;display:flex;align-items:center;gap:6px}
+.user-role{background:var(--orange);color:#fff;font-size:10px;border-radius:10px;padding:1px 7px;font-weight:500}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4CAF50}
+.sync-dot.syncing{background:#FFA000;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.logout-btn{background:none;border:0.5px solid var(--steel-light);border-radius:var(--radius);padding:5px 10px;color:#9AA3B8;font-size:12px;cursor:pointer}
+.logout-btn:hover{color:#fff;border-color:#fff}
+
+.nav{background:var(--steel-mid);display:flex;border-bottom:1px solid var(--steel-light);overflow-x:auto}
+.nav-btn{background:none;border:none;color:#9AA3B8;padding:12px 16px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;border-bottom:2px solid transparent;white-space:nowrap}
+.nav-btn:hover{color:#fff}
+.nav-btn.active{color:#fff;border-bottom-color:var(--orange);background:rgba(232,93,4,0.1)}
+.nav-btn.hidden{display:none}
+.badge{background:var(--orange);color:#fff;font-size:10px;border-radius:10px;padding:1px 5px;font-weight:500}
+
+.main{padding:20px;max-width:1100px;margin:0 auto}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-title{font-size:16px;font-weight:500}
+.section-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:14px 16px}
+.stat-value{font-size:24px;font-weight:500}
+.stat-label{font-size:11px;color:var(--gray-400);margin-top:3px}
+.orange{color:var(--orange)}.red{color:var(--red)}.green{color:var(--green)}
+
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+.truck-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden}
+.truck-card-header{background:var(--steel);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.truck-avatar{width:36px;height:36px;background:var(--orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.truck-id{color:#fff;font-size:14px;font-weight:500}
+.truck-model{color:#9AA3B8;font-size:11px;margin-top:1px}
+.status-pill{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:500;margin-left:auto}
+.s-active{background:var(--green-bg);color:var(--green)}
+.s-due{background:var(--amber-bg);color:var(--amber)}
+.s-overdue{background:var(--red-bg);color:var(--red)}
+.truck-card-body{padding:14px}
+.truck-miles{font-size:22px;font-weight:500}
+.truck-miles-label{font-size:11px;color:var(--gray-400)}
+.truck-tasks{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.task-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.task-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--green)}.dot-soon{background:#FFA000}.dot-overdue{background:var(--red)}
+.task-name{color:var(--gray-600);flex:1}.task-due{color:var(--gray-400)}
+
+.alerts-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.alert-item{background:#fff;border-radius:8px;border-left:3px solid;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+.alert-overdue{border-color:var(--red)}.alert-soon{border-color:#FFA000}.alert-ok{border-color:var(--green)}
+.alert-icon{width:32px;height:32px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.ai-red{background:var(--red-bg)}.ai-amber{background:var(--amber-bg)}.ai-green{background:var(--green-bg)}
+.alert-title{font-weight:500;font-size:13px}
+.alert-detail{font-size:11px;color:var(--gray-400);margin-top:2px}
+
+.records-table{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden;margin-bottom:16px}
+.table-header{display:grid;grid-template-columns:80px 130px 1fr 80px 80px 80px 90px;gap:8px;padding:10px 14px;background:var(--gray-100);border-bottom:0.5px solid var(--gray-200);font-size:11px;color:var(--gray-400);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.table-row{display:grid;grid-template-columns:80px 130px 1fr 80px 80px 80px 90px;gap:8px;padding:11px 14px;border-bottom:0.5px solid var(--gray-200);align-items:center;font-size:13px}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:var(--gray-100)}
+
+.inspection-form{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:16px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:11px;color:var(--gray-600);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.form-input{border:0.5px solid var(--gray-200);border-radius:var(--radius);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;transition:border 0.15s}
+.form-input:focus{border-color:var(--orange)}
+.form-select{border:0.5px solid var(--gray-200);border-radius:var(--radius);padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;outline:none}
+
+.photo-zones{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.photo-zone{border:1.5px dashed var(--gray-200);border-radius:8px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--gray-100);transition:all 0.15s;font-size:22px}
+.photo-zone:hover{border-color:var(--orange);background:var(--orange-light)}
+.photo-zone-label{font-size:10px;color:var(--gray-400);text-align:center}
+.photo-zone.has-photo{border-style:solid;border-color:var(--green);background:var(--green-bg)}
+.photo-zone.has-photo .photo-zone-label{color:var(--green)}
+
+.checklist{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.check-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--gray-200);font-size:13px;cursor:pointer}
+.check-item:hover{background:var(--gray-100)}
+.check-item.checked{background:var(--green-bg);border-color:var(--green)}
+.check-item.checked .check-label{color:var(--green)}
+.check-box{width:16px;height:16px;border:1.5px solid var(--gray-400);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.check-item.checked .check-box{background:var(--green);border-color:var(--green);color:#fff}
+.check-flag{margin-left:auto;font-size:11px;color:var(--gray-400)}
+
+.history-list{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden}
+.history-item{padding:12px 14px;border-bottom:0.5px solid var(--gray-200);display:flex;align-items:center;gap:12px}
+.history-item:last-child{border-bottom:none}
+.history-icon{width:34px;height:34px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.hi-maint{background:var(--orange-light)}.hi-insp{background:#E3F2FD}.hi-user{background:#F3E5F5}
+.history-title{font-size:13px;font-weight:500}
+.history-meta{font-size:11px;color:var(--gray-400);margin-top:2px}
+.history-right{text-align:right;margin-left:auto}
+.history-cost{font-size:13px;font-weight:500}
+.history-date{font-size:11px;color:var(--gray-400);margin-top:2px}
+
+/* Team tab */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px}
+.team-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:16px;display:flex;align-items:center;gap:12px}
+.team-avatar{width:42px;height:42px;border-radius:50%;background:var(--steel);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:500;flex-shrink:0}
+.team-name{font-size:14px;font-weight:500}
+.team-username{font-size:11px;color:var(--gray-400)}
+.team-role-badge{font-size:10px;border-radius:10px;padding:2px 8px;font-weight:500;margin-top:4px;display:inline-block}
+.role-admin{background:#E8EAF6;color:#3949AB}
+.role-manager{background:var(--orange-light);color:var(--orange)}
+.role-driver{background:var(--green-bg);color:var(--green)}
+.team-actions{margin-left:auto}
+
+/* Audit log */
+.audit-item{padding:11px 14px;border-bottom:0.5px solid var(--gray-200);display:flex;align-items:flex-start;gap:10px}
+.audit-item:last-child{border-bottom:none}
+.audit-who{font-size:12px;font-weight:500;color:var(--gray-800)}
+.audit-action{font-size:12px;color:var(--gray-600)}
+.audit-time{font-size:11px;color:var(--gray-400);margin-top:2px}
+.audit-truck{background:var(--orange-light);color:var(--orange);font-size:10px;border-radius:4px;padding:1px 6px;font-weight:500}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:420px;max-height:85vh;overflow-y:auto;padding:20px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:20px;line-height:1}
+.modal .form-group{margin-bottom:12px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+.btn-sm{background:none;border:0.5px solid var(--gray-400);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray-600)}
+.btn-sm:hover{border-color:var(--orange);color:var(--orange)}
+.btn-primary{background:var(--orange);border:none;border-radius:var(--radius);padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:#fff}
+.btn-primary:hover{background:var(--orange-dark)}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed}
+
+.loading{text-align:center;padding:40px;color:var(--gray-400)}
+.empty{text-align:center;padding:40px;color:var(--gray-400)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--steel);color:#fff;padding:10px 16px;border-radius:var(--radius);font-size:13px;z-index:200;opacity:0;transition:opacity 0.3s}
+.toast.show{opacity:1}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .photo-zones{grid-template-columns:repeat(2,1fr)}
+  .table-header,.table-row{grid-template-columns:70px 110px 1fr 70px 70px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🚛</div>
+      <div>
+        <div class="login-title">Bashka Express</div>
+        <div class="login-sub">Fleet Maintenance</div>
+      </div>
+    </div>
+    <div class="login-field">
+      <label class="login-label">Username</label>
+      <input class="login-input" id="login-user" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="login-input" id="login-pass" type="password" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error">Invalid username or password</div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="header">
+    <div class="logo-icon">🚛</div>
+    <div>
+      <div class="logo-text">Bashka Express</div>
+      <div class="logo-sub">Fleet Maintenance</div>
+    </div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="user-display">—</span>
+        <span class="user-role" id="role-display">—</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="switchTab('reminders',this)">🔔 Reminders <span class="badge" id="reminder-count">0</span></button>
+    <button class="nav-btn" onclick="switchTab('records',this)">📋 Records</button>
+    <button class="nav-btn" onclick="switchTab('inspection',this)">📷 Inspection</button>
+    <button class="nav-btn" onclick="switchTab('history',this)">🕐 History</button>
+    <button class="nav-btn hidden" id="nav-team" onclick="switchTab('team',this)">👥 Team</button>
+    <button class="nav-btn hidden" id="nav-audit" onclick="switchTab('audit',this)">🔍 Audit Log</button>
+  </nav>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value green" id="stat-active">—</div><div class="stat-label">Trucks operational</div></div>
+        <div class="stat-card"><div class="stat-value orange" id="stat-due">—</div><div class="stat-label">Maintenance due</div></div>
+        <div class="stat-card"><div class="stat-value red" id="stat-overdue">—</div><div class="stat-label">Overdue service</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-cost">—</div><div class="stat-label">Spent this month</div></div>
+      </div>
+      <div class="section-header">
+        <div><div class="section-title">Fleet status</div><div class="section-sub">Live from Supabase</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-sm" id="motive-sync-btn" onclick="syncMotive()" style="display:flex;align-items:center;gap:6px">🔄 Sync Motive</button>
+          <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
+        </div>
+      </div>
+      <div id="fleet-cards" class="cards-grid"><div class="loading">Loading fleet...</div></div>
+    </div>
+
+    <!-- REMINDERS -->
+    <div class="tab-panel" id="tab-reminders">
+      <div class="section-header">
+        <div><div class="section-title">Maintenance reminders</div></div>
+        <button class="btn-primary" onclick="openModal('modal-reminder')">+ Add reminder</button>
+      </div>
+      <div id="alerts-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- RECORDS -->
+    <div class="tab-panel" id="tab-records">
+      <div class="section-header">
+        <div><div class="section-title">Maintenance records</div></div>
+        <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
+      </div>
+      <div class="records-table">
+        <div class="table-header"><div>Truck</div><div>Service</div><div>Notes</div><div>Miles</div><div>Cost</div><div>By</div><div>Date</div></div>
+        <div id="records-body"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- INSPECTION -->
+    <div class="tab-panel" id="tab-inspection">
+      <div class="section-header">
+        <div><div class="section-title">Truck inspection</div><div class="section-sub">Pre-trip pickup or post-trip return</div></div>
+      </div>
+
+      <!-- Type toggle -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:0.5px solid var(--gray-200);width:fit-content">
+        <button id="btn-pretrip" onclick="setInspType('pre-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
+        <button id="btn-posttrip" onclick="setInspType('post-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
+      </div>
+
+      <div class="inspection-form">
+        <div style="background:var(--orange-light);border:0.5px solid var(--orange);border-radius:var(--radius);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--orange);font-weight:500" id="insp-type-label">🚀 Pre-trip inspection — Driver picking up truck</div>
+        <div class="form-grid">
+          <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="insp-truck"></select></div>
+          <div class="form-group"><div class="form-label">Driver</div><select class="form-select" id="insp-driver"><option>Said Mohamud</option><option>Alisaid Alisaid</option><option>Ali Ibrahim</option><option>Samir</option><option>Other</option></select></div>
+          <div class="form-group"><div class="form-label">Odometer reading</div><input type="number" class="form-input" id="insp-odo" placeholder="e.g. 284210"></div>
+          <div class="form-group"><div class="form-label" id="route-label">Planned route</div><input type="text" class="form-input" id="insp-route" placeholder="e.g. Minneapolis → Chicago"></div>
+        </div>
+        <div class="form-label" style="margin-bottom:8px">Photo walkaround — tap each zone</div>
+        <div class="photo-zones">
+          <div class="photo-zone" onclick="togglePhoto(this,'Front')"><span>📷</span><span class="photo-zone-label">Front</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Driver side')"><span>📷</span><span class="photo-zone-label">Driver side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Passenger side')"><span>📷</span><span class="photo-zone-label">Passenger side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Rear')"><span>📷</span><span class="photo-zone-label">Rear</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Tires')"><span>📷</span><span class="photo-zone-label">Tires</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Undercarriage')"><span>📷</span><span class="photo-zone-label">Undercarriage</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Interior cab')"><span>📷</span><span class="photo-zone-label">Interior cab</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,'Cargo area')"><span>📷</span><span class="photo-zone-label">Cargo area</span></div>
+        </div>
+        <div class="form-label" style="margin-bottom:8px">Condition checklist</div>
+        <div class="checklist" id="checklist">
+          <!-- Pre-trip items (shown by default) -->
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Fuel level adequate for route</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Tires inflated, no visible damage</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">All lights functional</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No fluid leaks under truck</span><span class="check-flag">Required</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Mirrors adjusted and clean</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Registration and insurance in cab</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">No existing damage noted (or documented)</span></div>
+          <div class="check-item pre-item" onclick="toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">Cargo secured properly</span></div>
+          <!-- Post-trip items (hidden by default) -->
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">No new body damage</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Tires still good, no flats or bulges</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">All lights still functional</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">No fluid leaks under truck</span><span class="check-flag">Required</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cargo area cleared and clean</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cargo tie-downs returned and stowed</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Fuel level logged</span></div>
+          <div class="check-item post-item" onclick="toggleCheck(this)" style="display:none"><div class="check-box">✓</div><span class="check-label">Cab clean, no trash or personal items</span></div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <div class="form-label">Damage / issues noted</div>
+          <textarea class="form-input" id="insp-issues" rows="3" placeholder="Describe any damage, warning lights, or concerns..." style="resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div id="photo-status" style="font-size:12px;color:var(--gray-400)">0 of 8 photos captured</div>
+          <button class="btn-primary" id="submit-insp-btn" onclick="submitInspection()">✓ Submit inspection</button>
+        </div>
+      </div>
+      <div class="section-header"><div class="section-title">Recent inspections</div></div>
+      <div class="history-list" id="insp-history"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="tab-panel" id="tab-history">
+      <div class="section-header">
+        <div><div class="section-title">Activity history</div></div>
+        <select class="form-select" id="history-filter" style="width:160px" onchange="renderHistory()">
+          <option value="all">All trucks</option>
+        </select>
+      </div>
+      <div class="history-list" id="full-history"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- TEAM (admin only) -->
+    <div class="tab-panel" id="tab-team">
+      <div class="section-header">
+        <div><div class="section-title">Team members</div><div class="section-sub">Manage login access</div></div>
+        <button class="btn-primary" onclick="openModal('modal-adduser')">+ Add member</button>
+      </div>
+      <div class="team-grid" id="team-grid"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- AUDIT LOG (admin only) -->
+    <div class="tab-panel" id="tab-audit">
+      <div class="section-header">
+        <div><div class="section-title">Audit log</div><div class="section-sub">All team activity</div></div>
+      </div>
+      <div class="history-list" id="audit-list"><div class="loading">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Log service -->
+<div class="modal-overlay" id="modal-service">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal('modal-service')">✕</button></div>
+    <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="svc-truck"></select></div>
+    <div class="form-group"><div class="form-label">Service type</div>
+      <select class="form-select" id="svc-type">
+        <option>Oil change</option><option>Tire rotation</option><option>Brake inspection</option>
+        <option>Air filter</option><option>Transmission service</option><option>Coolant flush</option>
+        <option>DOT inspection</option><option>Other</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="svc-notes" placeholder="Technician, parts, observations..."></div>
+    <div class="form-group"><div class="form-label">Odometer (miles)</div><input type="number" class="form-input" id="svc-miles"></div>
+    <div class="form-group"><div class="form-label">Cost ($)</div><input type="number" class="form-input" id="svc-cost"></div>
+    <div class="form-group"><div class="form-label">Date</div><input type="date" class="form-input" id="svc-date"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('modal-service')">Cancel</button>
+      <button class="btn-primary" id="save-svc-btn" onclick="saveService()">Save record</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add reminder -->
+<div class="modal-overlay" id="modal-reminder">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal('modal-reminder')">✕</button></div>
+    <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="rem-truck"></select></div>
+    <div class="form-group"><div class="form-label">Service</div><input class="form-input" id="rem-service" placeholder="e.g. Oil change, DOT inspection..."></div>
+    <div class="form-group"><div class="form-label">Due date</div><input type="date" class="form-input" id="rem-date"></div>
+    <div class="form-group"><div class="form-label">Due mileage (optional)</div><input type="number" class="form-input" id="rem-miles" placeholder="e.g. 290000"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('modal-reminder')">Cancel</button>
+      <button class="btn-primary" id="save-rem-btn" onclick="saveReminder()">Add reminder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add user (admin only) -->
+<div class="modal-overlay" id="modal-adduser">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal('modal-adduser')">✕</button></div>
+    <div class="form-group"><div class="form-label">Full name</div><input class="form-input" id="new-name" placeholder="e.g. Omar Hassan"></div>
+    <div class="form-group"><div class="form-label">Username</div><input class="form-input" id="new-username" placeholder="e.g. omar"></div>
+    <div class="form-group"><div class="form-label">Password</div><input type="password" class="form-input" id="new-password" placeholder="Temporary password"></div>
+    <div class="form-group"><div class="form-label">Role</div>
+      <select class="form-select" id="new-role">
+        <option value="driver">Driver — inspection only</option>
+        <option value="manager">Manager — log service + inspections</option>
+        <option value="admin">Admin — full access</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('modal-adduser')">Cancel</button>
+      <button class="btn-primary" id="save-user-btn" onclick="saveUser()">Add member</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://ghrbrwusfyjprxhivxfo.supabase.co';
+const SB_KEY = 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
+const H = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+let currentUser = null;
+let fleet=[], reminders=[], records=[], inspections=[], teamMembers=[], auditLog=[];
+
+// --- SESSION ---
+const SESSION_KEY = 'bashka_fleet_user';
+function saveSession(u){sessionStorage.setItem(SESSION_KEY,JSON.stringify(u));}
+function loadSession(){try{return JSON.parse(sessionStorage.getItem(SESSION_KEY));}catch{return null;}}
+function clearSession(){sessionStorage.removeItem(SESSION_KEY);}
+
+async function rpc(fn,params={}){
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:H,body:JSON.stringify(params)});
+  if(!res.ok){const e=await res.text();throw new Error(e);}
+  return res.json();
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function setSyncing(v){
+  const d=document.getElementById('sync-dot');
+  v?d.classList.add('syncing'):d.classList.remove('syncing');
+}
+
+// --- LOGIN ---
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+async function doLogin(){
+  const username=document.getElementById('login-user').value.trim();
+  const password=document.getElementById('login-pass').value;
+  if(!username||!password)return;
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.textContent='Signing in...';
+  document.getElementById('login-error').style.display='none';
+  try{
+    const result=await rpc('fleet_login',{p_username:username,p_password:password});
+    if(result.error){
+      document.getElementById('login-error').textContent=result.error;
+      document.getElementById('login-error').style.display='block';
+    } else {
+      currentUser=result;
+      saveSession(result);
+      showApp();
+      await logAction('Signed in','');
+    }
+  }catch(e){
+    document.getElementById('login-error').textContent='Connection error — try again';
+    document.getElementById('login-error').style.display='block';
+  }
+  btn.disabled=false;btn.textContent='Sign in';
+}
+
+function doLogout(){
+  clearSession();
+  currentUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-display').textContent=currentUser.name;
+  document.getElementById('role-display').textContent=currentUser.role;
+  // Show admin tabs
+  if(currentUser.role==='admin'){
+    document.getElementById('nav-team').classList.remove('hidden');
+    document.getElementById('nav-audit').classList.remove('hidden');
+  }
+  loadAll();
+}
+
+// --- AUDIT ---
+async function logAction(action,details,truckId=null){
+  try{
+    await rpc('fleet_log_action',{
+      p_user_id:currentUser.id,
+      p_username:currentUser.username,
+      p_name:currentUser.name,
+      p_action:action,
+      p_details:details,
+      p_truck_id:truckId
+    });
+  }catch(e){console.error('Audit log error',e);}
+}
+
+// --- LOAD ---
+async function loadAll(){
+  setSyncing(true);
+  try{
+    const calls=[rpc('get_fleet'),rpc('get_reminders'),rpc('get_records'),rpc('get_inspections')];
+    if(currentUser.role==='admin') calls.push(rpc('fleet_get_users'),rpc('fleet_get_audit'));
+    const results=await Promise.all(calls);
+    [fleet,reminders,records,inspections]=results;
+    if(currentUser.role==='admin'){teamMembers=results[4];auditLog=results[5];}
+    populateSelects();
+    renderDashboard();renderReminders();renderRecords();renderInspHistory();renderHistory();
+    if(currentUser.role==='admin'){renderTeam();renderAudit();}
+  }catch(e){showToast('Connection error');console.error(e);}
+  setSyncing(false);
+}
+
+function populateSelects(){
+  const opts=fleet.map(t=>`<option value="${t.truck_id}">${t.truck_id} — ${t.model}</option>`).join('');
+  ['svc-truck','rem-truck','insp-truck'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.innerHTML=opts;
+  });
+  const hf=document.getElementById('history-filter');
+  hf.innerHTML='<option value="all">All trucks</option>'+fleet.map(t=>`<option value="${t.truck_id}">${t.truck_id}</option>`).join('');
+}
+
+const fmt=d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const fmtTime=d=>new Date(d).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const daysUntil=d=>Math.round((new Date(d)-new Date())/86400000);
+
+// --- DASHBOARD ---
+function renderDashboard(){
+  document.getElementById('stat-active').textContent=fleet.filter(t=>t.status==='active').length;
+  document.getElementById('stat-due').textContent=fleet.filter(t=>t.status==='due').length;
+  document.getElementById('stat-overdue').textContent=fleet.filter(t=>t.status==='overdue').length;
+  const now=new Date();
+  const mc=records.filter(r=>{const d=new Date(r.service_date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,r)=>s+parseFloat(r.cost||0),0);
+  document.getElementById('stat-cost').textContent='$'+mc.toLocaleString();
+  document.getElementById('reminder-count').textContent=reminders.filter(r=>r.severity!=='ok').length;
+
+  const byTruck={};
+  reminders.forEach(r=>{if(!byTruck[r.truck_id])byTruck[r.truck_id]=[];byTruck[r.truck_id].push(r);});
+  const c=document.getElementById('fleet-cards');
+  if(!fleet.length){c.innerHTML='<div class="empty">No trucks found</div>';return;}
+  c.innerHTML=fleet.map(t=>{
+    const sp=t.status==='overdue'?'s-overdue':t.status==='due'?'s-due':'s-active';
+    const sl=t.status==='overdue'?'Overdue':t.status==='due'?'Service due':'Operational';
+    const tasks=(byTruck[t.truck_id]||[]).slice(0,2);
+    return`<div class="truck-card">
+      <div class="truck-card-header">
+        <div class="truck-avatar">🚛</div>
+        <div><div class="truck-id">${t.truck_id}</div><div class="truck-model">${t.model}</div></div>
+        <span class="status-pill ${sp}">${sl}</span>
+      </div>
+      <div class="truck-card-body">
+        <div class="truck-miles">${(t.current_miles||0).toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--gray-400)">mi</span></div>
+        <div class="truck-miles-label">Current odometer</div>
+        <div class="truck-tasks">${tasks.map(k=>`<div class="task-row"><span class="task-dot dot-${k.severity==='overdue'?'overdue':k.severity==='soon'?'soon':'ok'}"></span><span class="task-name">${k.service}</span><span class="task-due">${k.due_date?fmt(k.due_date):''}</span></div>`).join('')}</div>
+        <div style="margin-top:10px"><button class="btn-sm" onclick="openServiceFor('${t.truck_id}')">Log service</button></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderReminders(){
+  const list=document.getElementById('alerts-list');
+  if(!reminders.length){list.innerHTML='<div class="empty">No active reminders</div>';return;}
+  list.innerHTML=reminders.map(r=>{
+    const sc=r.severity==='overdue'?'alert-overdue':r.severity==='soon'?'alert-soon':'alert-ok';
+    const ic=r.severity==='overdue'?'ai-red':r.severity==='soon'?'ai-amber':'ai-green';
+    const em=r.severity==='overdue'?'🔴':r.severity==='soon'?'🟡':'🟢';
+    const days=r.due_date?daysUntil(r.due_date):null;
+    const dl=days===null?'':days<0?`${Math.abs(days)} days overdue`:days===0?'Due today':`Due in ${days} days`;
+    return`<div class="alert-item ${sc}">
+      <div class="alert-icon ${ic}">${em}</div>
+      <div style="flex:1"><div class="alert-title">${r.truck_id} — ${r.service}</div>
+      <div class="alert-detail">${dl}${r.due_date?' · '+fmt(r.due_date):''}${r.due_miles?' · At '+r.due_miles.toLocaleString()+' mi':''}</div></div>
+      <div><button class="btn-sm" onclick="openServiceFor('${r.truck_id}')">Log service</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecords(){
+  const body=document.getElementById('records-body');
+  if(!records.length){body.innerHTML='<div class="empty">No records yet</div>';return;}
+  body.innerHTML=records.map(r=>`
+    <div class="table-row">
+      <div><strong>${r.truck_id}</strong></div>
+      <div>${r.service}</div>
+      <div style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</div>
+      <div>${r.miles_at_service?r.miles_at_service.toLocaleString():'—'}</div>
+      <div style="font-weight:500">$${parseFloat(r.cost||0).toLocaleString()}</div>
+      <div style="color:var(--gray-400);font-size:12px">${r.technician||'—'}</div>
+      <div style="color:var(--gray-400);font-size:12px">${fmt(r.service_date)}</div>
+    </div>`).join('');
+}
+
+function renderInspHistory(){
+  const list=document.getElementById('insp-history');
+  if(!inspections.length){list.innerHTML='<div class="empty">No inspections yet</div>';return;}
+  list.innerHTML=inspections.slice(0,10).map(i=>{
+    const isPost=i.inspection_type==='post-trip';
+    return`<div class="history-item">
+      <div class="history-icon hi-insp">${isPost?'🏁':'🚀'}</div>
+      <div><div class="history-title">${i.truck_id} — ${isPost?'Post-trip':'Pre-trip'} inspection</div>
+      <div class="history-meta">Driver: ${i.driver||'—'} · ${i.route||'—'} · ${i.photos_captured}/8 photos · ${i.issues||'No issues'}</div></div>
+      <div class="history-right"><div class="history-date">${fmt(i.inspection_date)}</div></div>
+    </div>`;}).join('');
+}
+
+function renderHistory(){
+  const filter=document.getElementById('history-filter').value;
+  const all=[
+    ...records.map(r=>({type:'maint',truck:r.truck_id,desc:r.service,cost:'$'+parseFloat(r.cost||0).toLocaleString(),date:r.service_date,by:r.technician||'—'})),
+    ...inspections.map(i=>({type:'insp',truck:i.truck_id,desc:'Route return inspection',cost:'—',date:i.inspection_date,by:i.driver||'—'}))
+  ].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filtered=filter==='all'?all:all.filter(h=>h.truck===filter);
+  const list=document.getElementById('full-history');
+  if(!filtered.length){list.innerHTML='<div class="empty">No history found</div>';return;}
+  list.innerHTML=filtered.map(h=>`
+    <div class="history-item">
+      <div class="history-icon ${h.type==='maint'?'hi-maint':'hi-insp'}">${h.type==='maint'?'🔧':'📷'}</div>
+      <div><div class="history-title">${h.truck} — ${h.desc}</div>
+      <div class="history-meta">By: ${h.by}</div></div>
+      <div class="history-right"><div class="history-cost">${h.cost}</div><div class="history-date">${fmt(h.date)}</div></div>
+    </div>`).join('');
+}
+
+function renderTeam(){
+  const g=document.getElementById('team-grid');
+  if(!teamMembers.length){g.innerHTML='<div class="empty">No team members</div>';return;}
+  g.innerHTML=teamMembers.map(u=>{
+    const initials=u.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const rc=u.role==='admin'?'role-admin':u.role==='manager'?'role-manager':'role-driver';
+    return`<div class="team-card">
+      <div class="team-avatar">${initials}</div>
+      <div>
+        <div class="team-name">${u.name}</div>
+        <div class="team-username">@${u.username}</div>
+        <span class="team-role-badge ${rc}">${u.role}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAudit(){
+  const list=document.getElementById('audit-list');
+  if(!auditLog.length){list.innerHTML='<div class="empty">No activity yet</div>';return;}
+  list.innerHTML=auditLog.map(a=>`
+    <div class="audit-item">
+      <div style="font-size:20px">${a.action==='Signed in'?'🔐':a.action.includes('inspection')?'📷':a.action.includes('service')?'🔧':a.action.includes('reminder')?'🔔':'👤'}</div>
+      <div style="flex:1">
+        <div><span class="audit-who">${a.name}</span> <span class="audit-action">— ${a.action}</span>${a.truck_id?` <span class="audit-truck">${a.truck_id}</span>`:''}</div>
+        ${a.details?`<div style="font-size:12px;color:var(--gray-600);margin-top:2px">${a.details}</div>`:''}
+        <div class="audit-time">${fmtTime(a.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// --- ACTIONS ---
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+function openModal(id){
+  if(id==='modal-service') document.getElementById('svc-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function openServiceFor(truckId){
+  const sel=document.getElementById('svc-truck');
+  for(let o of sel.options)if(o.value===truckId){sel.value=truckId;break;}
+  document.getElementById('svc-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('modal-service').classList.add('open');
+}
+
+async function saveService(){
+  const truck=document.getElementById('svc-truck').value;
+  const service=document.getElementById('svc-type').value;
+  const notes=document.getElementById('svc-notes').value||null;
+  const miles=parseInt(document.getElementById('svc-miles').value)||0;
+  const cost=parseFloat(document.getElementById('svc-cost').value)||0;
+  const date=document.getElementById('svc-date').value;
+  const btn=document.getElementById('save-svc-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('log_service',{p_truck_id:truck,p_service:service,p_notes:notes,p_miles:miles,p_cost:cost,p_date:date,p_technician:currentUser.name});
+    await logAction('Logged service',`${service} on ${truck} — $${cost}`,truck);
+    closeModal('modal-service');showToast('Service logged ✓');await loadAll();
+  }catch(e){showToast('Error saving');console.error(e);}
+  btn.disabled=false;btn.textContent='Save record';
+}
+
+async function saveReminder(){
+  const service=document.getElementById('rem-service').value;
+  const date=document.getElementById('rem-date').value;
+  if(!service||!date){showToast('Enter service name and due date');return;}
+  const truck=document.getElementById('rem-truck').value;
+  const btn=document.getElementById('save-rem-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('add_reminder',{p_truck_id:truck,p_service:service,p_due_date:date,p_due_miles:parseInt(document.getElementById('rem-miles').value)||null});
+    await logAction('Added reminder',`${service} for ${truck} due ${date}`,truck);
+    closeModal('modal-reminder');showToast('Reminder added ✓');await loadAll();
+  }catch(e){showToast('Error saving');console.error(e);}
+  btn.disabled=false;btn.textContent='Add reminder';
+}
+
+async function saveUser(){
+  const name=document.getElementById('new-name').value.trim();
+  const username=document.getElementById('new-username').value.trim();
+  const password=document.getElementById('new-password').value;
+  const role=document.getElementById('new-role').value;
+  if(!name||!username||!password){showToast('Fill in all fields');return;}
+  const btn=document.getElementById('save-user-btn');
+  btn.disabled=true;btn.textContent='Adding...';
+  try{
+    await rpc('fleet_add_user',{p_name:name,p_username:username,p_password:password,p_role:role});
+    await logAction('Added team member',`${name} (@${username}) as ${role}`);
+    closeModal('modal-adduser');showToast(`${name} added ✓`);await loadAll();
+  }catch(e){showToast('Error — username may already exist');console.error(e);}
+  btn.disabled=false;btn.textContent='Add member';
+}
+
+// --- INSPECTION TYPE TOGGLE ---
+let currentInspType='pre-trip';
+function setInspType(type){
+  currentInspType=type;
+  const pre=type==='pre-trip';
+  document.getElementById('btn-pretrip').style.background=pre?'var(--orange)':'#fff';
+  document.getElementById('btn-pretrip').style.color=pre?'#fff':'var(--gray-600)';
+  document.getElementById('btn-posttrip').style.background=pre?'#fff':'var(--steel)';
+  document.getElementById('btn-posttrip').style.color=pre?'var(--gray-600)':'#fff';
+  const lbl=document.getElementById('insp-type-label');
+  lbl.textContent=pre?'🚀 Pre-trip inspection — Driver picking up truck':'🏁 Post-trip inspection — Driver returning truck';
+  lbl.style.background=pre?'var(--orange-light)':'var(--green-bg)';
+  lbl.style.borderColor=pre?'var(--orange)':'var(--green)';
+  lbl.style.color=pre?'var(--orange)':'var(--green)';
+  document.getElementById('route-label').textContent=pre?'Planned route':'Route completed';
+  document.getElementById('insp-route').placeholder=pre?'e.g. Minneapolis → Chicago':'e.g. Minneapolis → Chicago (completed)';
+  document.querySelectorAll('.pre-item').forEach(el=>el.style.display=pre?'':'none');
+  document.querySelectorAll('.post-item').forEach(el=>el.style.display=pre?'none':'');
+  document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
+  document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
+  photoCaptured.clear();
+  document.getElementById('photo-status').textContent='0 of 8 photos captured';
+}
+
+let photoCaptured=new Set();
+function togglePhoto(el,label){
+  if(photoCaptured.has(label)){photoCaptured.delete(label);el.classList.remove('has-photo');el.querySelector('span').textContent='📷';}
+  else{photoCaptured.add(label);el.classList.add('has-photo');el.querySelector('span').textContent='✅';}
+  document.getElementById('photo-status').textContent=`${photoCaptured.size} of 8 photos captured`;
+}
+function toggleCheck(el){el.classList.toggle('checked');}
+
+async function submitInspection(){
+  const truck=document.getElementById('insp-truck').value;
+  const odo=parseInt(document.getElementById('insp-odo').value)||0;
+  const route=document.getElementById('insp-route').value;
+  const driver=document.getElementById('insp-driver').value;
+  const issues=document.getElementById('insp-issues').value||'None';
+  const checklist=Array.from(document.querySelectorAll('#checklist .check-item.checked')).map(el=>el.querySelector('.check-label').textContent);
+  const btn=document.getElementById('submit-insp-btn');
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    await rpc('submit_inspection',{p_truck_id:truck,p_driver:driver,p_route:route,p_odometer:odo,p_photos_captured:photoCaptured.size,p_photo_zones:JSON.stringify([...photoCaptured]),p_checklist:JSON.stringify(checklist),p_issues:issues,p_inspection_type:currentInspType});
+    await logAction(`Submitted ${currentInspType} inspection`,`${truck} — ${route} — ${photoCaptured.size}/8 photos`,truck);
+    document.querySelectorAll('.photo-zone').forEach(z=>{z.classList.remove('has-photo');z.querySelector('span').textContent='📷';});
+    document.querySelectorAll('.check-item').forEach(c=>c.classList.remove('checked'));
+    document.getElementById('insp-odo').value='';
+    document.getElementById('insp-route').value='';
+    document.getElementById('insp-issues').value='';
+    photoCaptured.clear();
+    document.getElementById('photo-status').textContent='0 of 8 photos captured';
+    showToast(`${currentInspType==='pre-trip'?'Pre-trip':'Post-trip'} inspection submitted ✓`);await loadAll();
+  }catch(e){showToast('Error submitting');console.error(e);}
+  btn.disabled=false;btn.textContent='✓ Submit inspection';
+}
+
+async function syncMotive(){
+  const btn=document.getElementById('motive-sync-btn');
+  btn.textContent='⏳ Syncing...';btn.disabled=true;
+  try{
+    const res=await fetch('/api/motive-sync');
+    const data=await res.json();
+    if(data.success){
+      showToast(`✅ Synced ${data.synced} trucks from Motive`);
+      await loadAll();
+    } else {
+      showToast('Motive sync error — check console');
+      console.error(data);
+    }
+  }catch(e){showToast('Sync failed — try again');console.error(e);}
+  btn.textContent='🔄 Sync Motive';btn.disabled=false;
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// Always show login on fresh load
+clearSession();
+</script>
+</body>
+</html>
