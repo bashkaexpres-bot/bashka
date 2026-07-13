@@ -232,6 +232,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <button class="nav-btn" onclick="switchTab('history',this)">🕐 History</button>
     <button class="nav-btn hidden" id="nav-team" onclick="switchTab('team',this)">👥 Team</button>
     <button class="nav-btn hidden" id="nav-audit" onclick="switchTab('audit',this)">🔍 Audit Log</button>
+    <button class="nav-btn hidden" id="nav-eld" onclick="switchTab('eld',this)">📄 ELD / Drivers</button>
   </nav>
 
   <div class="main">
@@ -366,6 +367,36 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <div><div class="section-title">Audit log</div><div class="section-sub">All team activity</div></div>
       </div>
       <div class="history-list" id="audit-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- ELD / DRIVERS (admin only) -->
+    <div class="tab-panel" id="tab-eld">
+      <div class="section-header">
+        <div><div class="section-title">ELD Vehicle & Driver Inventory</div><div class="section-sub">Upload your Excel compliance file to display truck and driver list</div></div>
+      </div>
+      <div style="background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:20px;margin-bottom:16px">
+        <div onclick="document.getElementById('eld-file-input').click()" id="eld-drop-zone"
+          style="border:2px dashed var(--gray-200);border-radius:8px;padding:32px;text-align:center;cursor:pointer;background:var(--gray-100)">
+          <div style="font-size:32px;margin-bottom:8px">📊</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gray-600)">Click to upload ELD Excel or CSV file</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Supports .xlsx, .xls, .csv</div>
+        </div>
+        <input type="file" id="eld-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleEldFile(this)">
+        <div id="eld-file-name" style="font-size:12px;color:var(--gray-400);margin-top:8px;text-align:center"></div>
+      </div>
+      <div id="eld-table-container" style="display:none">
+        <div class="section-header">
+          <div class="section-title" id="eld-table-title">Vehicle inventory</div>
+          <input type="text" class="form-input" id="eld-search" placeholder="Search..." style="width:200px" oninput="filterEldTable()">
+        </div>
+        <div style="background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:auto;max-height:500px">
+          <table id="eld-table" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead id="eld-thead" style="background:var(--gray-100);position:sticky;top:0"></thead>
+            <tbody id="eld-tbody"></tbody>
+          </table>
+        </div>
+        <div id="eld-count" style="font-size:12px;color:var(--gray-400);margin-top:8px;text-align:right"></div>
+      </div>
     </div>
 
   </div>
@@ -509,6 +540,7 @@ function showApp(){
   if(currentUser.role==='admin'){
     document.getElementById('nav-team').classList.remove('hidden');
     document.getElementById('nav-audit').classList.remove('hidden');
+    document.getElementById('nav-eld').classList.remove('hidden');
   }
   loadAll();
 }
@@ -828,6 +860,98 @@ async function syncMotive(){
 }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// --- ELD FILE UPLOAD ---
+let eldAllRows = [];
+let eldHeaders = [];
+
+function handleEldFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('eld-file-name').textContent = '📂 ' + file.name;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file);
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = e => parseXLSX(e.target.result);
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) { showToast('File is empty'); return; }
+  eldHeaders = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+  eldAllRows = lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.replace(/"/g,'').trim());
+    const row = {};
+    eldHeaders.forEach((h, i) => row[h] = vals[i] || '');
+    return row;
+  });
+  renderEldTable(eldAllRows);
+}
+
+function parseXLSX(buffer) {
+  // Use SheetJS if available, otherwise show message
+  try {
+    const XLSX = window.XLSX;
+    if (!XLSX) {
+      showToast('Loading Excel parser...');
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = () => {
+        const wb = window.XLSX.read(buffer, {type:'arraybuffer'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = window.XLSX.utils.sheet_to_json(ws, {defval:''});
+        if (!data.length) { showToast('No data found in file'); return; }
+        eldHeaders = Object.keys(data[0]);
+        eldAllRows = data;
+        renderEldTable(data);
+      };
+      document.head.appendChild(script);
+    } else {
+      const wb = XLSX.read(buffer, {type:'arraybuffer'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!data.length) { showToast('No data found in file'); return; }
+      eldHeaders = Object.keys(data[0]);
+      eldAllRows = data;
+      renderEldTable(data);
+    }
+  } catch(e) {
+    showToast('Error reading file — try CSV format');
+    console.error(e);
+  }
+}
+
+function renderEldTable(rows) {
+  if (!rows.length) { showToast('No data found'); return; }
+  const thead = document.getElementById('eld-thead');
+  const tbody = document.getElementById('eld-tbody');
+  thead.innerHTML = '<tr>' + eldHeaders.map(h => `<th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--gray-400);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--gray-200);white-space:nowrap">${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = rows.map(row => '<tr style="border-bottom:0.5px solid var(--gray-200)" onmouseover="this.style.background=\'var(--gray-100)\'" onmouseout="this.style.background=\'\'">' +
+    eldHeaders.map(h => `<td style="padding:9px 12px;color:var(--gray-800)">${row[h] || '—'}</td>`).join('') + '</tr>').join('');
+  document.getElementById('eld-table-container').style.display = 'block';
+  document.getElementById('eld-table-title').textContent = `Vehicle inventory — ${rows.length} records`;
+  document.getElementById('eld-count').textContent = `${rows.length} rows`;
+  document.getElementById('eld-drop-zone').style.borderColor = 'var(--green)';
+  document.getElementById('eld-drop-zone').style.background = 'var(--green-bg)';
+}
+
+function filterEldTable() {
+  const q = document.getElementById('eld-search').value.toLowerCase();
+  if (!q) { renderEldTable(eldAllRows); return; }
+  const filtered = eldAllRows.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(q)));
+  const tbody = document.getElementById('eld-tbody');
+  tbody.innerHTML = filtered.map(row => '<tr style="border-bottom:0.5px solid var(--gray-200)">' +
+    eldHeaders.map(h => `<td style="padding:9px 12px">${row[h] || '—'}</td>`).join('') + '</tr>').join('');
+  document.getElementById('eld-count').textContent = `${filtered.length} of ${eldAllRows.length} rows`;
+}
 
 // Always show login on fresh load
 clearSession();
