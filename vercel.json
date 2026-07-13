@@ -1,10 +1,5 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/bashka-payroll-v3_14.html" }
-  ],
-  "functions": {
-    "api/motive-sync.js": {
-      "runtime": "@vercel/node@3"
-    }
-  }
+  ]
 }
