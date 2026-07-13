@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<!-- saved from url=(0045)file:///C:/Users/bashk/Downloads/index_6.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bashka Express — Fleet Maintenance</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -15,8 +14,6 @@
   --radius:6px;
 }
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);color:var(--gray-800);font-size:14px;min-height:100vh}
-
-/* LOGIN */
 .login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--steel)}
 .login-box{background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
@@ -31,8 +28,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .login-btn:hover{background:var(--orange-dark)}
 .login-btn:disabled{opacity:0.6;cursor:not-allowed}
 .login-error{color:var(--red);font-size:12px;margin-top:8px;display:none}
-
-/* APP */
 .app{display:none}
 .header{background:var(--steel);padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--orange)}
 .logo-icon{width:32px;height:32px;background:var(--orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px}
@@ -46,26 +41,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .logout-btn{background:none;border:0.5px solid var(--steel-light);border-radius:var(--radius);padding:5px 10px;color:#9AA3B8;font-size:12px;cursor:pointer}
 .logout-btn:hover{color:#fff;border-color:#fff}
-
 .nav{background:var(--steel-mid);display:flex;border-bottom:1px solid var(--steel-light);overflow-x:auto}
 .nav-btn{background:none;border:none;color:#9AA3B8;padding:12px 16px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;border-bottom:2px solid transparent;white-space:nowrap}
 .nav-btn:hover{color:#fff}
 .nav-btn.active{color:#fff;border-bottom-color:var(--orange);background:rgba(232,93,4,0.1)}
 .nav-btn.hidden{display:none}
 .badge{background:var(--orange);color:#fff;font-size:10px;border-radius:10px;padding:1px 5px;font-weight:500}
-
 .main{padding:20px;max-width:1100px;margin:0 auto}
 .tab-panel{display:none}.tab-panel.active{display:block}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
 .section-title{font-size:16px;font-weight:500}
 .section-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
-
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .stat-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:14px 16px}
 .stat-value{font-size:24px;font-weight:500}
 .stat-label{font-size:11px;color:var(--gray-400);margin-top:3px}
 .orange{color:var(--orange)}.red{color:var(--red)}.green{color:var(--green)}
-
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
 .truck-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden}
 .truck-card-header{background:var(--steel);padding:12px 14px;display:flex;align-items:center;gap:10px}
@@ -84,7 +75,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .task-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dot-ok{background:var(--green)}.dot-soon{background:#FFA000}.dot-overdue{background:var(--red)}
 .task-name{color:var(--gray-600);flex:1}.task-due{color:var(--gray-400)}
-
 .alerts-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
 .alert-item{background:#fff;border-radius:8px;border-left:3px solid;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
 .alert-overdue{border-color:var(--red)}.alert-soon{border-color:#FFA000}.alert-ok{border-color:var(--green)}
@@ -92,13 +82,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .ai-red{background:var(--red-bg)}.ai-amber{background:var(--amber-bg)}.ai-green{background:var(--green-bg)}
 .alert-title{font-weight:500;font-size:13px}
 .alert-detail{font-size:11px;color:var(--gray-400);margin-top:2px}
-
 .records-table{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden;margin-bottom:16px}
 .table-header{display:grid;grid-template-columns:80px 130px 1fr 80px 80px 80px 90px;gap:8px;padding:10px 14px;background:var(--gray-100);border-bottom:0.5px solid var(--gray-200);font-size:11px;color:var(--gray-400);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
 .table-row{display:grid;grid-template-columns:80px 130px 1fr 80px 80px 80px 90px;gap:8px;padding:11px 14px;border-bottom:0.5px solid var(--gray-200);align-items:center;font-size:13px}
 .table-row:last-child{border-bottom:none}
 .table-row:hover{background:var(--gray-100)}
-
 .inspection-form{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:16px;margin-bottom:16px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .form-group{display:flex;flex-direction:column;gap:5px}
@@ -106,14 +94,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .form-input{border:0.5px solid var(--gray-200);border-radius:var(--radius);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;transition:border 0.15s}
 .form-input:focus{border-color:var(--orange)}
 .form-select{border:0.5px solid var(--gray-200);border-radius:var(--radius);padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;outline:none}
-
 .photo-zones{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .photo-zone{border:1.5px dashed var(--gray-200);border-radius:8px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--gray-100);transition:all 0.15s;font-size:22px}
 .photo-zone:hover{border-color:var(--orange);background:var(--orange-light)}
 .photo-zone-label{font-size:10px;color:var(--gray-400);text-align:center}
 .photo-zone.has-photo{border-style:solid;border-color:var(--green);background:var(--green-bg)}
 .photo-zone.has-photo .photo-zone-label{color:var(--green)}
-
 .checklist{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .check-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--gray-200);font-size:13px;cursor:pointer}
 .check-item:hover{background:var(--gray-100)}
@@ -122,7 +108,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .check-box{width:16px;height:16px;border:1.5px solid var(--gray-400);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
 .check-item.checked .check-box{background:var(--green);border-color:var(--green);color:#fff}
 .check-flag{margin-left:auto;font-size:11px;color:var(--gray-400)}
-
 .history-list{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);overflow:hidden}
 .history-item{padding:12px 14px;border-bottom:0.5px solid var(--gray-200);display:flex;align-items:center;gap:12px}
 .history-item:last-child{border-bottom:none}
@@ -133,8 +118,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .history-right{text-align:right;margin-left:auto}
 .history-cost{font-size:13px;font-weight:500}
 .history-date{font-size:11px;color:var(--gray-400);margin-top:2px}
-
-/* Team tab */
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px}
 .team-card{background:#fff;border-radius:8px;border:0.5px solid var(--gray-200);padding:16px;display:flex;align-items:center;gap:12px}
 .team-avatar{width:42px;height:42px;border-radius:50%;background:var(--steel);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:500;flex-shrink:0}
@@ -145,15 +128,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .role-manager{background:var(--orange-light);color:var(--orange)}
 .role-driver{background:var(--green-bg);color:var(--green)}
 .team-actions{margin-left:auto}
-
-/* Audit log */
 .audit-item{padding:11px 14px;border-bottom:0.5px solid var(--gray-200);display:flex;align-items:flex-start;gap:10px}
 .audit-item:last-child{border-bottom:none}
 .audit-who{font-size:12px;font-weight:500;color:var(--gray-800)}
 .audit-action{font-size:12px;color:var(--gray-600)}
 .audit-time{font-size:11px;color:var(--gray-400);margin-top:2px}
 .audit-truck{background:var(--orange-light);color:var(--orange);font-size:10px;border-radius:4px;padding:1px 6px;font-weight:500}
-
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:10px;width:420px;max-height:85vh;overflow-y:auto;padding:20px}
@@ -162,18 +142,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .modal-close{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:20px;line-height:1}
 .modal .form-group{margin-bottom:12px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
-
 .btn-sm{background:none;border:0.5px solid var(--gray-400);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray-600)}
 .btn-sm:hover{border-color:var(--orange);color:var(--orange)}
 .btn-primary{background:var(--orange);border:none;border-radius:var(--radius);padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:#fff}
 .btn-primary:hover{background:var(--orange-dark)}
 .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
-
 .loading{text-align:center;padding:40px;color:var(--gray-400)}
 .empty{text-align:center;padding:40px;color:var(--gray-400)}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--steel);color:#fff;padding:10px 16px;border-radius:var(--radius);font-size:13px;z-index:200;opacity:0;transition:opacity 0.3s}
 .toast.show{opacity:1}
-
 @media(max-width:600px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .form-grid{grid-template-columns:1fr}
@@ -184,7 +161,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
     <div class="login-logo">
@@ -207,7 +183,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app">
   <div class="header">
     <div class="logo-icon">🚛</div>
@@ -240,7 +215,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
   <div class="main">
 
-    <!-- DASHBOARD -->
     <div class="tab-panel active" id="tab-dashboard">
       <div class="stats-row">
         <div class="stat-card"><div class="stat-value green" id="stat-active">—</div><div class="stat-label">Trucks operational</div></div>
@@ -255,7 +229,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       <div id="fleet-cards" class="cards-grid"><div class="loading">Loading fleet...</div></div>
     </div>
 
-    <!-- REMINDERS -->
     <div class="tab-panel" id="tab-reminders">
       <div class="section-header">
         <div><div class="section-title">Maintenance reminders</div></div>
@@ -264,7 +237,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       <div id="alerts-list"><div class="loading">Loading...</div></div>
     </div>
 
-    <!-- RECORDS -->
     <div class="tab-panel" id="tab-records">
       <div class="section-header">
         <div><div class="section-title">Maintenance records</div></div>
@@ -276,18 +248,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </div>
     </div>
 
-    <!-- INSPECTION -->
     <div class="tab-panel" id="tab-inspection">
       <div class="section-header">
         <div><div class="section-title">Truck inspection</div><div class="section-sub">Pre-trip pickup or post-trip return</div></div>
       </div>
-
-      <!-- Type toggle -->
       <div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:0.5px solid var(--gray-200);width:fit-content">
         <button id="btn-pretrip" onclick="setInspType('pre-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
         <button id="btn-posttrip" onclick="setInspType('post-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
       </div>
-
       <div class="inspection-form">
         <div style="background:var(--orange-light);border:0.5px solid var(--orange);border-radius:var(--radius);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--orange);font-weight:500" id="insp-type-label">🚀 Pre-trip inspection — Driver picking up truck</div>
         <div class="form-grid">
@@ -339,7 +307,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       <div class="history-list" id="insp-history"><div class="loading">Loading...</div></div>
     </div>
 
-    <!-- HISTORY -->
     <div class="tab-panel" id="tab-history">
       <div class="section-header">
         <div><div class="section-title">Activity history</div></div>
@@ -354,14 +321,35 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-driverfiles">
       <div class="section-header">
         <div><div class="section-title">Driver files</div><div class="section-sub">DQF documents &amp; applications on record</div></div>
-        <button class="btn-primary" onclick="openModal('modal-grandfather')">+ Add existing driver</button>
-        <button class="btn-sm" onclick="document.getElementById('compliance-file-input').click()">📊 Import compliance spreadsheet</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" onclick="document.getElementById('compliance-file-input').click()">📊 Import compliance spreadsheet</button>
+          <button class="btn-primary" onclick="openModal('modal-grandfather')">+ Add existing driver</button>
+        </div>
         <input type="file" id="compliance-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleComplianceUpload(event)">
       </div>
       <div class="history-list" id="driverfiles-list"><div class="loading">Loading...</div></div>
+
+      <div class="section-header" style="margin-top:28px">
+        <div><div class="section-title">Driver medical &amp; license records</div><div class="section-sub">From compliance spreadsheet import</div></div>
+      </div>
+      <div class="records-table" id="medical-records-table" style="margin-bottom:24px">
+        <div class="table-header" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr 70px">
+          <div>Driver</div><div>License #</div><div>State</div><div>Examiner</div><div>Expires</div><div>Status</div><div></div>
+        </div>
+        <div id="medical-records-body" style="display:contents"><div class="loading">Loading...</div></div>
+      </div>
+
+      <div class="section-header">
+        <div><div class="section-title">Truck ELD &amp; vehicle info</div><div class="section-sub">From compliance spreadsheet import</div></div>
+      </div>
+      <div class="records-table" id="eld-info-table">
+        <div class="table-header" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
+          <div>Unit #</div><div>VIN</div><div>Plate</div><div>ELD Device</div><div>Model</div><div>Serial #</div>
+        </div>
+        <div id="eld-info-body" style="display:contents"><div class="loading">Loading...</div></div>
+      </div>
     </div>
 
-    <!-- TEAM (admin only) -->
     <div class="tab-panel" id="tab-team">
       <div class="section-header">
         <div><div class="section-title">Team members</div><div class="section-sub">Manage login access</div></div>
@@ -370,7 +358,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       <div class="team-grid" id="team-grid"><div class="loading">Loading...</div></div>
     </div>
 
-    <!-- AUDIT LOG (admin only) -->
     <div class="tab-panel" id="tab-audit">
       <div class="section-header">
         <div><div class="section-title">Audit log</div><div class="section-sub">All team activity</div></div>
@@ -381,7 +368,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
-<!-- Modal: Log service -->
 <div class="modal-overlay" id="modal-service">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal('modal-service')">✕</button></div>
@@ -404,7 +390,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
-<!-- Modal: Add reminder -->
 <div class="modal-overlay" id="modal-reminder">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal('modal-reminder')">✕</button></div>
@@ -419,7 +404,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
-<!-- Modal: Add existing driver's application (grandfather) -->
 <div class="modal-overlay" id="modal-grandfather">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add existing driver's application</div><button class="modal-close" onclick="closeModal('modal-grandfather')">✕</button></div>
@@ -435,7 +419,23 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
-<!-- Modal: Add user (admin only) -->
+<div class="modal-overlay" id="modal-editmedical">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="editmedical-title">Edit medical record</div><button class="modal-close" onclick="closeModal('modal-editmedical')">✕</button></div>
+    <input type="hidden" id="em-id">
+    <div class="form-group"><div class="form-label">License #</div><input class="form-input" id="em-license"></div>
+    <div class="form-group"><div class="form-label">License state</div><input class="form-input" id="em-license-state"></div>
+    <div class="form-group"><div class="form-label">Medical examiner</div><input class="form-input" id="em-examiner"></div>
+    <div class="form-group"><div class="form-label">Cert state</div><input class="form-input" id="em-cert-state"></div>
+    <div class="form-group"><div class="form-label">Issue date</div><input type="date" class="form-input" id="em-issue"></div>
+    <div class="form-group"><div class="form-label">Expiration date</div><input type="date" class="form-input" id="em-expiry"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('modal-editmedical')">Cancel</button>
+      <button class="btn-primary" id="save-em-btn" onclick="saveMedicalEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-adduser">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal('modal-adduser')">✕</button></div>
@@ -458,6 +458,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const SB_URL = 'https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SB_KEY = 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
@@ -692,6 +693,121 @@ async function loadDriverFiles(){
     const apps = await rpc('dqf_get_applications',{p_user_id:currentUser.id});
     renderDriverFiles(apps);
   }catch(e){console.error('DQF load error',e);}
+  try{
+    const medical = await rpc('dqf_get_driver_medical_records',{p_user_id:currentUser.id});
+    renderMedicalRecords(medical);
+  }catch(e){
+    console.error('Medical records load error',e);
+    document.getElementById('medical-records-body').innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+  }
+  try{
+    const eld = await rpc('dqf_get_truck_eld_info',{p_user_id:currentUser.id});
+    renderEldInfo(eld);
+  }catch(e){
+    console.error('ELD info load error',e);
+    document.getElementById('eld-info-body').innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+  }
+}
+
+function daysUntilExpiry(dateStr){
+  if(!dateStr) return null;
+  return Math.round((new Date(dateStr) - new Date()) / 86400000);
+}
+
+function statusPillFor(days, statusField){
+  let label, cls;
+  if(days === null){
+    label = statusField ? statusField.replace('_',' ') : '—';
+    cls = 's-active';
+  } else if(days < 0){
+    label = 'Expired'; cls = 's-overdue';
+  } else if(days <= 60){
+    label = 'Expires soon'; cls = 's-due';
+  } else {
+    label = 'Current'; cls = 's-active';
+  }
+  return `<span class="status-pill ${cls}" style="margin-left:0">${label}</span>`;
+}
+
+let medicalRecordsCache = [];
+
+function renderMedicalRecords(rows){
+  medicalRecordsCache = rows || [];
+  const body = document.getElementById('medical-records-body');
+  if(!rows || !rows.length){
+    body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+    return;
+  }
+  body.innerHTML = rows.map(r=>{
+    const days = daysUntilExpiry(r.expiry_date);
+    return `<div class="table-row" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr 70px">
+      <div><strong>${r.full_name||'—'}</strong></div>
+      <div>${r.license_number||'—'}</div>
+      <div>${r.license_state||'—'}</div>
+      <div style="color:var(--gray-600)">${r.examiner||'—'}</div>
+      <div style="color:var(--gray-400);font-size:12px">${r.expiry_date?fmt(r.expiry_date):'—'}</div>
+      <div>${statusPillFor(days, r.status)}</div>
+      <div><button class="btn-sm" onclick="editMedicalRecord('${r.id}')">Edit</button></div>
+    </div>`;
+  }).join('');
+}
+
+function editMedicalRecord(id){
+  const r = medicalRecordsCache.find(m=>m.id===id);
+  if(!r) return;
+  document.getElementById('editmedical-title').textContent = `Edit — ${r.full_name}`;
+  document.getElementById('em-id').value = r.id;
+  document.getElementById('em-license').value = r.license_number||'';
+  document.getElementById('em-license-state').value = r.license_state||'';
+  document.getElementById('em-examiner').value = r.examiner||'';
+  document.getElementById('em-cert-state').value = r.cert_state||'';
+  document.getElementById('em-issue').value = r.issue_date||'';
+  document.getElementById('em-expiry').value = r.expiry_date||'';
+  openModal('modal-editmedical');
+}
+
+async function saveMedicalEdit(){
+  const id = document.getElementById('em-id').value;
+  const license = document.getElementById('em-license').value.trim();
+  const licenseState = document.getElementById('em-license-state').value.trim()||null;
+  const examiner = document.getElementById('em-examiner').value.trim()||null;
+  const certState = document.getElementById('em-cert-state').value.trim()||null;
+  const issue = document.getElementById('em-issue').value||null;
+  const expiry = document.getElementById('em-expiry').value||null;
+  if(!license){showToast('License # is required');return;}
+  const days = expiry ? daysUntilExpiry(expiry) : null;
+  const status = days===null ? 'current' : (days<0 ? 'expired' : (days<=60 ? 'expiring_soon' : 'current'));
+  const btn = document.getElementById('save-em-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('dqf_update_driver_medical_record',{
+      p_user_id:currentUser.id, p_id:id, p_license_number:license,
+      p_license_state:licenseState, p_examiner:examiner, p_cert_state:certState,
+      p_issue_date:issue, p_expiry_date:expiry, p_status:status
+    });
+    closeModal('modal-editmedical');
+    showToast('Record updated ✓');
+    const medical = await rpc('dqf_get_driver_medical_records',{p_user_id:currentUser.id});
+    renderMedicalRecords(medical);
+  }catch(e){showToast('Error saving');console.error(e);}
+  btn.disabled=false;btn.textContent='Save';
+}
+
+function renderEldInfo(rows){
+  const body = document.getElementById('eld-info-body');
+  if(!rows || !rows.length){
+    body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+    return;
+  }
+  body.innerHTML = rows.map(r=>`
+    <div class="table-row" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
+      <div><strong>${r.truck_id||'—'}</strong></div>
+      <div style="font-size:12px;color:var(--gray-600)">${r.vin||'—'}</div>
+      <div>${r.plate||'<span style="color:var(--red)">Missing</span>'}</div>
+      <div>${r.eld_device_name||'—'}${r.eld_manufacturer?' · '+r.eld_manufacturer:''}</div>
+      <div>${r.eld_model_number||'—'}</div>
+      <div style="font-size:12px;color:var(--gray-400)">${r.eld_serial_number||'—'}</div>
+    </div>`).join('');
 }
 
 function renderDriverFiles(apps){
@@ -723,7 +839,6 @@ function excelDateToISO(val){
   if(val === null || val === undefined || val === '') return null;
   if(val instanceof Date) return val.toISOString().split('T')[0];
   if(typeof val === 'number'){
-    // Excel serial date -> JS date
     const d = XLSX.SSF.parse_date_code(val);
     if(!d) return null;
     const mm = String(d.m).padStart(2,'0'), dd = String(d.d).padStart(2,'0');
@@ -738,7 +853,7 @@ const STATUS_MAP = {'CURRENT':'current','EXPIRES SOON':'expiring_soon','EXPIRED'
 async function handleComplianceUpload(event){
   const file = event.target.files[0];
   if(!file) return;
-  event.target.value = ''; // reset so the same file can be picked again later
+  event.target.value = '';
 
   showToast('Reading spreadsheet...');
   try{
@@ -747,7 +862,6 @@ async function handleComplianceUpload(event){
 
     let driverCount = 0, truckCount = 0;
 
-    // --- Driver Medical Records sheet ---
     const medSheetName = wb.SheetNames.find(n => /medical/i.test(n));
     if(medSheetName){
       const sheet = wb.Sheets[medSheetName];
@@ -773,7 +887,6 @@ async function handleComplianceUpload(event){
       }
     }
 
-    // --- ELD Vehicle Inventory sheet ---
     const eldSheetName = wb.SheetNames.find(n => /eld|vehicle/i.test(n));
     if(eldSheetName){
       const sheet = wb.Sheets[eldSheetName];
@@ -807,7 +920,7 @@ async function handleComplianceUpload(event){
 async function generateApplicationLink(){
   try{
     const token = await rpc('dqf_create_application_link',{p_user_id:currentUser.id});
-    const link = `https://bashka-website.vercel.app/job-application.html?token=${token}`;
+    const link = `${window.location.origin}/job-application.html?token=${token}`;
     await navigator.clipboard.writeText(link);
     showToast('Link copied — paste it to send to the applicant');
     if(currentUser.dqf_access_ok) await loadDriverFiles();
