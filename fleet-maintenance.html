@@ -333,8 +333,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <div><div class="section-title">Driver medical &amp; license records</div><div class="section-sub">From compliance spreadsheet import</div></div>
       </div>
       <div class="records-table" id="medical-records-table" style="margin-bottom:24px">
-        <div class="table-header" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr">
-          <div>Driver</div><div>License #</div><div>State</div><div>Examiner</div><div>Expires</div><div>Status</div>
+        <div class="table-header" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr 70px">
+          <div>Driver</div><div>License #</div><div>State</div><div>Examiner</div><div>Expires</div><div>Status</div><div></div>
         </div>
         <div id="medical-records-body" style="display:contents"><div class="loading">Loading...</div></div>
       </div>
@@ -415,6 +415,23 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="modal-footer">
       <button class="btn-sm" onclick="closeModal('modal-grandfather')">Cancel</button>
       <button class="btn-primary" id="save-gf-btn" onclick="saveGrandfather()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-editmedical">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="editmedical-title">Edit medical record</div><button class="modal-close" onclick="closeModal('modal-editmedical')">✕</button></div>
+    <input type="hidden" id="em-id">
+    <div class="form-group"><div class="form-label">License #</div><input class="form-input" id="em-license"></div>
+    <div class="form-group"><div class="form-label">License state</div><input class="form-input" id="em-license-state"></div>
+    <div class="form-group"><div class="form-label">Medical examiner</div><input class="form-input" id="em-examiner"></div>
+    <div class="form-group"><div class="form-label">Cert state</div><input class="form-input" id="em-cert-state"></div>
+    <div class="form-group"><div class="form-label">Issue date</div><input type="date" class="form-input" id="em-issue"></div>
+    <div class="form-group"><div class="form-label">Expiration date</div><input type="date" class="form-input" id="em-expiry"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('modal-editmedical')">Cancel</button>
+      <button class="btn-primary" id="save-em-btn" onclick="saveMedicalEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -712,7 +729,10 @@ function statusPillFor(days, statusField){
   return `<span class="status-pill ${cls}" style="margin-left:0">${label}</span>`;
 }
 
+let medicalRecordsCache = [];
+
 function renderMedicalRecords(rows){
+  medicalRecordsCache = rows || [];
   const body = document.getElementById('medical-records-body');
   if(!rows || !rows.length){
     body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
@@ -720,15 +740,57 @@ function renderMedicalRecords(rows){
   }
   body.innerHTML = rows.map(r=>{
     const days = daysUntilExpiry(r.expiry_date);
-    return `<div class="table-row" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr">
+    return `<div class="table-row" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr 70px">
       <div><strong>${r.full_name||'—'}</strong></div>
       <div>${r.license_number||'—'}</div>
       <div>${r.license_state||'—'}</div>
       <div style="color:var(--gray-600)">${r.examiner||'—'}</div>
       <div style="color:var(--gray-400);font-size:12px">${r.expiry_date?fmt(r.expiry_date):'—'}</div>
       <div>${statusPillFor(days, r.status)}</div>
+      <div><button class="btn-sm" onclick="editMedicalRecord('${r.id}')">Edit</button></div>
     </div>`;
   }).join('');
+}
+
+function editMedicalRecord(id){
+  const r = medicalRecordsCache.find(m=>m.id===id);
+  if(!r) return;
+  document.getElementById('editmedical-title').textContent = `Edit — ${r.full_name}`;
+  document.getElementById('em-id').value = r.id;
+  document.getElementById('em-license').value = r.license_number||'';
+  document.getElementById('em-license-state').value = r.license_state||'';
+  document.getElementById('em-examiner').value = r.examiner||'';
+  document.getElementById('em-cert-state').value = r.cert_state||'';
+  document.getElementById('em-issue').value = r.issue_date||'';
+  document.getElementById('em-expiry').value = r.expiry_date||'';
+  openModal('modal-editmedical');
+}
+
+async function saveMedicalEdit(){
+  const id = document.getElementById('em-id').value;
+  const license = document.getElementById('em-license').value.trim();
+  const licenseState = document.getElementById('em-license-state').value.trim()||null;
+  const examiner = document.getElementById('em-examiner').value.trim()||null;
+  const certState = document.getElementById('em-cert-state').value.trim()||null;
+  const issue = document.getElementById('em-issue').value||null;
+  const expiry = document.getElementById('em-expiry').value||null;
+  if(!license){showToast('License # is required');return;}
+  const days = expiry ? daysUntilExpiry(expiry) : null;
+  const status = days===null ? 'current' : (days<0 ? 'expired' : (days<=60 ? 'expiring_soon' : 'current'));
+  const btn = document.getElementById('save-em-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('dqf_update_driver_medical_record',{
+      p_user_id:currentUser.id, p_id:id, p_license_number:license,
+      p_license_state:licenseState, p_examiner:examiner, p_cert_state:certState,
+      p_issue_date:issue, p_expiry_date:expiry, p_status:status
+    });
+    closeModal('modal-editmedical');
+    showToast('Record updated ✓');
+    const medical = await rpc('dqf_get_driver_medical_records',{p_user_id:currentUser.id});
+    renderMedicalRecords(medical);
+  }catch(e){showToast('Error saving');console.error(e);}
+  btn.disabled=false;btn.textContent='Save';
 }
 
 function renderEldInfo(rows){
