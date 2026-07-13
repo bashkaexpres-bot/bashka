@@ -328,6 +328,26 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <input type="file" id="compliance-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleComplianceUpload(event)">
       </div>
       <div class="history-list" id="driverfiles-list"><div class="loading">Loading...</div></div>
+
+      <div class="section-header" style="margin-top:28px">
+        <div><div class="section-title">Driver medical &amp; license records</div><div class="section-sub">From compliance spreadsheet import</div></div>
+      </div>
+      <div class="records-table" id="medical-records-table" style="margin-bottom:24px">
+        <div class="table-header" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr">
+          <div>Driver</div><div>License #</div><div>State</div><div>Examiner</div><div>Expires</div><div>Status</div>
+        </div>
+        <div id="medical-records-body" style="display:contents"><div class="loading">Loading...</div></div>
+      </div>
+
+      <div class="section-header">
+        <div><div class="section-title">Truck ELD &amp; vehicle info</div><div class="section-sub">From compliance spreadsheet import</div></div>
+      </div>
+      <div class="records-table" id="eld-info-table">
+        <div class="table-header" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
+          <div>Unit #</div><div>VIN</div><div>Plate</div><div>ELD Device</div><div>Model</div><div>Serial #</div>
+        </div>
+        <div id="eld-info-body" style="display:contents"><div class="loading">Loading...</div></div>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-team">
@@ -656,6 +676,76 @@ async function loadDriverFiles(){
     const apps = await rpc('dqf_get_applications',{p_user_id:currentUser.id});
     renderDriverFiles(apps);
   }catch(e){console.error('DQF load error',e);}
+  try{
+    const medical = await rpc('dqf_get_driver_medical_records',{p_user_id:currentUser.id});
+    renderMedicalRecords(medical);
+  }catch(e){
+    console.error('Medical records load error',e);
+    document.getElementById('medical-records-body').innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+  }
+  try{
+    const eld = await rpc('dqf_get_truck_eld_info',{p_user_id:currentUser.id});
+    renderEldInfo(eld);
+  }catch(e){
+    console.error('ELD info load error',e);
+    document.getElementById('eld-info-body').innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+  }
+}
+
+function daysUntilExpiry(dateStr){
+  if(!dateStr) return null;
+  return Math.round((new Date(dateStr) - new Date()) / 86400000);
+}
+
+function statusPillFor(days, statusField){
+  let label, cls;
+  if(days === null){
+    label = statusField ? statusField.replace('_',' ') : '—';
+    cls = 's-active';
+  } else if(days < 0){
+    label = 'Expired'; cls = 's-overdue';
+  } else if(days <= 60){
+    label = 'Expires soon'; cls = 's-due';
+  } else {
+    label = 'Current'; cls = 's-active';
+  }
+  return `<span class="status-pill ${cls}" style="margin-left:0">${label}</span>`;
+}
+
+function renderMedicalRecords(rows){
+  const body = document.getElementById('medical-records-body');
+  if(!rows || !rows.length){
+    body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+    return;
+  }
+  body.innerHTML = rows.map(r=>{
+    const days = daysUntilExpiry(r.expiry_date);
+    return `<div class="table-row" style="grid-template-columns:1.2fr 1fr 1fr 1.4fr 0.9fr 0.9fr">
+      <div><strong>${r.full_name||'—'}</strong></div>
+      <div>${r.license_number||'—'}</div>
+      <div>${r.license_state||'—'}</div>
+      <div style="color:var(--gray-600)">${r.examiner||'—'}</div>
+      <div style="color:var(--gray-400);font-size:12px">${r.expiry_date?fmt(r.expiry_date):'—'}</div>
+      <div>${statusPillFor(days, r.status)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderEldInfo(rows){
+  const body = document.getElementById('eld-info-body');
+  if(!rows || !rows.length){
+    body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
+    return;
+  }
+  body.innerHTML = rows.map(r=>`
+    <div class="table-row" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
+      <div><strong>${r.truck_id||'—'}</strong></div>
+      <div style="font-size:12px;color:var(--gray-600)">${r.vin||'—'}</div>
+      <div>${r.plate||'<span style="color:var(--red)">Missing</span>'}</div>
+      <div>${r.eld_device_name||'—'}${r.eld_manufacturer?' · '+r.eld_manufacturer:''}</div>
+      <div>${r.eld_model_number||'—'}</div>
+      <div style="font-size:12px;color:var(--gray-400)">${r.eld_serial_number||'—'}</div>
+    </div>`).join('');
 }
 
 function renderDriverFiles(apps){
