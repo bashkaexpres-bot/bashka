@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0057)file:///C:/Users/bashk/Downloads/fleet-maintenance_5.html -->
+<!-- saved from url=(0057)file:///C:/Users/bashk/Downloads/fleet-maintenance_7.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -137,6 +137,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:10px;width:420px;max-height:85vh;overflow-y:auto;padding:20px}
+.modal-wide{width:760px;max-width:92vw}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .modal-title{font-size:15px;font-weight:500}
 .modal-close{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:20px;line-height:1}
@@ -529,9 +530,24 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-truckhistory">
+  <div class="modal modal-wide">
+    <div class="modal-header"><div class="modal-title" id="th-title">Truck history</div><button class="modal-close" onclick="closeModal(&#39;modal-truckhistory&#39;)">✕</button></div>
+    <div id="th-summary" style="color:var(--gray-400);font-size:12px;margin:-8px 0 14px"></div>
+    <div class="records-table" style="margin-bottom:0">
+      <div class="table-header" style="grid-template-columns:130px 1fr 80px 80px 80px 90px 60px"><div>Service</div><div>Notes</div><div>Miles</div><div>Cost</div><div>By</div><div>Date</div><div></div></div>
+      <div id="th-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal(&#39;modal-truckhistory&#39;)">Close</button>
+      <button class="btn-primary" id="th-logservice-btn" onclick="closeModal(&#39;modal-truckhistory&#39;);openServiceFor(currentTruckHistoryId)">+ Log service for this truck</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<script src="./Bashka Express — Fleet Maintenance last_files/xlsx.full.min.js.download"></script>
+<script src="./Bashka Express — Fleet Maintenance last 2_files/xlsx.full.min.js.download"></script>
 <script>
 const SB_URL = 'https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SB_KEY = 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
@@ -682,7 +698,7 @@ function renderDashboard(){
     const sp=t.status==='overdue'?'s-overdue':t.status==='due'?'s-due':'s-active';
     const sl=t.status==='overdue'?'Overdue':t.status==='due'?'Service due':'Operational';
     const tasks=(byTruck[t.truck_id]||[]).slice(0,2);
-    return`<div class="truck-card">
+    return`<div class="truck-card" style="cursor:pointer" onclick="showTruckHistory('${t.truck_id}')">
       <div class="truck-card-header">
         <div class="truck-avatar">🚛</div>
         <div><div class="truck-id">${t.truck_id}</div><div class="truck-model">${t.model}</div></div>
@@ -692,7 +708,7 @@ function renderDashboard(){
         <div class="truck-miles">${(t.current_miles||0).toLocaleString()} <span style="font-size:13px;font-weight:400;color:var(--gray-400)">mi</span></div>
         <div class="truck-miles-label">Current odometer</div>
         <div class="truck-tasks">${tasks.map(k=>`<div class="task-row"><span class="task-dot dot-${k.severity==='overdue'?'overdue':k.severity==='soon'?'soon':'ok'}"></span><span class="task-name">${k.service}</span><span class="task-due">${k.due_date?fmt(k.due_date):''}</span></div>`).join('')}</div>
-        <div style="margin-top:10px"><button class="btn-sm" onclick="openServiceFor('${t.truck_id}')">Log service</button></div>
+        <div style="margin-top:10px"><button class="btn-sm" onclick="event.stopPropagation();openServiceFor('${t.truck_id}')">Log service</button></div>
       </div>
     </div>`;
   }).join('');
@@ -732,11 +748,36 @@ function renderRecords(){
     </div>`).join('');
 }
 
+let currentTruckHistoryId=null;
+function showTruckHistory(truckId){
+  currentTruckHistoryId=truckId;
+  const t=fleet.find(x=>x.truck_id===truckId);
+  document.getElementById('th-title').textContent=`${truckId}${t&&t.model?' — '+t.model:''}`;
+  document.getElementById('th-summary').textContent=t?`${(t.current_miles||0).toLocaleString()} mi current odometer`:'';
+  const rows=records.filter(r=>r.truck_id===truckId).sort((a,b)=>new Date(b.service_date)-new Date(a.service_date));
+  const body=document.getElementById('th-body');
+  if(!rows.length){body.innerHTML='<div class="empty">No maintenance logged for this truck yet</div>';}
+  else{
+    body.innerHTML=rows.map(r=>`
+      <div class="table-row" style="grid-template-columns:130px 1fr 80px 80px 80px 90px 60px">
+        <div>${r.service}</div>
+        <div style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</div>
+        <div>${r.miles_at_service?r.miles_at_service.toLocaleString():'—'}</div>
+        <div style="font-weight:500">$${parseFloat(r.cost||0).toLocaleString()}</div>
+        <div style="color:var(--gray-400);font-size:12px">${r.technician||'—'}</div>
+        <div style="color:var(--gray-400);font-size:12px">${fmt(r.service_date)}</div>
+        <div><button class="btn-sm" onclick="editRecord('${r.id}')">Edit</button></div>
+      </div>`).join('');
+  }
+  openModal('modal-truckhistory');
+}
+
 let recordsEditCache=[];
 function editRecord(id){
   recordsEditCache=records;
   const r=records.find(x=>String(x.id)===String(id));
   if(!r){showToast('Could not find that record — try refreshing');return;}
+  if(!document.getElementById('modal-truckhistory').classList.contains('open')) currentTruckHistoryId=null;
   document.getElementById('er-id').value=r.id;
   document.getElementById('er-truck').textContent=`${r.truck_id} — ${r.service}`;
   document.getElementById('er-service').value=r.service||'';
@@ -744,6 +785,7 @@ function editRecord(id){
   document.getElementById('er-miles').value=r.miles_at_service||'';
   document.getElementById('er-cost').value=r.cost||'';
   document.getElementById('er-date').value=r.service_date?r.service_date.slice(0,10):'';
+  closeModal('modal-truckhistory');
   openModal('modal-editrecord');
 }
 
@@ -768,6 +810,7 @@ async function saveRecordEdit(){
     closeModal('modal-editrecord');
     showToast('Record updated ✓');
     await loadAll();
+    if(currentTruckHistoryId) showTruckHistory(currentTruckHistoryId);
   }catch(e){showToast('Error saving — see console');console.error(e);}
   btn.disabled=false;btn.textContent='Save changes';
 }
@@ -1442,6 +1485,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
   }
 })();
 </script>
+
 
 
 
