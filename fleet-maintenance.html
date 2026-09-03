@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0057)file:///C:/Users/bashk/Downloads/fleet-maintenance_5.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bashka Express — Fleet Maintenance</title>
 <style>
@@ -198,19 +198,20 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </div>
       <button class="logout-btn" id="loc-toggle-btn" onclick="toggleMyLocationSharing()">📍 Share my location: off</button>
       <button class="logout-btn" id="quick-link-btn" style="display:none" onclick="generateApplicationLink()">🔗 New driver link</button>
+      <button class="logout-btn" onclick="openChangePassword()">🔑 Change password</button>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
   </div>
 
   <nav class="nav">
-    <button class="nav-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
-    <button class="nav-btn" onclick="switchTab('reminders',this)">🔔 Reminders <span class="badge" id="reminder-count">0</span></button>
-    <button class="nav-btn" onclick="switchTab('records',this)">📋 Records</button>
-    <button class="nav-btn" onclick="switchTab('inspection',this)">📷 Inspection</button>
-    <button class="nav-btn" onclick="switchTab('history',this)">🕐 History</button>
-    <button class="nav-btn hidden" id="nav-driverfiles" onclick="switchTab('driverfiles',this)">📁 Driver Files</button>
-    <button class="nav-btn hidden" id="nav-team" onclick="switchTab('team',this)">👥 Team</button>
-    <button class="nav-btn hidden" id="nav-audit" onclick="switchTab('audit',this)">🔍 Audit Log</button>
+    <button class="nav-btn active" onclick="switchTab(&#39;dashboard&#39;,this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="switchTab(&#39;reminders&#39;,this)">🔔 Reminders <span class="badge" id="reminder-count">0</span></button>
+    <button class="nav-btn" onclick="switchTab(&#39;records&#39;,this)">📋 Records</button>
+    <button class="nav-btn" onclick="switchTab(&#39;inspection&#39;,this)">📷 Inspection</button>
+    <button class="nav-btn" onclick="switchTab(&#39;history&#39;,this)">🕐 History</button>
+    <button class="nav-btn hidden" id="nav-driverfiles" onclick="switchTab(&#39;driverfiles&#39;,this)">📁 Driver Files</button>
+    <button class="nav-btn hidden" id="nav-team" onclick="switchTab(&#39;team&#39;,this)">👥 Team</button>
+    <button class="nav-btn hidden" id="nav-audit" onclick="switchTab(&#39;audit&#39;,this)">🔍 Audit Log</button>
   </nav>
 
   <div class="main">
@@ -224,7 +225,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </div>
       <div class="section-header">
         <div><div class="section-title">Fleet status</div><div class="section-sub">Live from Supabase</div></div>
-        <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm hidden" id="btn-addtruck" onclick="openModal(&#39;modal-addtruck&#39;)">+ Add truck</button>
+          <button class="btn-primary" onclick="openModal(&#39;modal-service&#39;)">+ Log service</button>
+        </div>
       </div>
       <div id="fleet-cards" class="cards-grid"><div class="loading">Loading fleet...</div></div>
     </div>
@@ -232,7 +236,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-reminders">
       <div class="section-header">
         <div><div class="section-title">Maintenance reminders</div></div>
-        <button class="btn-primary" onclick="openModal('modal-reminder')">+ Add reminder</button>
+        <button class="btn-primary" onclick="openModal(&#39;modal-reminder&#39;)">+ Add reminder</button>
       </div>
       <div id="alerts-list"><div class="loading">Loading...</div></div>
     </div>
@@ -240,10 +244,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-records">
       <div class="section-header">
         <div><div class="section-title">Maintenance records</div></div>
-        <button class="btn-primary" onclick="openModal('modal-service')">+ Log service</button>
+        <button class="btn-primary" onclick="openModal(&#39;modal-service&#39;)">+ Log service</button>
       </div>
       <div class="records-table">
-        <div class="table-header"><div>Truck</div><div>Service</div><div>Notes</div><div>Miles</div><div>Cost</div><div>By</div><div>Date</div></div>
+        <div class="table-header" style="grid-template-columns:80px 130px 1fr 80px 80px 80px 90px 60px"><div>Truck</div><div>Service</div><div>Notes</div><div>Miles</div><div>Cost</div><div>By</div><div>Date</div><div></div></div>
         <div id="records-body"><div class="loading">Loading...</div></div>
       </div>
     </div>
@@ -253,8 +257,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <div><div class="section-title">Truck inspection</div><div class="section-sub">Pre-trip pickup or post-trip return</div></div>
       </div>
       <div style="display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:0.5px solid var(--gray-200);width:fit-content">
-        <button id="btn-pretrip" onclick="setInspType('pre-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
-        <button id="btn-posttrip" onclick="setInspType('post-trip')" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
+        <button id="btn-pretrip" onclick="setInspType(&#39;pre-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:var(--orange);color:#fff">🚀 Pre-trip — Pickup</button>
+        <button id="btn-posttrip" onclick="setInspType(&#39;post-trip&#39;)" style="padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;background:#fff;color:var(--gray-600)">🏁 Post-trip — Return</button>
       </div>
       <div class="inspection-form">
         <div style="background:var(--orange-light);border:0.5px solid var(--orange);border-radius:var(--radius);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--orange);font-weight:500" id="insp-type-label">🚀 Pre-trip inspection — Driver picking up truck</div>
@@ -266,14 +270,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         </div>
         <div class="form-label" style="margin-bottom:8px">Photo walkaround — tap each zone</div>
         <div class="photo-zones">
-          <div class="photo-zone" onclick="togglePhoto(this,'Front')"><span>📷</span><span class="photo-zone-label">Front</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Driver side')"><span>📷</span><span class="photo-zone-label">Driver side</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Passenger side')"><span>📷</span><span class="photo-zone-label">Passenger side</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Rear')"><span>📷</span><span class="photo-zone-label">Rear</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Tires')"><span>📷</span><span class="photo-zone-label">Tires</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Undercarriage')"><span>📷</span><span class="photo-zone-label">Undercarriage</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Interior cab')"><span>📷</span><span class="photo-zone-label">Interior cab</span></div>
-          <div class="photo-zone" onclick="togglePhoto(this,'Cargo area')"><span>📷</span><span class="photo-zone-label">Cargo area</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Front&#39;)"><span>📷</span><span class="photo-zone-label">Front</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Driver side&#39;)"><span>📷</span><span class="photo-zone-label">Driver side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Passenger side&#39;)"><span>📷</span><span class="photo-zone-label">Passenger side</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Rear&#39;)"><span>📷</span><span class="photo-zone-label">Rear</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Tires&#39;)"><span>📷</span><span class="photo-zone-label">Tires</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Undercarriage&#39;)"><span>📷</span><span class="photo-zone-label">Undercarriage</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Interior cab&#39;)"><span>📷</span><span class="photo-zone-label">Interior cab</span></div>
+          <div class="photo-zone" onclick="togglePhoto(this,&#39;Cargo area&#39;)"><span>📷</span><span class="photo-zone-label">Cargo area</span></div>
         </div>
         <div class="form-label" style="margin-bottom:8px">Condition checklist</div>
         <div class="checklist" id="checklist">
@@ -322,8 +326,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       <div class="section-header">
         <div><div class="section-title">Driver files</div><div class="section-sub">DQF documents &amp; applications on record</div></div>
         <div style="display:flex;gap:8px">
-          <button class="btn-sm" onclick="document.getElementById('compliance-file-input').click()">📊 Import compliance spreadsheet</button>
-          <button class="btn-primary" onclick="openModal('modal-grandfather')">+ Add existing driver</button>
+          <button class="btn-sm" onclick="document.getElementById(&#39;compliance-file-input&#39;).click()">📊 Import compliance spreadsheet</button>
+          <button class="btn-primary" onclick="openModal(&#39;modal-grandfather&#39;)">+ Add existing driver</button>
         </div>
         <input type="file" id="compliance-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleComplianceUpload(event)">
       </div>
@@ -343,8 +347,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <div><div class="section-title">Truck ELD &amp; vehicle info</div><div class="section-sub">From compliance spreadsheet import</div></div>
       </div>
       <div class="records-table" id="eld-info-table">
-        <div class="table-header" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
-          <div>Unit #</div><div>VIN</div><div>Plate</div><div>ELD Device</div><div>Model</div><div>Serial #</div>
+        <div class="table-header" style="grid-template-columns:0.6fr 0.9fr 0.8fr 1.2fr 0.9fr 1.1fr 60px">
+          <div>Unit #</div><div>VIN</div><div>Plate</div><div>ELD Device</div><div>Model</div><div>Serial #</div><div></div>
         </div>
         <div id="eld-info-body" style="display:contents"><div class="loading">Loading...</div></div>
       </div>
@@ -353,7 +357,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="tab-panel" id="tab-team">
       <div class="section-header">
         <div><div class="section-title">Team members</div><div class="section-sub">Manage login access</div></div>
-        <button class="btn-primary" onclick="openModal('modal-adduser')">+ Add member</button>
+        <button class="btn-primary" onclick="openModal(&#39;modal-adduser&#39;)">+ Add member</button>
       </div>
       <div class="team-grid" id="team-grid"><div class="loading">Loading...</div></div>
     </div>
@@ -370,7 +374,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="modal-overlay" id="modal-service">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal('modal-service')">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Log service</div><button class="modal-close" onclick="closeModal(&#39;modal-service&#39;)">✕</button></div>
     <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="svc-truck"></select></div>
     <div class="form-group"><div class="form-label">Service type</div>
       <select class="form-select" id="svc-type">
@@ -384,7 +388,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="form-group"><div class="form-label">Cost ($)</div><input type="number" class="form-input" id="svc-cost"></div>
     <div class="form-group"><div class="form-label">Date</div><input type="date" class="form-input" id="svc-date"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('modal-service')">Cancel</button>
+      <button class="btn-sm" onclick="closeModal(&#39;modal-service&#39;)">Cancel</button>
       <button class="btn-primary" id="save-svc-btn" onclick="saveService()">Save record</button>
     </div>
   </div>
@@ -392,13 +396,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="modal-overlay" id="modal-reminder">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal('modal-reminder')">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add reminder</div><button class="modal-close" onclick="closeModal(&#39;modal-reminder&#39;)">✕</button></div>
     <div class="form-group"><div class="form-label">Truck</div><select class="form-select" id="rem-truck"></select></div>
     <div class="form-group"><div class="form-label">Service</div><input class="form-input" id="rem-service" placeholder="e.g. Oil change, DOT inspection..."></div>
     <div class="form-group"><div class="form-label">Due date</div><input type="date" class="form-input" id="rem-date"></div>
     <div class="form-group"><div class="form-label">Due mileage (optional)</div><input type="number" class="form-input" id="rem-miles" placeholder="e.g. 290000"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('modal-reminder')">Cancel</button>
+      <button class="btn-sm" onclick="closeModal(&#39;modal-reminder&#39;)">Cancel</button>
       <button class="btn-primary" id="save-rem-btn" onclick="saveReminder()">Add reminder</button>
     </div>
   </div>
@@ -406,14 +410,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="modal-overlay" id="modal-grandfather">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add existing driver's application</div><button class="modal-close" onclick="closeModal('modal-grandfather')">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add existing driver's application</div><button class="modal-close" onclick="closeModal(&#39;modal-grandfather&#39;)">✕</button></div>
     <div class="form-group"><div class="form-label">Driver full name</div><input class="form-input" id="gf-name" placeholder="e.g. Omar Hassan"></div>
     <div class="form-group"><div class="form-label">Link to driver record (optional)</div><select class="form-select" id="gf-driver"><option value="">— Not linked yet —</option></select></div>
     <div class="form-group"><div class="form-label">Hire date</div><input type="date" class="form-input" id="gf-hire"></div>
     <div class="form-group"><div class="form-label">Date signed on paper application</div><input type="date" class="form-input" id="gf-signed"></div>
     <div class="form-group"><div class="form-label">Upload scanned application</div><input type="file" class="form-input" id="gf-file" accept=".pdf,.jpg,.jpeg,.png"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('modal-grandfather')">Cancel</button>
+      <button class="btn-sm" onclick="closeModal(&#39;modal-grandfather&#39;)">Cancel</button>
       <button class="btn-primary" id="save-gf-btn" onclick="saveGrandfather()">Save</button>
     </div>
   </div>
@@ -421,7 +425,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="modal-overlay" id="modal-editmedical">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="editmedical-title">Edit medical record</div><button class="modal-close" onclick="closeModal('modal-editmedical')">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="editmedical-title">Edit medical record</div><button class="modal-close" onclick="closeModal(&#39;modal-editmedical&#39;)">✕</button></div>
     <input type="hidden" id="em-id">
     <div class="form-group"><div class="form-label">License #</div><input class="form-input" id="em-license"></div>
     <div class="form-group"><div class="form-label">License state</div><input class="form-input" id="em-license-state"></div>
@@ -430,7 +434,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
     <div class="form-group"><div class="form-label">Issue date</div><input type="date" class="form-input" id="em-issue"></div>
     <div class="form-group"><div class="form-label">Expiration date</div><input type="date" class="form-input" id="em-expiry"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('modal-editmedical')">Cancel</button>
+      <button class="btn-sm" onclick="closeModal(&#39;modal-editmedical&#39;)">Cancel</button>
       <button class="btn-primary" id="save-em-btn" onclick="saveMedicalEdit()">Save</button>
     </div>
   </div>
@@ -438,7 +442,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
 
 <div class="modal-overlay" id="modal-adduser">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal('modal-adduser')">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add team member</div><button class="modal-close" onclick="closeModal(&#39;modal-adduser&#39;)">✕</button></div>
     <div class="form-group"><div class="form-label">Full name</div><input class="form-input" id="new-name" placeholder="e.g. Omar Hassan"></div>
     <div class="form-group"><div class="form-label">Username</div><input class="form-input" id="new-username" placeholder="e.g. omar"></div>
     <div class="form-group"><div class="form-label">Password</div><input type="password" class="form-input" id="new-password" placeholder="Temporary password"></div>
@@ -450,15 +454,84 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('modal-adduser')">Cancel</button>
+      <button class="btn-sm" onclick="closeModal(&#39;modal-adduser&#39;)">Cancel</button>
       <button class="btn-primary" id="save-user-btn" onclick="saveUser()">Add member</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-editrecord">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Edit service record</div><button class="modal-close" onclick="closeModal(&#39;modal-editrecord&#39;)">✕</button></div>
+    <input type="hidden" id="er-id">
+    <div class="section-sub" id="er-truck" style="margin-bottom:12px"></div>
+    <div class="form-group"><div class="form-label">Service type</div><input class="form-input" id="er-service"></div>
+    <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="er-notes"></div>
+    <div class="form-group"><div class="form-label">Odometer (miles)</div><input type="number" class="form-input" id="er-miles" placeholder="e.g. 284210"></div>
+    <div class="form-group"><div class="form-label">Cost ($)</div><input type="number" class="form-input" id="er-cost"></div>
+    <div class="form-group"><div class="form-label">Date</div><input type="date" class="form-input" id="er-date"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal(&#39;modal-editrecord&#39;)">Cancel</button>
+      <button class="btn-primary" id="save-er-btn" onclick="saveRecordEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-changepass">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Change password</div><button class="modal-close" onclick="closeModal(&#39;modal-changepass&#39;)">✕</button></div>
+    <div class="form-group"><div class="form-label">Current password</div><input type="password" class="form-input" id="cp-current" autocomplete="current-password"></div>
+    <div class="form-group"><div class="form-label">New password</div><input type="password" class="form-input" id="cp-new" autocomplete="new-password"></div>
+    <div class="form-group"><div class="form-label">Confirm new password</div><input type="password" class="form-input" id="cp-confirm" autocomplete="new-password"></div>
+    <div class="login-error" id="cp-error" style="display:none"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal(&#39;modal-changepass&#39;)">Cancel</button>
+      <button class="btn-primary" id="save-cp-btn" onclick="changePassword()">Save new password</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-editeld">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="editeld-title">Edit vehicle info</div><button class="modal-close" onclick="closeModal(&#39;modal-editeld&#39;)">✕</button></div>
+    <input type="hidden" id="ee-id">
+    <div class="form-group"><div class="form-label">Unit #</div><input class="form-input" id="ee-truck-id"></div>
+    <div class="form-group"><div class="form-label">VIN</div><input class="form-input" id="ee-vin"></div>
+    <div class="form-group"><div class="form-label">Plate</div><input class="form-input" id="ee-plate"></div>
+    <div class="form-group"><div class="form-label">ELD device name</div><input class="form-input" id="ee-device"></div>
+    <div class="form-group"><div class="form-label">ELD manufacturer</div><input class="form-input" id="ee-manufacturer"></div>
+    <div class="form-group"><div class="form-label">ELD model #</div><input class="form-input" id="ee-model"></div>
+    <div class="form-group"><div class="form-label">ELD serial #</div><input class="form-input" id="ee-serial"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal(&#39;modal-editeld&#39;)">Cancel</button>
+      <button class="btn-primary" id="save-ee-btn" onclick="saveEldEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-addtruck">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add truck</div><button class="modal-close" onclick="closeModal(&#39;modal-addtruck&#39;)">✕</button></div>
+    <div class="form-group"><div class="form-label">Unit / truck #</div><input class="form-input" id="at-truck-id" placeholder="e.g. 112"></div>
+    <div class="form-group"><div class="form-label">Make &amp; model</div><input class="form-input" id="at-model" placeholder="e.g. Freightliner M2"></div>
+    <div class="form-group"><div class="form-label">Starting odometer (miles)</div><input type="number" class="form-input" id="at-miles" placeholder="e.g. 210000"></div>
+    <div class="form-group"><div class="form-label">Status</div>
+      <select class="form-select" id="at-status">
+        <option value="active">Active</option>
+        <option value="due">Service due</option>
+        <option value="overdue">Overdue service</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal(&#39;modal-addtruck&#39;)">Cancel</button>
+      <button class="btn-primary" id="save-at-btn" onclick="saveNewTruck()">Add truck</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./Bashka Express — Fleet Maintenance last_files/xlsx.full.min.js.download"></script>
 <script>
 const SB_URL = 'https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SB_KEY = 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
@@ -535,6 +608,7 @@ function showApp(){
   if(currentUser.role==='admin'){
     document.getElementById('nav-team').classList.remove('hidden');
     document.getElementById('nav-audit').classList.remove('hidden');
+    document.getElementById('btn-addtruck').classList.remove('hidden');
   }
   currentUser.dqf_access_ok = currentUser.role==='admin' || currentUser.dqf_access===true;
   if(currentUser.dqf_access_ok){
@@ -646,7 +720,7 @@ function renderRecords(){
   const body=document.getElementById('records-body');
   if(!records.length){body.innerHTML='<div class="empty">No records yet</div>';return;}
   body.innerHTML=records.map(r=>`
-    <div class="table-row">
+    <div class="table-row" style="grid-template-columns:80px 130px 1fr 80px 80px 80px 90px 60px">
       <div><strong>${r.truck_id}</strong></div>
       <div>${r.service}</div>
       <div style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</div>
@@ -654,7 +728,48 @@ function renderRecords(){
       <div style="font-weight:500">$${parseFloat(r.cost||0).toLocaleString()}</div>
       <div style="color:var(--gray-400);font-size:12px">${r.technician||'—'}</div>
       <div style="color:var(--gray-400);font-size:12px">${fmt(r.service_date)}</div>
+      <div><button class="btn-sm" onclick="editRecord('${r.id}')">Edit</button></div>
     </div>`).join('');
+}
+
+let recordsEditCache=[];
+function editRecord(id){
+  recordsEditCache=records;
+  const r=records.find(x=>String(x.id)===String(id));
+  if(!r){showToast('Could not find that record — try refreshing');return;}
+  document.getElementById('er-id').value=r.id;
+  document.getElementById('er-truck').textContent=`${r.truck_id} — ${r.service}`;
+  document.getElementById('er-service').value=r.service||'';
+  document.getElementById('er-notes').value=r.notes||'';
+  document.getElementById('er-miles').value=r.miles_at_service||'';
+  document.getElementById('er-cost').value=r.cost||'';
+  document.getElementById('er-date').value=r.service_date?r.service_date.slice(0,10):'';
+  openModal('modal-editrecord');
+}
+
+async function saveRecordEdit(){
+  const id=document.getElementById('er-id').value;
+  const service=document.getElementById('er-service').value.trim();
+  const miles=document.getElementById('er-miles').value;
+  const date=document.getElementById('er-date').value;
+  if(!service||!date){showToast('Service and date are required');return;}
+  const btn=document.getElementById('save-er-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('update_service_record',{
+      p_id:id,
+      p_service:service,
+      p_notes:document.getElementById('er-notes').value.trim()||null,
+      p_miles_at_service:miles?parseInt(miles):null,
+      p_cost:parseFloat(document.getElementById('er-cost').value)||0,
+      p_service_date:date
+    });
+    await logAction('Edited service record',`${service} — ${date}`);
+    closeModal('modal-editrecord');
+    showToast('Record updated ✓');
+    await loadAll();
+  }catch(e){showToast('Error saving — see console');console.error(e);}
+  btn.disabled=false;btn.textContent='Save changes';
 }
 
 function renderInspHistory(){
@@ -793,21 +908,67 @@ async function saveMedicalEdit(){
   btn.disabled=false;btn.textContent='Save';
 }
 
+let eldInfoCache = [];
+
 function renderEldInfo(rows){
+  eldInfoCache = rows || [];
   const body = document.getElementById('eld-info-body');
   if(!rows || !rows.length){
     body.innerHTML = '<div class="empty">No records yet — import a compliance spreadsheet above</div>';
     return;
   }
   body.innerHTML = rows.map(r=>`
-    <div class="table-row" style="grid-template-columns:0.7fr 1fr 0.9fr 1.3fr 1fr 1.3fr">
+    <div class="table-row" style="grid-template-columns:0.6fr 0.9fr 0.8fr 1.2fr 0.9fr 1.1fr 60px">
       <div><strong>${r.truck_id||'—'}</strong></div>
       <div style="font-size:12px;color:var(--gray-600)">${r.vin||'—'}</div>
       <div>${r.plate||'<span style="color:var(--red)">Missing</span>'}</div>
       <div>${r.eld_device_name||'—'}${r.eld_manufacturer?' · '+r.eld_manufacturer:''}</div>
       <div>${r.eld_model_number||'—'}</div>
       <div style="font-size:12px;color:var(--gray-400)">${r.eld_serial_number||'—'}</div>
+      <div><button class="btn-sm" onclick="editEldRow('${r.id}')">Edit</button></div>
     </div>`).join('');
+}
+
+function editEldRow(id){
+  const r = eldInfoCache.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('editeld-title').textContent = `Edit — Unit ${r.truck_id||''}`;
+  document.getElementById('ee-id').value = r.id;
+  document.getElementById('ee-truck-id').value = r.truck_id||'';
+  document.getElementById('ee-vin').value = r.vin||'';
+  document.getElementById('ee-plate').value = r.plate||'';
+  document.getElementById('ee-device').value = r.eld_device_name||'';
+  document.getElementById('ee-manufacturer').value = r.eld_manufacturer||'';
+  document.getElementById('ee-model').value = r.eld_model_number||'';
+  document.getElementById('ee-serial').value = r.eld_serial_number||'';
+  openModal('modal-editeld');
+}
+
+async function saveEldEdit(){
+  const id = document.getElementById('ee-id').value;
+  const truckId = document.getElementById('ee-truck-id').value.trim();
+  if(!truckId){showToast('Unit # is required');return;}
+  const btn = document.getElementById('save-ee-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    await rpc('dqf_update_truck_eld',{
+      p_user_id: currentUser.id,
+      p_id: id,
+      p_truck_id: truckId,
+      p_vin: document.getElementById('ee-vin').value.trim()||null,
+      p_plate: document.getElementById('ee-plate').value.trim()||null,
+      p_eld_device_name: document.getElementById('ee-device').value.trim()||null,
+      p_eld_manufacturer: document.getElementById('ee-manufacturer').value.trim()||null,
+      p_eld_model_number: document.getElementById('ee-model').value.trim()||null,
+      p_eld_serial_number: document.getElementById('ee-serial').value.trim()||null
+    });
+    await logAction('Updated vehicle/ELD info',`Unit ${truckId}`,truckId);
+    closeModal('modal-editeld');
+    showToast('Vehicle info updated ✓');
+    const eld = await rpc('dqf_get_truck_eld_info',{p_user_id:currentUser.id});
+    renderEldInfo(eld);
+  }catch(e){showToast('Error saving');console.error(e);}
+  btn.disabled=false;btn.textContent='Save';
 }
 
 function renderDriverFiles(apps){
@@ -1163,6 +1324,59 @@ async function saveUser(){
   btn.disabled=false;btn.textContent='Add member';
 }
 
+function openChangePassword(){
+  document.getElementById('cp-current').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-confirm').value='';
+  document.getElementById('cp-error').style.display='none';
+  openModal('modal-changepass');
+}
+
+async function changePassword(){
+  const cur=document.getElementById('cp-current').value;
+  const next=document.getElementById('cp-new').value;
+  const confirm=document.getElementById('cp-confirm').value;
+  const errEl=document.getElementById('cp-error');
+  errEl.style.display='none';
+  if(!cur||!next||!confirm){errEl.textContent='Fill in all fields';errEl.style.display='block';return;}
+  if(next.length<8){errEl.textContent='New password must be at least 8 characters';errEl.style.display='block';return;}
+  if(next!==confirm){errEl.textContent='New passwords don\'t match';errEl.style.display='block';return;}
+  const btn=document.getElementById('save-cp-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    const result=await rpc('fleet_change_password',{p_user_id:currentUser.id,p_current_password:cur,p_new_password:next});
+    if(result && result.error){
+      errEl.textContent=result.error;errEl.style.display='block';
+    } else {
+      await logAction('Changed own password','');
+      closeModal('modal-changepass');
+      showToast('Password updated ✓');
+    }
+  }catch(e){errEl.textContent='Error updating password';errEl.style.display='block';console.error(e);}
+  btn.disabled=false;btn.textContent='Save new password';
+}
+
+async function saveNewTruck(){
+  const truckId=document.getElementById('at-truck-id').value.trim();
+  const model=document.getElementById('at-model').value.trim();
+  if(!truckId||!model){showToast('Enter a unit # and make/model');return;}
+  const miles=parseInt(document.getElementById('at-miles').value)||0;
+  const status=document.getElementById('at-status').value;
+  const btn=document.getElementById('save-at-btn');
+  btn.disabled=true;btn.textContent='Adding...';
+  try{
+    await rpc('fleet_add_truck',{p_user_id:currentUser.id,p_truck_id:truckId,p_model:model,p_current_miles:miles,p_status:status});
+    await logAction('Added truck',`Unit ${truckId} — ${model}`,truckId);
+    closeModal('modal-addtruck');
+    document.getElementById('at-truck-id').value='';
+    document.getElementById('at-model').value='';
+    document.getElementById('at-miles').value='';
+    showToast(`Truck ${truckId} added ✓`);
+    await loadAll();
+  }catch(e){showToast('Error — unit # may already exist');console.error(e);}
+  btn.disabled=false;btn.textContent='Add truck';
+}
+
 let currentInspType='pre-trip';
 function setInspType(type){
   currentInspType=type;
@@ -1220,8 +1434,15 @@ async function submitInspection(){
 
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
-clearSession();
+(function restoreSession(){
+  const saved=loadSession();
+  if(saved && saved.id){
+    currentUser=saved;
+    showApp();
+  }
+})();
 </script>
+
 
 
 </body></html>
