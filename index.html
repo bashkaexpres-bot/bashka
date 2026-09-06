@@ -191,7 +191,7 @@ select.form-input{appearance:none}
     <div class="login-err" id="login-err"></div>
     <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="login-email" placeholder="dispatch@bashkaexpress.com"></div>
     <div class="form-group"><div class="form-label">Password</div><input class="form-input" type="password" id="login-pass" placeholder="••••••••"></div>
-    <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button>
+    <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button><div class="login-screen" id="recovery-screen" style="display:none"><div class="login-box"><div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div><div><div class="login-title">Set New Password</div><div class="login-sub">Choose a new password for your account</div></div><div class="login-err" id="recovery-err"></div><div class="form-group"><div class="form-label">New Password</div><input class="form-input" type="password" id="recovery-pass" placeholder="••••••••"></div><div class="form-group"><div class="form-label">Confirm Password</div><input class="form-input" type="password" id="recovery-pass2" placeholder="••••••••"></div><button class="btn-gold" id="recovery-btn" onclick="doSetNewPassword()">Set Password</button></div></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-driver">
@@ -408,10 +408,10 @@ select.form-input{appearance:none}
 const SUPABASE_URL='https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SUPABASE_KEY='sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let currentUser=null,allDrivers=[],shipFilter='all';
+let currentUser=null,allDrivers=[],shipFilter='all',inRecovery=false;sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){inRecovery=true;document.getElementById('login-screen').style.display='none';document.getElementById('sys-bar').style.display='none';document.getElementById('screen-site').style.display='none';document.getElementById('screen-dash').style.display='none';document.getElementById('recovery-screen').style.display='flex';}});
 function toast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
 async function doLogin(){const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const btn=document.getElementById('login-btn');const err=document.getElementById('login-err');err.style.display='none';btn.disabled=true;btn.textContent='Signing in...';const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Sign In';}else{onLogin(data.user);}}
-function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('sys-bar').style.display='flex';document.getElementById('screen-site').style.display='block';document.getElementById('user-email-display').textContent=user.email.split('@')[0];document.getElementById('sidebar-user').textContent=user.email.split('@')[0];showScreen('dash');refreshAll();initMarquee();loadSiteStats();}
+function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('recovery-screen').style.display='none';document.getElementById('sys-bar').style.display='flex';document.getElementById('screen-site').style.display='block';document.getElementById('user-email-display').textContent=user.email.split('@')[0];document.getElementById('sidebar-user').textContent=user.email.split('@')[0];showScreen('dash');refreshAll();initMarquee();loadSiteStats();}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.getElementById('screen-site').style.display='none';document.getElementById('screen-dash').style.display='none';}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
 const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers'};
@@ -439,8 +439,8 @@ window.sendContactForm=sendContactForm;
 async function refreshAll(){await loadOverview();toast('Data refreshed');}
 window.refreshAll=refreshAll;
 function initMarquee(){const items=['GPS Tracking','Geofencing','Proof of Delivery','Real-Time Dispatch','Fleet Management','Driver Compliance'];document.getElementById('marquee').innerHTML=[...items,...items].map(t=>`<div class="marquee-item"><span>✦</span>${t}</div>`).join('');}
-document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-(async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user){onLogin(session.user);}})();
+async function doSetNewPassword(){const pass=document.getElementById('recovery-pass').value;const pass2=document.getElementById('recovery-pass2').value;const btn=document.getElementById('recovery-btn');const err=document.getElementById('recovery-err');err.style.display='none';if(!pass||pass.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return;}if(pass!==pass2){err.textContent='Passwords do not match';err.style.display='block';return;}btn.disabled=true;btn.textContent='Saving...';const{data,error}=await sb.auth.updateUser({password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Set Password';return;}inRecovery=false;history.replaceState(null,'',window.location.pathname);toast('Password updated');onLogin(data.user);}window.doSetNewPassword=doSetNewPassword;document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doSetNewPassword();});
+(async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user && !inRecovery){onLogin(session.user);}})();
 </script>
 </body>
 </html>
