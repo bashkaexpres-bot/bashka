@@ -236,7 +236,7 @@ select.form-input{appearance:none}
       <select class="form-input" id="s-route" onchange="onShipmentRouteChange()"><option value="">— No Route —</option></select>
     </div>
     <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="s-pay-rate" placeholder="0.00"></div>
-    <div class="form-group"><div class="form-label">Scheduled Pickup</div><input class="form-input" type="datetime-local" id="document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);"></div>
+    <div class="form-group"><div class="form-label">Scheduled Pickup</div><input class="form-input" type="datetime-local" id="s-pickup"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('modal-shipment')">Cancel</button>
       <button class="btn-save" onclick="saveShipment()">Save Shipment</button>
