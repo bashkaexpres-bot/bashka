@@ -1,669 +1,222 @@
-<!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/bashk/Downloads/index_14.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bashka Express — Logistics Platform</title>
-<link href="./Bashka Express — Logistics Platform 2_files/css2" rel="stylesheet">
-<script src="./Bashka Express — Logistics Platform 2_files/supabase-js@2"></script>
-<link rel="stylesheet" href="./Bashka Express — Logistics Platform 2_files/leaflet.min.css">
-<script src="./Bashka Express — Logistics Platform 2_files/leaflet.min.js.download"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bashka Express — Driver App</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
 :root{
-  --gold:#E8A020;--gold-glow:rgba(232,160,32,0.15);--orange:#D95F2A;
-  --red:#E53535;--green:#1DB954;--blue:#2D7DD2;--teal:#0EA5A0;
+  --gold:#E8A020;--gold-glow:rgba(232,160,32,0.15);
+  --red:#E53535;--green:#1DB954;--blue:#2D7DD2;--orange:#D95F2A;
   --bg:#080b10;--bg2:#0d1117;--surface:#111620;--surface2:#171d2b;
-  --surface3:#1e2638;--border:#232d42;--border2:#2d3a55;
-  --text:#E8EDF8;--text2:#8B96B8;--text3:#5A6485;--muted:#3D4A6A;
+  --border:#232d42;--border2:#2d3a55;
+  --text:#E8EDF8;--text2:#8B96B8;--text3:#5A6485;
   --display:'Syne',sans-serif;--body:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
 }
-body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:100vh}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:40px;width:380px;display:flex;flex-direction:column;gap:20px}
-.login-logo{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:800;font-size:20px}
-.login-badge{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#000}
-.login-title{font-family:var(--display);font-size:24px;font-weight:800}
-.login-sub{font-size:13px;color:var(--text3)}
-.login-err{background:rgba(229,53,53,0.1);border:1px solid rgba(229,53,53,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#FF7070;display:none}
-.form-group{display:flex;flex-direction:column;gap:6px}
+body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:100vh;max-width:480px;margin:0 auto;position:relative;overflow-x:hidden}
+::-webkit-scrollbar{width:0}
+.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:32px 24px;gap:24px}
+.login-logo{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:800;font-size:22px}
+.login-badge{width:44px;height:44px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#000}
+.login-title{font-family:var(--display);font-size:26px;font-weight:800;text-align:center}
+.login-sub{font-size:14px;color:var(--text3);text-align:center}
+.login-err{background:rgba(229,53,53,0.1);border:1px solid rgba(229,53,53,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#FF7070;display:none;width:100%;text-align:center}
+.form-group{display:flex;flex-direction:column;gap:7px;width:100%}
 .form-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
-.form-input{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--body);font-size:14px;outline:none;transition:border-color 0.2s;width:100%}
-.form-input:focus{border-color:var(--gold)}.pw-wrap{position:relative}.pw-wrap .form-input{padding-right:42px}.pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#9ca3af;padding:8px;line-height:1;user-select:none}.pw-toggle:hover{color:#fff}
-.btn-gold{background:var(--gold);color:#000;border:none;padding:13px 24px;border-radius:8px;font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s;width:100%}
-.btn-gold:hover{background:#d4911c}
-.btn-gold:disabled{opacity:0.5;cursor:not-allowed}
-.sys-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(8,11,16,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;height:52px}
-.sys-logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:17px;margin-right:28px}
-.sys-logo-badge{width:30px;height:30px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000}
-.sys-tabs{display:flex;gap:0;flex:1}
-.sys-tab{padding:0 18px;height:52px;display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;white-space:nowrap}
-.sys-tab:hover{color:var(--text2)}
-.sys-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.sys-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.live-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--green);background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);padding:4px 10px;border-radius:20px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;flex-shrink:0}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.user-pill{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--surface);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer}
-.screen{display:none;padding-top:52px}
-.screen.active{display:block}
-.hero{min-height:100vh;position:relative;overflow:hidden;display:flex;align-items:center;background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(232,160,32,0.07) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 10% 80%,rgba(217,95,42,0.05) 0%,transparent 50%),var(--bg)}
-.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 30%,transparent 100%);opacity:0.3}
-.hero-content{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:80px 40px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
-.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:18px;display:flex;align-items:center;gap:10px}
-.hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--gold)}
-.hero-h1{font-family:var(--display);font-size:clamp(40px,5vw,68px);font-weight:800;line-height:1.0;letter-spacing:-2px;margin-bottom:24px}
-.hero-h1 em{color:var(--gold);font-style:normal}
-.hero-sub{font-size:16px;color:var(--text2);line-height:1.65;max-width:420px;margin-bottom:36px}
-.hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
-.btn-hero{background:var(--gold);color:#000;border:none;padding:14px 28px;border-radius:8px;font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s}
-.btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border2);padding:13px 28px;border-radius:8px;font-family:var(--display);font-weight:600;font-size:15px;cursor:pointer}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:40px}
-.hero-stat{background:var(--surface);padding:20px;text-align:center}
-.hero-stat-val{font-family:var(--display);font-size:30px;font-weight:800;color:var(--gold);line-height:1}
-.hero-stat-label{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);letter-spacing:1px}
-.fleet-visual{position:relative;height:400px}
-.fleet-card{position:absolute;background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden}
-.fleet-card-main{width:270px;height:190px;top:40px;right:0;background:linear-gradient(135deg,var(--surface2),var(--surface));padding:18px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
-.fleet-card-sm1{width:195px;height:125px;bottom:60px;right:40px;padding:14px;background:var(--surface2)}
-.fleet-card-sm2{width:175px;height:105px;top:10px;right:230px;padding:12px;background:var(--surface3)}
-.fleet-card-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
-.fleet-truck-icon{font-size:44px;text-align:center}
-.route-line{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--border2) 0,var(--border2) 4px,transparent 4px,transparent 8px)}
-.mini-bar{height:4px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden}
-.mini-bar-fill{height:100%;border-radius:2px;background:var(--gold)}
-.marquee-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);overflow:hidden;padding:14px 0}
-.marquee-track{display:flex;gap:40px;white-space:nowrap;animation:marquee 28s linear infinite}
-@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.marquee-item{font-family:var(--mono);font-size:12px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.marquee-item span{color:var(--gold)}
-.section{max-width:1100px;margin:0 auto;padding:80px 40px}
-.section-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
-.section-h2{font-family:var(--display);font-size:clamp(28px,4vw,46px);font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:16px}
-.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:48px}
-.service-card{background:var(--surface);padding:26px;transition:background 0.2s}
-.service-card:hover{background:var(--surface2)}
-.service-icon{width:42px;height:42px;border-radius:10px;background:var(--gold-glow);border:1px solid rgba(232,160,32,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
-.service-title{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:8px}
-.service-desc{font-size:13px;color:var(--text2);line-height:1.6}
-.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:44px}
-.why-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;gap:16px}
-.why-num{font-family:var(--display);font-size:34px;font-weight:800;color:var(--muted);line-height:1;flex-shrink:0;width:38px}
-.why-title{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:6px}
-.why-desc{font-size:13px;color:var(--text2);line-height:1.6}
-.contact-section{background:linear-gradient(135deg,var(--surface) 0%,var(--bg2) 100%);border-top:1px solid var(--border)}
-.contact-inner{max-width:1100px;margin:0 auto;padding:80px 40px;display:grid;grid-template-columns:1fr 1fr;gap:60px}
-.contact-info{display:flex;flex-direction:column;gap:22px}
-.contact-item{display:flex;gap:14px;align-items:flex-start}
-.contact-icon{width:40px;height:40px;background:var(--gold-glow);border:1px solid rgba(232,160,32,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.contact-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:3px}
-.contact-val{font-size:14px;font-weight:500}
-.contact-form{display:flex;flex-direction:column;gap:13px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-textarea{resize:vertical;min-height:95px}
-.footer{background:var(--bg2);border-top:1px solid var(--border);padding:36px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:1px}
-.footer-logo{font-family:var(--display);font-size:19px;font-weight:800;color:var(--text2);margin-bottom:8px}
-.dash{display:flex;height:calc(100vh - 52px)}
-.dash-sidebar{width:216px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:20px 0}
-.dash-sidebar-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);font-family:var(--display);font-weight:800;font-size:14px;color:var(--text2);display:flex;align-items:center;gap:8px}
-.sidebar-section-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:16px 18px 6px}
-.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--text3);cursor:pointer;font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all 0.15s;background:none;border-right:none;border-top:none;border-bottom:none;width:100%;text-align:left}
-.sidebar-item:hover{color:var(--text2);background:rgba(255,255,255,0.02)}
-.sidebar-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-glow)}
-.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
-.dash-main{flex:1;overflow-y:auto;background:var(--bg)}
-.dash-topbar{position:sticky;top:0;z-index:10;background:rgba(8,11,16,0.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:13px 26px;display:flex;align-items:center;justify-content:space-between}
-.dash-topbar-title{font-family:var(--display);font-size:19px;font-weight:800}
-.dash-topbar-sub{font-size:12px;color:var(--text3);font-family:var(--mono)}
-.dash-content{padding:22px 26px;display:flex;flex-direction:column;gap:22px}
-.dash-section{display:none}
-.dash-section.active{display:flex;flex-direction:column;gap:22px}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi-card.gold::before{background:var(--gold)}
-.kpi-card.green::before{background:var(--green)}
-.kpi-card.blue::before{background:var(--blue)}
-.kpi-card.orange::before{background:var(--orange)}
-.kpi-card.red::before{background:var(--red)}
-.kpi-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
-.kpi-val{font-family:var(--display);font-size:30px;font-weight:800;line-height:1}
-.kpi-delta{font-size:12px;color:var(--text3)}
-.kpi-icon{position:absolute;top:14px;right:14px;font-size:20px;opacity:0.12}
-.dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden}
-.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.panel-title{font-family:var(--display);font-size:14px;font-weight:700}
-.panel-body{padding:16px 18px}
-.data-table{width:100%;border-collapse:collapse;font-size:13px}
-.data-table th{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg2);font-weight:400}
-.data-table td{padding:11px 14px;border-bottom:1px solid rgba(35,45,66,0.5);color:var(--text2);vertical-align:middle}
-.data-table tr:last-child td{border-bottom:none}
-.data-table tr:hover td{background:rgba(255,255,255,0.01)}
-.td-primary{color:var(--text)!important;font-weight:500}
-.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.form-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:15px 16px;color:var(--text);font-family:var(--body);font-size:16px;outline:none;transition:border-color 0.2s;width:100%}
+.form-input:focus{border-color:var(--gold)}
+.btn-gold{background:var(--gold);color:#000;border:none;padding:16px 24px;border-radius:12px;font-family:var(--display);font-weight:700;font-size:16px;cursor:pointer;width:100%;transition:all 0.2s}
+.btn-gold:disabled{opacity:0.5}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:15px}
+.topbar-badge{width:28px;height:28px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000}
+.driver-name-pill{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--bg2);border:1px solid var(--border);padding:4px 10px;border-radius:20px}
+.status-bar{padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.status-indicator{display:flex;align-items:center;gap:8px}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.status-label{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.gps-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:20px;border:1px solid var(--border)}
+.main{padding:16px 20px;display:flex;flex-direction:column;gap:16px;padding-bottom:100px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.card-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--display);font-size:14px;font-weight:700}
+.card-body{padding:16px}
+.job-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;position:relative}
+.job-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold)}
+.job-urgent::before{background:var(--red)}
+.job-high::before{background:var(--orange)}
+.job-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.job-id{font-family:var(--mono);font-size:11px;color:var(--gold)}
+.job-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.route-display{display:flex;align-items:center;gap:10px}
+.route-point{flex:1}
+.route-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.route-addr{font-size:14px;font-weight:600;color:var(--text)}
+.route-arrow{color:var(--text3);font-size:18px;flex-shrink:0}
+.job-meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta-pill{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.action-row{display:flex;gap:10px}
+.btn-action{flex:1;padding:13px;border-radius:12px;border:none;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:var(--gold);color:#000}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.btn-green{background:rgba(29,185,84,0.15);color:var(--green);border:1px solid rgba(29,185,84,0.3)}
+.btn-red{background:rgba(229,53,53,0.15);color:#FF7070;border:1px solid rgba(229,53,53,0.3)}
+.map-container{height:220px;background:var(--bg2);position:relative;overflow:hidden;border-radius:12px;background-image:linear-gradient(rgba(35,45,66,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(35,45,66,0.6) 1px,transparent 1px);background-size:20px 20px}
+.map-you{position:absolute;transform:translate(-50%,-50%)}
+.map-you-dot{width:20px;height:20px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 6px rgba(45,125,210,0.25);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 6px rgba(45,125,210,0.25)}50%{box-shadow:0 0 0 12px rgba(45,125,210,0.1)}}
+.map-info{position:absolute;bottom:10px;left:10px;right:10px;background:rgba(8,11,16,0.92);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.map-coords{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.map-accuracy{font-family:var(--mono);font-size:10px;color:var(--green)}
+.geofence-alert{background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.3);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+.geofence-icon{font-size:24px;flex-shrink:0}
+.geofence-title{font-family:var(--display);font-size:14px;font-weight:700;color:var(--green);margin-bottom:3px}
+.geofence-sub{font-size:12px;color:var(--text3)}
+.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px}
 .tag-gold{background:rgba(232,160,32,0.12);color:var(--gold);border:1px solid rgba(232,160,32,0.25)}
 .tag-green{background:rgba(29,185,84,0.1);color:var(--green);border:1px solid rgba(29,185,84,0.2)}
 .tag-blue{background:rgba(45,125,210,0.1);color:#5BA3E8;border:1px solid rgba(45,125,210,0.2)}
 .tag-red{background:rgba(229,53,53,0.1);color:#FF7070;border:1px solid rgba(229,53,53,0.2)}
 .tag-muted{background:rgba(90,100,133,0.1);color:var(--text3);border:1px solid var(--border)}
 .tag-orange{background:rgba(217,95,42,0.1);color:#F08060;border:1px solid rgba(217,95,42,0.2)}
-.action-btn{background:var(--gold);color:#000;border:none;padding:8px 15px;border-radius:7px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
-.action-btn-sm{padding:5px 10px;font-size:11px}
-.action-btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border);padding:7px 13px;border-radius:7px;font-family:var(--mono);font-size:11px;cursor:pointer}
-.action-btn-danger{background:rgba(229,53,53,0.15);color:#FF7070;border:1px solid rgba(229,53,53,0.3);padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:10px;cursor:pointer}
-.action-btn-neutral{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:10px;cursor:pointer;margin-right:6px}
-.insp-card{border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.insp-photo{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block}
-.filter-tabs{display:flex;gap:3px}
-.filter-tab{padding:5px 11px;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer}
-.filter-tab.active{background:var(--gold-glow);color:var(--gold)}
-.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;border-radius:3px}
-.driver-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(35,45,66,0.5)}
-.driver-item:last-child{border-bottom:none}
-.driver-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:13px;font-weight:700;flex-shrink:0;background:var(--gold-glow);color:var(--gold)}
-.driver-name{font-size:14px;font-weight:500;color:var(--text)}
-.driver-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.driver-status{margin-left:auto;display:flex;align-items:center;gap:8px}
-.detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(35,45,66,0.4);font-size:13px}
-.detail-row:last-child{border-bottom:none}
-.loading{display:flex;align-items:center;justify-content:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--text3)}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--text3);gap:8px}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:none;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
-.modal-title{font-family:var(--display);font-size:18px;font-weight:800}
-.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:4px;position:sticky;bottom:0;background:var(--surface);padding-top:14px;border-top:1px solid var(--border2)}
-.btn-cancel{background:transparent;color:var(--text3);border:1px solid var(--border);padding:9px 18px;border-radius:8px;font-family:var(--mono);font-size:12px;cursor:pointer}
-.btn-save{background:var(--gold);color:#000;border:none;padding:9px 20px;border-radius:8px;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer}
-select.form-input{appearance:none}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-family:var(--mono);font-size:12px;color:var(--text2);z-index:9999;opacity:0;transform:translateY(8px);transition:all 0.3s;pointer-events:none}
-.toast.show{opacity:1;transform:translateY(0)}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 20px;font-family:var(--mono);font-size:12px;color:var(--text2);z-index:9999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{border-color:rgba(29,185,84,0.4);color:var(--green)}
 .toast.error{border-color:rgba(229,53,53,0.4);color:#FF7070}
-.map-box{height:560px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.leaflet-popup-content{font-family:var(--body);font-size:12px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 20px}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;cursor:pointer;background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;transition:color 0.2s}
+.nav-item.active{color:var(--gold)}
+.nav-icon{font-size:20px}
+.section-title{font-family:var(--display);font-size:18px;font-weight:800;margin-bottom:4px}
+.section-sub{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-family:var(--mono);font-size:12px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.empty-icon{font-size:40px;opacity:0.4}
+.loading{text-align:center;padding:30px;color:var(--text3);font-family:var(--mono);font-size:12px}
+.history-item{padding:14px 16px;border-bottom:1px solid rgba(35,45,66,0.5);display:flex;gap:12px;align-items:center}
+.history-item:last-child{border-bottom:none}
+.history-icon{width:36px;height:36px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.history-main{flex:1}
+.history-id{font-family:var(--mono);font-size:11px;color:var(--gold)}
+.history-route{font-size:13px;font-weight:500;margin:2px 0}
+.history-time{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.insp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:3000;display:none;align-items:flex-end;justify-content:center}
+.insp-overlay.open{display:flex}
+.insp-sheet{background:var(--surface);border:1px solid var(--border2);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.insp-title{font-family:var(--display);font-size:18px;font-weight:800}
+.insp-sub{font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.photo-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--bg2);border:1px solid var(--border)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-remove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);color:#fff;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-add{aspect-ratio:1;border-radius:10px;border:1.5px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;background:var(--bg2)}
+.damage-toggle{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:13px}
+.damage-toggle input{width:18px;height:18px;flex-shrink:0}
+.insp-textarea{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:var(--body);font-size:14px;outline:none;width:100%;min-height:70px;resize:vertical}
+.insp-footer{display:flex;gap:10px}
+.sat-toggle{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:13px}
+.sat-toggle input{width:18px;height:18px;flex-shrink:0}
+.sig-wrap{display:flex;flex-direction:column;gap:6px}
+.sig-label{font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
+.sig-canvas{width:100%;height:140px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);touch-action:none}
+.sig-actions{display:flex;justify-content:flex-end}
+.sig-clear{background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;font-family:var(--body)}
+.insp-checklist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.checklist-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:12px;cursor:pointer}
+.checklist-item input{width:16px;height:16px;flex-shrink:0}
 </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
 <div class="login-screen" id="login-screen">
-  <div class="login-box">
-    <div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div>
-    <div><div class="login-title">Welcome back</div><div class="login-sub">Sign in to access the dispatch portal</div></div>
-    <div class="login-err" id="login-err"></div>
-    <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="login-email" placeholder="dispatch@bashkaexpress.com"></div>
-    <div class="form-group"><div class="form-label">Password</div><div class="pw-wrap"><input class="form-input" type="password" id="login-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;login-pass&#39;,this)">👁</button></div></div>
-    <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button><div style="text-align:center;margin-top:12px"><a href="file:///C:/Users/bashk/Downloads/index_14.html#" onclick="showRecoveryRequest();return false;" style="color:#9ca3af;font-size:13px">Forgot password?</a></div></div></div><div class="login-screen" id="recovery-screen" style="display:none"><div class="login-box"><div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div><div id="recovery-step1"><div><div class="login-title">Reset Password</div><div class="login-sub">Enter your email to receive a reset code</div></div><div class="login-err" id="recovery-err1"></div><div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="recovery-email" placeholder="you@example.com"></div><button class="btn-gold" id="recovery-send-btn" onclick="sendResetCode()">Send Code</button><div style="text-align:center;margin-top:12px"><a href="file:///C:/Users/bashk/Downloads/index_14.html#" onclick="hideRecovery();return false;" style="color:#9ca3af;font-size:13px">Back to Sign In</a></div></div><div id="recovery-step2" style="display:none"><div><div class="login-title">Set New Password</div><div class="login-sub">Choose a new password for your account</div></div><div class="login-err" id="recovery-err"></div><div class="form-group"><div class="form-label">Reset Code</div><input class="form-input" type="text" id="recovery-code" placeholder="123456" inputmode="numeric"></div><div class="form-group"><div class="form-label">New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;recovery-pass&#39;,this)">👁</button></div></div><div class="form-group"><div class="form-label">Confirm Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass2" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;recovery-pass2&#39;,this)">👁</button></div></div><button class="btn-gold" id="recovery-btn" onclick="doSetNewPassword()">Set Password</button></div></div></div><div class="modal-overlay" id="modal-driver">
-  <div class="modal">
-    <div class="modal-title" id="modal-driver-title">Add Driver</div>
-    <input type="hidden" id="d-id" value="">
-    <div class="form-group"><div class="form-label">Full Name</div><input class="form-input" id="d-name" placeholder="John Smith"></div>
-    <div class="form-group"><div class="form-label">Phone</div><input class="form-input" id="d-phone" placeholder="(651) 555-0100"></div>
-    <div class="form-group"><div class="form-label">License Number</div><input class="form-input" id="d-license" placeholder="MN-DL-123456"></div>
-    <div class="form-group" id="d-email-wrap"><div class="form-label">Email (for driver login)</div><input class="form-input" type="email" id="d-email" placeholder="driver@bashkaexpress.com"></div>
-    <div class="form-group"><div class="form-label">Status</div>
-      <select class="form-input" id="d-status">
-        <option value="active">Active</option>
-        <option value="off_duty">Off Duty</option>
-        <option value="on_leave">On Leave</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-driver&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveDriver()">Save Driver</button>
-    </div>
-  </div>
+  <div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div>
+  <div><div class="login-title">Driver Portal</div><div class="login-sub" style="margin-top:6px">Sign in to start your shift</div></div>
+  <div class="login-err" id="login-err"></div>
+  <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="login-email" placeholder="driver@bashkaexpress.com" autocomplete="email"></div>
+  <div class="form-group"><div class="form-label">Password</div><input class="form-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+  <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button>
 </div>
-<div class="modal-overlay" id="modal-shipment">
-  <div class="modal">
-    <div class="modal-title">New Shipment</div>
-    <div class="form-group"><div class="form-label">Tracking Number</div><input class="form-input" id="s-tracking" placeholder="BE-2026-0001"></div>
-    <div class="form-group"><div class="form-label">Customer Name</div><input class="form-input" id="s-customer" placeholder="Nordic Wholesale"></div>
-    <div class="form-group"><div class="form-label">Origin</div><input class="form-input" id="s-origin" placeholder="Eagan HQ"></div>
-    <div class="form-group"><div class="form-label">Destination</div><input class="form-input" id="s-dest" placeholder="Savage Depot"></div>
-    <div class="form-group"><div class="form-label">Assign Driver</div>
-      <select class="form-input" id="s-driver"><option value="">— Select Driver —</option></select>
-    </div>
-    <div class="form-group"><div class="form-label">Assign Truck</div>
-      <select class="form-input" id="s-vehicle"><option value="">— Select Truck —</option></select>
-    </div>
-    <div class="form-group"><div class="form-label">Route Assignment</div>
-      <select class="form-input" id="s-route" onchange="onShipmentRouteChange()"><option value="">— No Route —</option></select>
-    </div>
-    <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="s-pay-rate" placeholder="0.00"></div>
-    <div class="form-group"><div class="form-label">Scheduled Pickup</div><input class="form-input" type="datetime-local" id="s-pickup"></div>
-    <div class="form-group"><div class="form-label">Scheduled Delivery</div><input class="form-input" type="datetime-local" id="s-delivery"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-shipment&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveShipment()">Save Shipment</button>
-    </div>
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div class="topbar-logo"><div class="topbar-badge">BE</div>Driver App</div>
+    <div class="driver-name-pill" id="driver-name-pill">Loading...</div>
   </div>
-</div>
-<div class="modal-overlay" id="modal-vehicle">
-  <div class="modal">
-    <div class="modal-title" id="modal-vehicle-title">Add Vehicle</div>
-    <input type="hidden" id="v-id">
-    <div class="form-group"><div class="form-label">Unit Number</div><input class="form-input" id="v-unit" placeholder="Truck 4"></div>
-    <div class="form-group"><div class="form-label">Make</div><input class="form-input" id="v-make" placeholder="Freightliner"></div>
-    <div class="form-group"><div class="form-label">Model</div><input class="form-input" id="v-model" placeholder="Cascadia"></div>
-    <div class="form-group"><div class="form-label">Year</div><input class="form-input" type="number" id="v-year" placeholder="2022"></div>
-    <div class="form-group"><div class="form-label">VIN</div><input class="form-input" id="v-vin" placeholder="1FUJGHDV0NLXXXXXX"></div>
-    <div class="form-group"><div class="form-label">Plate</div><input class="form-input" id="v-plate" placeholder="MN 123-ABC"></div>
-    <div class="form-group"><div class="form-label">Assigned Driver</div>
-      <select class="form-input" id="v-driver"><option value="">— Unassigned —</option></select>
-    </div>
-    <div class="form-group"><div class="form-label">Status</div>
-      <select class="form-input" id="v-status">
-        <option value="active">Active</option>
-        <option value="maintenance">Maintenance</option>
-        <option value="out_of_service">Out of Service</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-vehicle&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveVehicle()">Save Vehicle</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-customer">
-  <div class="modal">
-    <div class="modal-title">Add Customer</div>
-    <div class="form-group"><div class="form-label">Name</div><input class="form-input" id="c-name" placeholder="Nordic Wholesale"></div>
-    <div class="form-group"><div class="form-label">Email</div><input class="form-input" id="c-email" placeholder="orders@nordic.com"></div>
-    <div class="form-group"><div class="form-label">Phone</div><input class="form-input" id="c-phone" placeholder="(612) 555-0100"></div>
-    <div class="form-group"><div class="form-label">City</div><input class="form-input" id="c-city" placeholder="Eagan, MN"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-customer&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveCustomer()">Save Customer</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-assign-shipment">
-  <div class="modal">
-    <div class="modal-title">Assign Shipment</div>
-    <div class="form-group"><div class="form-label">Tracking #</div><div id="as-tracking" style="font-family:var(--mono);color:var(--gold)"></div></div>
-    <div class="form-group"><div class="form-label">Customer / Route</div><div id="as-customer" class="td-primary"></div></div>
-    <div class="form-group"><div class="form-label">Assign Driver</div><select class="form-input" id="as-driver"><option value="">— Select Driver —</option></select></div>
-    <div class="form-group"><div class="form-label">Assign Truck</div><select class="form-input" id="as-vehicle"><option value="">— Select Truck —</option></select></div>
-    <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="as-pay-rate" placeholder="0.00"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-assign-shipment&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveAssignment()">Assign</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-route">
-  <div class="modal">
-    <div class="modal-title" id="route-modal-title">Add Route</div>
-    <input type="hidden" id="route-id">
-    <div class="form-group"><div class="form-label">Route Name</div><input class="form-input" id="route-name" placeholder="e.g. Minneapolis Loop"></div>
-    <div class="form-group"><div class="form-label">Customer Name</div><input class="form-input" id="route-customer" placeholder="Nordic Wholesale"></div>
-    <div class="form-group"><div class="form-label">Pay Rate ($)</div><input class="form-input" type="number" step="0.01" id="route-price" placeholder="0.00"></div>
-    <div class="form-group"><div class="form-label">Pickup Address</div><input class="form-input" id="route-pickup-address" placeholder="Eagan HQ"></div>
-    <div class="form-group"><div class="form-label">Pickup Time (daily)</div><input class="form-input" type="time" id="route-pickup-time"></div>
-    <div class="form-group"><div class="form-label">Delivery Address</div><input class="form-input" id="route-drop-address" placeholder="Savage Depot"></div>
-    <div class="form-group"><div class="form-label">Delivery Time (daily)</div><input class="form-input" type="time" id="route-delivery-time"></div>
-    <div class="form-group"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" id="route-active" checked="" style="width:auto"> Active</label></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-route&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveRoute()">Save Route</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-extra-work">
-  <div class="modal">
-    <div class="modal-title">Add Extra Work</div>
-    <div class="form-group"><div class="form-label">Description</div><input class="form-input" id="ew-description" placeholder="e.g. Warehouse cleanup run"></div>
-    <div class="form-group"><div class="form-label">Date</div><input class="form-input" type="date" id="ew-date"></div>
-    <div class="form-group"><div class="form-label">Assign Driver</div><select class="form-input" id="ew-driver"><option value="">— Select Driver —</option></select></div>
-    <div class="form-group"><div class="form-label">Assign Truck</div><select class="form-input" id="ew-vehicle"><option value="">— Select Truck —</option></select></div>
-    <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="ew-pay-rate" placeholder="0.00"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-extra-work&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveExtraWork()">Add Extra Work</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-import-review">
-  <div class="modal" style="width:820px;max-width:92vw">
-    <div class="modal-title">Review Import — <span id="import-review-count"></span></div>
-    <div style="max-height:56vh;overflow-y:auto;margin:12px 0;border:1px solid var(--border);border-radius:8px">
-      <table class="data-table">
-        <thead><tr><th>Route / Work</th><th>Date</th><th>Driver</th><th>Truck</th><th>Pay</th><th>Status</th><th></th></tr></thead>
-        <tbody id="import-review-table"></tbody>
-      </table>
-    </div>
-    <div class="modal-footer" style="justify-content:space-between">
-      <button class="action-btn action-btn-sm" onclick="acceptAllImportRows()">✓ Accept All Valid Rows</button>
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-import-review&#39;)">Close</button>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-vehicle-docs">
-  <div class="modal" style="width:560px">
-    <div class="modal-title" id="vdocs-title">Vehicle Documents</div>
-    <input type="hidden" id="vdocs-vehicle-id">
-    <div style="display:flex;flex-direction:column;gap:14px;max-height:40vh;overflow-y:auto" id="vdocs-list"></div>
-    <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:12px">
-      <div class="form-label">Add Document</div>
-      <div style="display:flex;gap:10px">
-        <select class="form-input" id="vd-type" style="flex:1">
-          <option value="insurance">Insurance</option>
-          <option value="registration">Registration</option>
-          <option value="dot_inspection">DOT Inspection</option>
-          <option value="other">Other</option>
-        </select>
-        <input class="form-input" id="vd-number" placeholder="Doc / Policy #" style="flex:1">
+  <div id="tab-jobs" class="tab-content">
+    <div class="status-bar">
+      <div class="status-indicator">
+        <div class="status-dot" id="status-dot" style="background:var(--text3)"></div>
+        <div class="status-label" id="status-label" style="color:var(--text3)">Off Duty</div>
       </div>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1"><div class="form-label" style="margin-bottom:5px">Issued</div><input class="form-input" type="date" id="vd-issued"></div>
-        <div style="flex:1"><div class="form-label" style="margin-bottom:5px">Expires</div><input class="form-input" type="date" id="vd-expires"></div>
+      <div class="gps-pill" id="gps-pill" style="color:var(--text3)">📍 GPS Off</div>
+    </div>
+    <div class="main">
+      <div><div class="section-title">My Jobs</div><div class="section-sub" id="jobs-sub">Loading your assignments...</div></div>
+      <div class="map-container" id="map-container">
+        <div class="map-you" id="map-you" style="left:50%;top:50%"><div class="map-you-dot"></div></div>
+        <div class="map-info"><div class="map-coords" id="map-coords">Waiting for GPS...</div><div class="map-accuracy" id="map-accuracy"></div></div>
       </div>
-      <input class="form-input" type="file" id="vd-file" accept="image/*,application/pdf">
-      <button class="btn-save" id="vd-add-btn" onclick="addVehicleDoc()">Upload Document</button>
+      <div class="geofence-alert" id="geofence-alert" style="display:none">
+        <div class="geofence-icon">📍</div>
+        <div><div class="geofence-title" id="geofence-title">Arrived at Pickup</div><div class="geofence-sub" id="geofence-sub">You are within the pickup zone</div></div>
+      </div>
+      <div id="active-job-container"></div>
+      <div id="jobs-list"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-vehicle-docs&#39;)">Close</button>
+  </div>
+  <div id="tab-history" class="tab-content" style="display:none">
+    <div class="main">
+      <div><div class="section-title">Delivery History</div><div class="section-sub">Completed jobs</div></div>
+      <div class="card" id="history-list"><div class="loading">Loading history...</div></div>
     </div>
+  </div>
+  <div id="tab-truck" class="tab-content" style="display:none">
+    <div class="main">
+      <div><div class="section-title">My Truck</div><div class="section-sub">Vehicle &amp; paperwork</div></div>
+      <div class="card"><div class="card-body" id="truck-body"><div class="loading">Loading...</div></div></div>
+    </div>
+  </div>
+  <div id="tab-profile" class="tab-content" style="display:none">
+    <div class="main">
+      <div><div class="section-title">My Profile</div><div class="section-sub">Driver information</div></div>
+      <div class="card"><div class="card-body" id="profile-body"><div class="loading">Loading...</div></div></div>
+      <button class="btn-action btn-red" style="width:100%;padding:15px;border-radius:12px" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+  <div id="tab-pay" class="tab-content" style="display:none">
+    <div class="main">
+      <div><div class="section-title">My Pay</div><div class="section-sub" id="pay-sub">Loading...</div></div>
+      <div class="card"><div class="card-body" id="pay-period-body"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-body" id="pay-ytd-body"></div></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item active" id="nav-jobs" onclick="switchTab('jobs')"><div class="nav-icon">📦</div>Jobs</button>
+    <button class="nav-item" id="nav-history" onclick="switchTab('history')"><div class="nav-icon">📋</div>History</button>
+    <button class="nav-item" id="nav-truck" onclick="switchTab('truck')"><div class="nav-icon">🚚</div>Truck</button>
+    <button class="nav-item" id="nav-pay" onclick="switchTab('pay')"><div class="nav-icon">💰</div>Pay</button>
+    <button class="nav-item" id="nav-profile" onclick="switchTab('profile')"><div class="nav-icon">👤</div>Profile</button>
   </div>
 </div>
-<div class="modal-overlay" id="modal-inspections">
-  <div class="modal" style="width:560px">
-    <div class="modal-title" id="insp-modal-title">Trip Inspections</div>
-    <div id="insp-modal-body" style="display:flex;flex-direction:column;gap:14px;max-height:60vh;overflow-y:auto"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-inspections&#39;)">Close</button>
+<div class="insp-overlay" id="insp-overlay">
+  <div class="insp-sheet">
+    <div><div class="insp-title" id="insp-title">Pre-Trip Inspection</div><div class="insp-sub" id="insp-sub">Job —</div></div>
+    <div class="insp-checklist" id="insp-checklist"></div>
+    <input type="file" id="insp-file-input" accept="image/*" multiple style="display:none" onchange="handleInspectionFiles(this.files)">
+    <div class="photo-grid" id="insp-photo-grid"></div>
+    <label class="damage-toggle"><input type="checkbox" id="insp-damage"> ⚠️ Damage or issue found</label>
+    <textarea class="insp-textarea" id="insp-notes" placeholder="Notes (optional) — describe any damage, cargo condition, etc."></textarea>
+    <label class="sat-toggle"><input type="checkbox" id="insp-satisfactory"> Condition of the above vehicle is satisfactory</label>
+    <div class="sig-wrap">
+      <div class="sig-label">Driver Signature</div>
+      <canvas id="insp-sig-canvas" class="sig-canvas" onpointerdown="sigStart(event)" onpointermove="sigMove(event)" onpointerup="sigEnd(event)" onpointerleave="sigEnd(event)"></canvas>
+      <div class="sig-actions"><button type="button" class="sig-clear" onclick="clearSignature()">Clear</button></div>
     </div>
-  </div>
-</div>
-<div class="sys-bar" id="sys-bar" style="display:none">
-  <div class="sys-logo"><div class="sys-logo-badge">BE</div>Bashka Express</div>
-  <div class="sys-tabs">
-    <button class="sys-tab active" onclick="showScreen(&#39;site&#39;)">🌐 Marketing Site</button>
-    <button class="sys-tab" onclick="showScreen(&#39;dash&#39;)">⚙️ Dispatch Portal</button>
-  </div>
-  <div class="sys-right">
-    <div class="live-pill"><div class="dot"></div>Live</div>
-    <div class="user-pill" onclick="doLogout()"><span id="user-email-display"></span><span style="color:var(--text3)">· Sign out</span></div>
-  </div>
-</div>
-<div id="screen-site" class="screen">
-  <section class="hero">
-    <div class="hero-grid"></div>
-    <div class="hero-content">
-      <div>
-        <div class="hero-eyebrow">Minnesota Logistics Leader</div>
-        <h1 class="hero-h1">Moving <em>Minnesota</em> Forward, Every Mile</h1>
-        <p class="hero-sub">Bashka Express LLC delivers dependable freight, last-mile, and regional logistics solutions across Minnesota and the Upper Midwest.</p>
-        <div class="hero-ctas">
-          <button class="btn-hero" onclick="showScreen(&#39;dash&#39;)">Launch Dispatch Portal</button>
-          <button class="btn-ghost">Request a Quote</button>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat"><div class="hero-stat-val" id="stat-deliveries">—</div><div class="hero-stat-label">Deliveries</div></div>
-          <div class="hero-stat"><div class="hero-stat-val">98.7%</div><div class="hero-stat-label">On-Time Rate</div></div>
-          <div class="hero-stat"><div class="hero-stat-val">12</div><div class="hero-stat-label">Service Zones</div></div>
-        </div>
-      </div>
-      <div class="fleet-visual">
-        <div class="fleet-card fleet-card-main">
-          <div><div class="fleet-card-label">Active Route</div><div style="font-size:15px;font-weight:700;font-family:var(--display);margin-top:4px">Route 4 - Eagan to Savage</div></div>
-          <div class="fleet-truck-icon">🚛</div>
-          <div><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="route-line"></div><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:5px"><span>Eagan HQ</span><span>38 mph</span><span>Savage</span></div></div>
-        </div>
-        <div class="fleet-card fleet-card-sm1"><div class="fleet-card-label">Fleet Status</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span>Active</span><span id="fleet-active" style="color:var(--green);font-family:var(--mono);font-weight:600">—</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span>Off Duty</span><span id="fleet-off" style="color:var(--text3);font-family:var(--mono);font-weight:600">—</span></div></div></div>
-        <div class="fleet-card fleet-card-sm2"><div class="fleet-card-label">Today's Jobs</div><div id="fleet-jobs" style="font-family:var(--display);font-size:26px;font-weight:800;color:var(--gold);margin-top:4px">—</div><div class="mini-bar"><div class="mini-bar-fill" id="fleet-bar" style="width:0%"></div></div></div>
-      </div>
-    </div>
-  </section>
-  <div class="marquee-wrap"><div class="marquee-track" id="marquee"></div></div>
-  <section class="section">
-    <div class="section-label">What We Do</div>
-    <h2 class="section-h2">End-to-End Logistics Built for the Midwest</h2>
-    <div class="services-grid">
-      <div class="service-card"><div class="service-icon">🚛</div><div class="service-title">Freight Delivery</div><div class="service-desc">Full-truckload and LTL freight across MN, WI, ND, and SD with real-time GPS tracking.</div></div>
-      <div class="service-card"><div class="service-icon">📦</div><div class="service-title">Last-Mile Delivery</div><div class="service-desc">Doorstep delivery for e-commerce, medical supply, and retail across the Twin Cities metro.</div></div>
-      <div class="service-card"><div class="service-icon">🏭</div><div class="service-title">Warehouse &amp; Distribution</div><div class="service-desc">Cross-docking, short-term storage, and pallet fulfillment from our Eagan hub.</div></div>
-      <div class="service-card"><div class="service-icon">❄️</div><div class="service-title">Temperature-Controlled</div><div class="service-desc">Climate-controlled vehicles for pharmaceutical, food-grade, and sensitive cargo.</div></div>
-      <div class="service-card"><div class="service-icon">⚡</div><div class="service-title">Same-Day Express</div><div class="service-desc">Urgent and time-critical deliveries across the metro with guaranteed arrival windows.</div></div>
-      <div class="service-card"><div class="service-icon">📊</div><div class="service-title">Supply Chain Analytics</div><div class="service-desc">Real-time dashboards, delivery reports, and KPI tracking for enterprise partners.</div></div>
-    </div>
-  </section>
-  <section class="section">
-    <div class="section-label">Why Bashka Express</div>
-    <h2 class="section-h2">Logistics You Can Count On</h2>
-    <div class="why-grid">
-      <div class="why-card"><div class="why-num">01</div><div><div class="why-title">Real-Time GPS Tracking</div><div class="why-desc">Every vehicle transmits live location data. Clients and dispatch see exactly where their freight is, always.</div></div></div>
-      <div class="why-card"><div class="why-num">02</div><div><div class="why-title">Geofence Compliance</div><div class="why-desc">Automated clock-ins, arrival triggers, and departure alerts ensure driver accountability and payroll accuracy.</div></div></div>
-      <div class="why-card"><div class="why-num">03</div><div><div class="why-title">Digital Proof of Delivery</div><div class="why-desc">E-signatures, timestamped photos, and geo-tagged PODs eliminate disputes and streamline billing.</div></div></div>
-      <div class="why-card"><div class="why-num">04</div><div><div class="why-title">Veteran MN Team</div><div class="why-desc">Our drivers and dispatchers know Minnesota roads, winters, and logistics challenges inside and out.</div></div></div>
-    </div>
-  </section>
-  <div class="contact-section">
-    <div class="contact-inner">
-      <div>
-        <div class="section-label">Get In Touch</div>
-        <h2 class="section-h2" style="margin-bottom:28px">Ready to Ship? Let's Talk.</h2>
-        <div class="contact-info">
-          <div class="contact-item"><div class="contact-icon">📍</div><div><div class="contact-label">Headquarters</div><div class="contact-val">3299 Valley Ridge Drive, Eagan, MN 55121</div></div></div>
-          <div class="contact-item"><div class="contact-icon">📞</div><div><div class="contact-label">Dispatch Line</div><div class="contact-val">(651) 555-0192</div></div></div>
-          <div class="contact-item"><div class="contact-icon">✉️</div><div><div class="contact-label">Email</div><div class="contact-val">dispatch@bashkaexpress.com</div></div></div>
-          <div class="contact-item"><div class="contact-icon">🕐</div><div><div class="contact-label">Hours</div><div class="contact-val">Mon-Fri 6AM-8PM · Sat 7AM-4PM</div></div></div>
-        </div>
-      </div>
-      <div>
-        <div class="panel" style="background:var(--bg2)">
-          <div class="panel-header"><div class="panel-title">Send a Message</div></div>
-          <div class="panel-body">
-            <div class="contact-form">
-              <div class="form-row"><div class="form-group"><div class="form-label">First Name</div><input class="form-input" id="c-first" placeholder="John"></div><div class="form-group"><div class="form-label">Last Name</div><input class="form-input" id="c-last" placeholder="Doe"></div></div>
-              <div class="form-group"><div class="form-label">Company</div><input class="form-input" id="c-company" placeholder="Your Company LLC"></div>
-              <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="c-email" placeholder="you@company.com"></div>
-              <div class="form-group"><div class="form-label">Message</div><textarea class="form-input form-textarea" id="c-msg" placeholder="Tell us about your freight needs..."></textarea></div>
-              <button class="btn-hero" style="width:100%;padding:13px" onclick="sendContactForm()">Send Message</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="footer"><div class="footer-logo">Bashka Express LLC</div><div>3299 Valley Ridge Drive · Eagan, MN 55121 · (651) 555-0192</div><div style="margin-top:8px">© 2026 Bashka Express LLC · All Rights Reserved</div></div>
-</div>
-<div id="screen-dash" class="screen">
-  <div class="dash">
-    <div class="dash-sidebar">
-      <div class="dash-sidebar-logo"><div style="width:26px;height:26px;background:var(--gold);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000">BE</div>Dispatch</div>
-      <div class="sidebar-section-label">Navigation</div>
-      <button class="sidebar-item active" onclick="showDash(&#39;overview&#39;,this)">📊 Overview</button>
-      <button class="sidebar-item" onclick="showDash(&#39;shipments&#39;,this)">📦 Shipments</button>
-      <button class="sidebar-item" onclick="showDash(&#39;drivers&#39;,this)">👤 Drivers</button>
-      <button class="sidebar-item" onclick="showDash(&#39;customers&#39;,this)">🏢 Customers</button>
-      <button class="sidebar-item" onclick="showDash(&#39;map&#39;,this)">🗺️ Live Map</button>
-      <button class="sidebar-item" onclick="showDash(&#39;vehicles&#39;,this)">🚚 Vehicles</button>
-      <button class="sidebar-item" onclick="showDash(&#39;pay&#39;,this)">💰 Driver Pay</button>
-      <button class="sidebar-item" onclick="showDash(&#39;hours&#39;,this)">⏱️ Driver Hours</button>
-      <button class="sidebar-item admin-only" id="nav-team" onclick="showDash(&#39;team&#39;,this)" style="display:none">👥 Team</button>
-      <button class="sidebar-item admin-only" id="nav-activity" onclick="showDash(&#39;activity&#39;,this)" style="display:none">📜 Activity Log</button>
-      <div class="sidebar-section-label">System</div>
-      <button class="sidebar-item" onclick="doLogout()">🚪 Sign Out</button>
-      <div class="sidebar-footer"><div style="font-weight:600;font-size:13px;color:var(--text2);margin-bottom:2px" id="sidebar-user">Admin</div><div style="font-family:var(--mono);font-size:10px">Eagan, MN</div></div>
-    </div>
-    <div class="dash-main">
-      <div class="dash-topbar">
-        <div><div class="dash-topbar-title" id="dash-title">Operations Overview</div><div class="dash-topbar-sub">Bashka Express LLC · Eagan, MN 55121</div></div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div class="live-pill"><div class="dot"></div>Connected</div>
-          <button class="action-btn action-btn-sm" onclick="refreshAll()">↻ Refresh</button>
-        </div>
-      </div>
-      <div class="dash-content">
-        <div id="dash-overview" class="dash-section active">
-          <div class="kpi-row">
-            <div class="kpi-card green"><div class="kpi-icon">👤</div><div class="kpi-label">Active Drivers</div><div class="kpi-val" id="kpi-drivers">—</div><div class="kpi-delta">from database</div></div>
-            <div class="kpi-card gold"><div class="kpi-icon">📦</div><div class="kpi-label">Total Shipments</div><div class="kpi-val" id="kpi-shipments">—</div><div class="kpi-delta">all time</div></div>
-            <div class="kpi-card blue"><div class="kpi-icon">🏢</div><div class="kpi-label">Customers</div><div class="kpi-val" id="kpi-customers">—</div><div class="kpi-delta">registered</div></div>
-            <div class="kpi-card orange"><div class="kpi-icon">⚠️</div><div class="kpi-label">Pending</div><div class="kpi-val" id="kpi-pending">—</div><div class="kpi-delta">need assignment</div></div>
-            <div class="kpi-card red"><div class="kpi-icon">⏰</div><div class="kpi-label">Running Late</div><div class="kpi-val" id="kpi-late">—</div><div class="kpi-delta">past scheduled time</div></div>
-          </div>
-          <div class="dash-grid-2">
-            <div class="panel"><div class="panel-header"><div class="panel-title">Recent Shipments</div><button class="action-btn action-btn-sm" onclick="showDash(&#39;shipments&#39;,null)">View All</button></div><table class="data-table"><thead><tr><th>Tracking</th><th>Customer</th><th>Status</th></tr></thead><tbody id="overview-shipments"><tr><td colspan="3"><div class="loading">Loading...</div></td></tr></tbody></table></div>
-            <div class="panel"><div class="panel-header"><div class="panel-title">Driver Status</div></div><div id="overview-drivers"><div class="loading">Loading...</div></div></div>
-          </div>
-        </div>
-        <div id="dash-shipments" class="dash-section">
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">All Shipments</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="filter-tabs" id="ship-filters"></div>
-                <button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-shipment&#39;,&#39;new&#39;)">+ New Shipment</button><input type="file" id="import-assign-file" accept=".csv" style="display:none" onchange="handleAssignmentImport(this)"><button class="action-btn action-btn-sm" onclick="downloadAssignmentTemplate()">⬇ Template</button><button class="action-btn action-btn-sm" onclick="document.getElementById(&#39;import-assign-file&#39;).click()">⬆ Import Assignments</button><button class="action-btn action-btn-sm" onclick="openExtraWorkModal()">+ Extra Work</button>
-              </div>
-            </div>
-            <table class="data-table">
-              <thead><tr><th>Tracking #</th><th>Customer</th><th>Driver</th><th>Origin → Dest</th><th>Priority</th><th>Status</th><th></th></tr></thead>
-              <tbody id="shipments-table"><tr><td colspan="7"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="dash-drivers" class="dash-section">
-          <div class="dash-grid-2">
-            <div class="panel">
-              <div class="panel-header"><div class="panel-title">Driver Roster</div><button class="action-btn action-btn-sm admin-only" id="btn-add-driver" style="display:none" onclick="openModal(&#39;modal-driver&#39;,&#39;new&#39;)">+ Add Driver</button></div>
-              <div id="drivers-list"><div class="loading">Loading...</div></div>
-            </div>
-            <div class="panel">
-              <div class="panel-header"><div class="panel-title">Driver Stats</div></div>
-              <div class="panel-body" id="drivers-stats"></div>
-            </div>
-          </div>
-        </div>
-        <div id="dash-customers" class="dash-section">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Customers</div><button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-customer&#39;)">+ Add Customer</button></div>
-            <table class="data-table">
-              <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>City</th><th></th></tr></thead>
-              <tbody id="customers-table"><tr><td colspan="5"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="dash-map" class="dash-section">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Live Driver &amp; Shipment Map</div><button class="action-btn action-btn-sm" onclick="loadMapData()">↻ Refresh</button></div>
-            <div class="panel-body" style="padding:0"><div id="map-container" class="map-box"></div></div>
-          </div>
-        </div>
-        <div id="dash-vehicles" class="dash-section">
-          <div id="vehicles-alert"></div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Fleet Vehicles</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="exportVehiclesCSV()">⬇ Export CSV</button><button class="action-btn action-btn-sm admin-only" style="display:none" onclick="downloadVehicleTemplate()">📋 Import Template</button><input type="file" id="vehicle-import-input" accept=".csv" style="display:none" onchange="handleVehicleImport(this)"><button class="action-btn action-btn-sm admin-only" id="btn-import-vehicles" style="display:none" onclick="document.getElementById(&#39;vehicle-import-input&#39;).click()">⬆ Import CSV</button><button class="action-btn action-btn-sm admin-only" id="btn-add-vehicle" style="display:none" onclick="openModal(&#39;modal-vehicle&#39;,&#39;new&#39;)">+ Add Vehicle</button></div></div>
-            <table class="data-table">
-              <thead><tr><th>Unit #</th><th>Vehicle</th><th>VIN / Plate</th><th>Assigned Driver</th><th>Status</th><th>Insurance</th><th>Registration</th><th></th></tr></thead>
-              <tbody id="vehicles-table"><tr><td colspan="8"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="dash-pay" class="dash-section">
-          <div class="dash-grid-2">
-            <div class="panel">
-              <div class="panel-header"><div class="panel-title">Log a Load (Driver Pay)</div></div>
-              <div class="panel-body">
-                <div class="form-group"><div class="form-label">Driver</div><select class="form-input" id="pay-driver"><option value="">— Select Driver —</option></select></div>
-                <div class="form-group"><div class="form-label">Route</div><select class="form-input" id="pay-route" onchange="onPayRouteChange()"><option value="">— Select Route —</option></select></div>
-                <div class="form-group"><div class="form-label">Date</div><input class="form-input" type="date" id="pay-date"></div>
-                <div class="form-group"><div class="form-label">Rate ($)</div><input class="form-input" type="number" step="0.01" id="pay-rate" placeholder="0.00"></div>
-                <div class="form-group"><div class="form-label">Deduction ($, optional)</div><input class="form-input" type="number" step="0.01" id="pay-deduction" placeholder="0.00"></div>
-                <div class="form-group"><div class="form-label">Load Ref (optional)</div><input class="form-input" id="pay-load-ref" placeholder="BE-2026-1234"></div>
-                <div class="form-group"><div class="form-label">Note (optional)</div><input class="form-input" id="pay-note" placeholder=""></div>
-                <button class="action-btn" style="width:100%;justify-content:center" onclick="logPayLoad()">+ Log Load</button>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-header"><div class="panel-title">Pay Period</div><button class="action-btn action-btn-sm" onclick="loadPaySummary()">↻ Refresh</button></div>
-              <div class="panel-body">
-                <div id="pay-period-label" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:14px">Loading...</div>
-                <div style="display:flex;gap:16px">
-                  <div style="flex:1"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Current Period Total</div><div style="font-family:var(--display);font-size:26px;font-weight:800;color:var(--gold)" id="pay-period-total">—</div></div>
-                  <div style="flex:1"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase" id="pay-year-label">YTD Total</div><div style="font-family:var(--display);font-size:26px;font-weight:800" id="pay-ytd-total">—</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Driver Pay — Current Period &amp; Year to Date</div></div>
-            <table class="data-table">
-              <thead><tr><th>Driver</th><th>Loads (Period)</th><th>Period Total</th><th>YTD Total</th></tr></thead>
-              <tbody id="pay-driver-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Recent Loads</div></div>
-            <table class="data-table">
-              <thead><tr><th>Date</th><th>Driver</th><th>Route</th><th>Rate</th><th>Deduction</th><th>Net</th><th>Ref</th></tr></thead>
-              <tbody id="pay-loads-table"><tr><td colspan="7"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Routes</div><div style="display:flex;gap:8px"><input type="file" id="import-route-file" accept=".csv" style="display:none" onchange="handleRouteImport(this)"><button class="action-btn-neutral action-btn-sm" onclick="downloadRouteTemplate()">⬇ Template</button><button class="action-btn-neutral action-btn-sm" onclick="document.getElementById(&#39;import-route-file&#39;).click()">⬆ Import Routes</button><button class="action-btn action-btn-sm" onclick="openRouteModal()">+ Add Route</button></div></div>
-            <div class="panel-body">
-              <table class="data-table">
-                <thead><tr><th>Route</th><th>Customer</th><th>Pay Rate</th><th>Pickup</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
-                <tbody id="routes-table"><tr><td colspan="7"><div class="loading">Loading...</div></td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div id="dash-hours" class="dash-section">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Driver Hours</div><div style="display:flex;align-items:center;gap:10px"><input class="form-input" type="date" id="hours-date" style="width:160px" onchange="loadDriverHours()"><span style="font-size:11px;color:var(--text3)">Auto-tracked via warehouse geofence</span></div></div>
-            <table class="data-table">
-              <thead><tr><th>Driver</th><th>Clock In</th><th>Clock Out</th><th>Hours</th><th>Status</th></tr></thead>
-              <tbody id="hours-table"><tr><td colspan="5"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="dash-team" class="dash-section">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Team Accounts</div><button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-team&#39;,&#39;new&#39;)">+ Invite Teammate</button></div>
-            <table class="data-table">
-              <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th></tr></thead>
-              <tbody id="team-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="dash-activity" class="dash-section">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Activity Log</div><button class="action-btn action-btn-sm" onclick="loadActivityLog()">↻ Refresh</button></div>
-            <table class="data-table">
-              <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th></tr></thead>
-              <tbody id="activity-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modal-team">
-  <div class="modal">
-    <div class="modal-title">Invite Teammate</div>
-    <div class="form-group"><div class="form-label">Full Name</div><input class="form-input" id="tm-name" placeholder="Jane Doe"></div>
-    <div class="form-group"><div class="form-label">Email (for login)</div><input class="form-input" type="email" id="tm-email" placeholder="jane@bashkaexpress.com"></div>
-    <div class="form-group"><div class="form-label">Phone</div><input class="form-input" id="tm-phone" placeholder="(651) 555-0100"></div>
-    <div class="form-group"><div class="form-label">Role</div>
-      <select class="form-input" id="tm-role">
-        <option value="dispatcher">Dispatcher</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal(&#39;modal-team&#39;)">Cancel</button>
-      <button class="btn-save" onclick="saveTeammate()">Send Invite</button>
+    <div class="insp-footer">
+      <button class="btn-action btn-secondary" style="flex:1" onclick="closeInspection()">Cancel</button>
+      <button class="btn-action btn-primary" style="flex:1" id="insp-submit-btn" onclick="submitInspection()">Save Inspection</button>
     </div>
   </div>
 </div>
@@ -671,142 +224,67 @@ select.form-input{appearance:none}
 const SUPABASE_URL='https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SUPABASE_KEY='sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const CREATE_DRIVER_FN=SUPABASE_URL+'/functions/v1/create-driver';
-const INVITE_TEAMMATE_FN=SUPABASE_URL+'/functions/v1/invite-teammate';
-const INVITE_DRIVER_FN=SUPABASE_URL+'/functions/v1/invite-driver';
-let currentUser=null,allDrivers=[],shipFilter='all',inRecovery=false,resetEmail='',myRole=null;
-let leafletMap=null,driverMarkers={},truckMarkers={},jobMarkers=[],mapPollInterval=null,truckTruePositions=[];
-sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){inRecovery=true;document.getElementById('login-screen').style.display='none';document.getElementById('sys-bar').style.display='none';document.getElementById('screen-site').style.display='none';document.getElementById('screen-dash').style.display='none';document.getElementById('recovery-screen').style.display='flex';}else if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&currentUser&&session?.user&&session.user.id!==currentUser.id){location.reload();}else if(event==='SIGNED_OUT'&&currentUser){location.reload();}});
+const GEOFENCE_RADIUS=300;
+const WAREHOUSE_LAT=44.998623,WAREHOUSE_LNG=-93.2363025,WAREHOUSE_GEOFENCE_M=152,WAREHOUSE_EXIT_BUFFER_M=100;
+let currentUser=null,driverRecord=null,myJobs=[],watchId=null,myLat=null,myLng=null,geofenceTriggered={},currentShiftId=null;
+const PRETRIP_CHECKLIST=['Tires & Wheels','Windshield & Wipers','Brakes','Coupling Devices','Lights & Reflectors','Emergency Equipment','Steering','Exhaust System','Suspension','Belts & Hoses','Mirrors','Battery','Fluid Levels','Leaks / Other Issues','Horn'];
+let insp={jobId:null,type:null,photos:[],checklist:[]},inspectionsDone=new Set();
 function toast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
-function togglePwVis(id,btn){const el=document.getElementById(id);if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁';}}window.togglePwVis=togglePwVis;async function doLogin(){const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const btn=document.getElementById('login-btn');const err=document.getElementById('login-err');err.style.display='none';btn.disabled=true;btn.textContent='Signing in...';const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Sign In';}else{onLogin(data.user);}}
-async function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('recovery-screen').style.display='none';document.getElementById('sys-bar').style.display='flex';document.getElementById('user-email-display').textContent=user.email.split('@')[0];document.getElementById('sidebar-user').textContent=user.email.split('@')[0];const{data:profile}=await sb.from('profiles').select('role,full_name').eq('id',user.id).maybeSingle();myRole=profile?.role||null;if(profile?.full_name){document.getElementById('sidebar-user').textContent=profile.full_name;}applyRoleUI();showScreen('dash');refreshAll();initMarquee();loadSiteStats();}
-function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll('.admin-only').forEach(el=>{el.style.display=isAdmin?'':'none';});}
-async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
-async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});}
-function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log'};
-function showDash(n,b){document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
-window.showScreen=showScreen;window.showDash=showDash;
-function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-window.openModal=openModal;window.closeModal=closeModal;
-function stTag(s){const m={in_transit:['tag-gold','In Transit'],delivered:['tag-green','Delivered'],pending:['tag-red','Pending'],assigned:['tag-blue','Assigned'],active:['tag-green','Active'],off_duty:['tag-muted','Off Duty'],on_leave:['tag-orange','On Leave'],cancelled:['tag-red','Cancelled'],failed:['tag-red','Failed'],maintenance:['tag-orange','Maintenance'],out_of_service:['tag-red','Out of Service']};const[c,l]=m[s]||['tag-muted',s];return `<span class="tag ${c}">${l}</span>`;}
-const LATE_GRACE_MINUTES=20;
-function isJobLate(job){const now=Date.now();if(job.status==='assigned'&&job.scheduled_time){return now-new Date(job.scheduled_time).getTime()>LATE_GRACE_MINUTES*60000;}if(job.status==='in_transit'&&job.scheduled_delivery_time){return now-new Date(job.scheduled_delivery_time).getTime()>LATE_GRACE_MINUTES*60000;}return false;}
-function lateBadge(job){return isJobLate(job)?'<span class="tag tag-red" style="margin-left:5px" title="Past scheduled time">⏰ Late</span>':'';}
-function pTag(p){if(p==='urgent')return'<span class="tag tag-red">Urgent</span>';if(p==='high')return'<span class="tag tag-orange">High</span>';return'<span class="tag tag-muted">Normal</span>';}
-async function loadOverview(){const[{count:dCount},{count:sCount},{count:pCount}]=await Promise.all([sb.from('drivers').select('*',{count:'exact',head:true}).eq('status','active'),sb.from('jobs').select('*',{count:'exact',head:true}),sb.from('jobs').select('*',{count:'exact',head:true}).eq('status','pending')]);document.getElementById('kpi-drivers').textContent=dCount??'—';document.getElementById('kpi-shipments').textContent=sCount??'—';document.getElementById('kpi-pending').textContent=pCount??'—';const{data:lateCheckRows}=await sb.from('jobs').select('status,scheduled_time,scheduled_delivery_time').in('status',['assigned','in_transit']);const lateCount=(lateCheckRows||[]).filter(isJobLate).length;document.getElementById('kpi-late').textContent=lateCount;const{data:custRows}=await sb.from('jobs').select('customer_name,customer_email,customer_phone');const custSet=new Set((custRows||[]).map(c=>c.customer_email||c.customer_phone||c.customer_name));document.getElementById('kpi-customers').textContent=custSet.size;const{data:recentJobs}=await sb.from('jobs').select('job_number,status,customer_name').order('created_at',{ascending:false}).limit(5);document.getElementById('overview-shipments').innerHTML=recentJobs?.length?recentJobs.map(s=>`<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${s.job_number}</span></td><td class="td-primary">${s.customer_name||'—'}</td><td>${stTag(s.status)}</td></tr>`).join(''):'<tr><td colspan="3"><div class="empty">No shipments yet</div></td></tr>';const{data:drivers}=await sb.from('drivers').select('full_name,status,id').order('full_name').limit(8);allDrivers=drivers||[];document.getElementById('overview-drivers').innerHTML=drivers?.length?drivers.map(d=>`<div class="driver-item"><div class="driver-avatar">${(d.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}</div><div><div class="driver-name">${d.full_name}</div></div><div class="driver-status">${stTag(d.status)}</div></div>`).join(''):'<div class="empty">No drivers yet</div>';}
-async function loadShipments(){document.getElementById('shipments-table').innerHTML='<tr><td colspan="7"><div class="loading">Loading...</div></td></tr>';let q=sb.from('jobs').select('id,job_number,status,priority,pickup_address,drop_address,customer_name,route_id,auto_generated,assigned_by_name,assigned_at,scheduled_time,scheduled_delivery_time,drivers(full_name)').order('created_at',{ascending:false});if(shipFilter!=='all')q=q.eq('status',shipFilter);const{data,error}=await q;if(error){toast('Error loading shipments: '+error.message,'error');return;}document.getElementById('ship-filters').innerHTML=[['all','All'],['pending','Pending'],['assigned','Assigned'],['in_transit','Transit'],['delivered','Delivered']].map(([v,l])=>`<button class="filter-tab ${v===shipFilter?'active':''}" onclick="setShipFilter('${v}',this)">${l}</button>`).join('');document.getElementById('shipments-table').innerHTML=data?.length?data.map(s=>`<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${s.job_number}</span>${s.auto_generated?' <span style="font-size:9px;background:#374151;color:#9ca3af;padding:2px 5px;border-radius:4px;">AUTO</span>':''}</td><td class="td-primary">${s.customer_name||'—'}</td><td style="color:${s.drivers?.full_name?'var(--text2)':'var(--red)'}">${s.drivers?.full_name||'Unassigned'}${s.assigned_by_name?`<div style="font-size:9px;color:var(--text3);margin-top:2px">by ${escHtml(s.assigned_by_name)}${s.assigned_at?' · '+new Date(s.assigned_at).toLocaleDateString():''}</div>`:''}</td><td style="font-size:12px;color:var(--text3)">${s.pickup_address||'—'} → ${s.drop_address||'—'}</td><td>${pTag(s.priority)}</td><td>${stTag(s.status)}${lateBadge(s)}</td><td>${!s.drivers?.full_name?`<button class="action-btn" onclick="openAssignModal('${s.id}')">Assign</button>`:''}<button class="action-btn-neutral" onclick="openInspectionsModal('${s.id}','${(s.job_number||'').replace(/'/g,"\\'")}')">📸 Inspections</button><button class="action-btn-danger" onclick="deleteShipment('${s.id}')">Delete</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty">No shipments found</div></td></tr>';}
+async function doLogin(){const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const btn=document.getElementById('login-btn');const err=document.getElementById('login-err');err.style.display='none';btn.disabled=true;btn.textContent='Signing in...';const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Sign In';}else{onLogin(data.user);}}
+async function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('driver-name-pill').textContent=user.email.split('@')[0];const{data:driver,error}=await sb.from('drivers').select('*').eq('profile_id',user.id).maybeSingle();if(error||!driver){toast('No driver profile linked to this account','error');return;}driverRecord=driver;await loadOpenShift();startGPS();loadJobs();setInterval(loadJobs,30000);}
+async function loadOpenShift(){if(!driverRecord)return;try{const{data}=await sb.from('driver_shifts').select('id').eq('driver_id',driverRecord.id).is('clock_out_at',null).order('clock_in_at',{ascending:false}).limit(1).maybeSingle();currentShiftId=data?data.id:null;}catch(e){currentShiftId=null;}}
+async function clockIn(lat,lng){if(!driverRecord||currentShiftId)return;try{const{data,error}=await sb.from('driver_shifts').insert({driver_id:driverRecord.id,clock_in_lat:lat,clock_in_lng:lng}).select('id').single();if(!error&&data){currentShiftId=data.id;toast('🕐 Clocked in — welcome to the warehouse!');}}catch(e){}}
+async function clockOut(lat,lng){if(!currentShiftId)return;const shiftId=currentShiftId;currentShiftId=null;try{const{error}=await sb.from('driver_shifts').update({clock_out_at:new Date().toISOString(),clock_out_lat:lat,clock_out_lng:lng}).eq('id',shiftId);if(!error)toast('🕐 Clocked out — see you next time!');}catch(e){}}
+function checkWarehouseGeofence(lat,lng){if(!driverRecord)return;const dist=getDistance(lat,lng,WAREHOUSE_LAT,WAREHOUSE_LNG);if(dist<=WAREHOUSE_GEOFENCE_M){if(!currentShiftId)clockIn(lat,lng);}else if(dist>WAREHOUSE_GEOFENCE_M+WAREHOUSE_EXIT_BUFFER_M){if(currentShiftId)clockOut(lat,lng);}}
+async function doLogout(){if(watchId)navigator.geolocation.clearWatch(watchId);currentShiftId=null;await sb.auth.signOut();document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
+function startGPS(){if(!navigator.geolocation){document.getElementById('gps-pill').textContent='❌ No GPS';return;}document.getElementById('gps-pill').innerHTML='📍 Connecting...';watchId=navigator.geolocation.watchPosition(onPosition,onGPSError,{enableHighAccuracy:true,maximumAge:10000,timeout:15000});}
+function onPosition(pos){myLat=pos.coords.latitude;myLng=pos.coords.longitude;const acc=Math.round(pos.coords.accuracy);document.getElementById('gps-pill').innerHTML='📍 GPS Live';document.getElementById('gps-pill').style.color='var(--green)';document.getElementById('map-coords').textContent=`${myLat.toFixed(5)}, ${myLng.toFixed(5)}`;document.getElementById('map-accuracy').textContent=`±${acc}m`;document.getElementById('status-dot').style.background='var(--green)';document.getElementById('status-label').textContent='ON DUTY';document.getElementById('status-label').style.color='var(--green)';saveLocation(myLat,myLng,acc);checkGeofences();checkWarehouseGeofence(myLat,myLng);}
+function onGPSError(){document.getElementById('gps-pill').innerHTML='❌ GPS Error';document.getElementById('map-coords').textContent='GPS unavailable';}
+async function saveLocation(lat,lng,accuracy){if(!driverRecord)return;try{await sb.from('drivers').update({current_lat:lat,current_lng:lng,last_ping:new Date().toISOString()}).eq('id',driverRecord.id);await sb.from('location_pings').insert({driver_id:driverRecord.id,lat,lng,accuracy_m:accuracy,timestamp:new Date().toISOString()});}catch(e){}}
+function getDistance(lat1,lng1,lat2,lng2){const R=6371000;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+async function checkGeofences(){if(!myLat||!myLng||!myJobs.length)return;for(const job of myJobs){if(job.status==='delivered'||job.status==='cancelled'||job.status==='failed')continue;if(job.pickup_lat&&job.pickup_lng&&!geofenceTriggered[job.id+'_pickup']){const dist=getDistance(myLat,myLng,job.pickup_lat,job.pickup_lng);if(dist<=GEOFENCE_RADIUS){geofenceTriggered[job.id+'_pickup']=true;triggerGeofence(job,'pickup');}}if(job.drop_lat&&job.drop_lng&&!geofenceTriggered[job.id+'_dropoff']&&job.status==='in_transit'){const dist=getDistance(myLat,myLng,job.drop_lat,job.drop_lng);if(dist<=GEOFENCE_RADIUS){geofenceTriggered[job.id+'_dropoff']=true;triggerGeofence(job,'dropoff');}}}}
+async function triggerGeofence(job,type){const isPickup=type==='pickup';const alertEl=document.getElementById('geofence-alert');document.getElementById('geofence-title').textContent=isPickup?'📍 Arrived at Pickup':'🏁 Arrived at Delivery';document.getElementById('geofence-sub').textContent=isPickup?`Auto-logged for ${job.job_number}`:`Auto-logged delivery for ${job.job_number}`;alertEl.style.display='flex';if(isPickup&&job.status==='assigned'){await updateJobStatus(job.id,'in_transit');}else if(!isPickup&&job.status==='in_transit'){await updateJobStatus(job.id,'delivered');}toast(isPickup?'✓ Pickup arrival logged automatically!':'✓ Delivery arrival logged automatically!');setTimeout(()=>{alertEl.style.display='none';},8000);}
+async function loadJobs(){if(!driverRecord)return;const{data,error}=await sb.from('jobs').select('*').eq('assigned_driver',driverRecord.id).not('status','in','(delivered,cancelled,failed)').order('created_at',{ascending:true});myJobs=data||[];await loadInspectionStatus();renderJobs();}
+async function loadInspectionStatus(){if(!myJobs.length){inspectionsDone=new Set();return;}const ids=myJobs.map(j=>j.id);const{data}=await sb.from('trip_inspections').select('job_id,type').in('job_id',ids);inspectionsDone=new Set((data||[]).map(r=>r.job_id+'_'+r.type));}
+function inspRow(job){const phase=job.status==='assigned'?'pre_trip':job.status==='in_transit'?'post_trip':null;if(!phase)return'';const label=phase==='pre_trip'?'Pre-Trip':'Post-Trip';if(inspectionsDone.has(job.id+'_'+phase)){return `<div class="meta-pill" style="color:var(--green);border-color:rgba(29,185,84,0.3);display:inline-flex;align-items:center;gap:4px;width:fit-content">✓ ${label} Inspection Logged</div>`;}return `<button class="btn-action btn-secondary" style="width:100%" onclick="openInspection('${job.id}','${phase}')">📸 ${label} Inspection</button>`;}
+function openInspection(jobId,type){insp={jobId,type,photos:[],checklist:type==='pre_trip'?PRETRIP_CHECKLIST.map(label=>({label,checked:false})):[]};const job=myJobs.find(j=>j.id===jobId);document.getElementById('insp-title').textContent=type==='pre_trip'?'📸 Pre-Trip Inspection':'📸 Post-Trip Inspection';document.getElementById('insp-sub').textContent='Job '+(job?.job_number||(jobId||'').slice(0,8));document.getElementById('insp-damage').checked=false;document.getElementById('insp-notes').value='';document.getElementById('insp-satisfactory').checked=false;renderInspectionChecklist();renderInspectionPhotos();document.getElementById('insp-overlay').classList.add('open');requestAnimationFrame(setupSignatureCanvas);}
+function renderInspectionChecklist(){const c=document.getElementById('insp-checklist');if(!insp.checklist.length){c.innerHTML='';return;}c.innerHTML=insp.checklist.map((item,i)=>`<label class="checklist-item"><input type="checkbox" ${item.checked?'checked':''} onchange="toggleChecklistItem(${i})">${escHtml(item.label)}</label>`).join('');}
+function toggleChecklistItem(i){insp.checklist[i].checked=!insp.checklist[i].checked;}
+let sigCtx=null,sigDrawing=false,sigHasContent=false,sigLastX=0,sigLastY=0;
+function setupSignatureCanvas(){const canvas=document.getElementById('insp-sig-canvas');if(!canvas)return;const rect=canvas.getBoundingClientRect();const dpr=window.devicePixelRatio||1;canvas.width=Math.max(rect.width,1)*dpr;canvas.height=Math.max(rect.height,1)*dpr;const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.strokeStyle='#E8EDF8';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';sigCtx=ctx;sigHasContent=false;}
+function sigPos(e){const canvas=document.getElementById('insp-sig-canvas');const rect=canvas.getBoundingClientRect();return{x:e.clientX-rect.left,y:e.clientY-rect.top};}
+function sigStart(e){if(!sigCtx)return;e.preventDefault();sigDrawing=true;const p=sigPos(e);sigLastX=p.x;sigLastY=p.y;}
+function sigMove(e){if(!sigDrawing||!sigCtx)return;e.preventDefault();const p=sigPos(e);sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLastX=p.x;sigLastY=p.y;sigHasContent=true;}
+function sigEnd(){sigDrawing=false;}
+function clearSignature(){const canvas=document.getElementById('insp-sig-canvas');if(!canvas||!sigCtx)return;sigCtx.clearRect(0,0,canvas.width,canvas.height);sigHasContent=false;}
+function closeInspection(){document.getElementById('insp-overlay').classList.remove('open');insp.photos.forEach(p=>URL.revokeObjectURL(p.url));insp={jobId:null,type:null,photos:[],checklist:[]};}
+function compressImage(file){return new Promise(resolve=>{const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const maxDim=1600;let w=img.width,h=img.height;if(w>h&&w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}else if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);canvas.toBlob(blob=>resolve(blob||file),'image/jpeg',0.75);};img.onerror=()=>resolve(file);img.src=e.target.result;};reader.onerror=()=>resolve(file);reader.readAsDataURL(file);});}
+async function handleInspectionFiles(fileList){const files=Array.from(fileList||[]);for(const f of files){if(insp.photos.length>=6){toast('Max 6 photos per inspection','error');break;}const blob=await compressImage(f);insp.photos.push({blob,url:URL.createObjectURL(blob)});}document.getElementById('insp-file-input').value='';renderInspectionPhotos();}
+function removeInspectionPhoto(idx){URL.revokeObjectURL(insp.photos[idx].url);insp.photos.splice(idx,1);renderInspectionPhotos();}
+function renderInspectionPhotos(){const grid=document.getElementById('insp-photo-grid');let html=insp.photos.map((p,i)=>`<div class="photo-thumb"><img src="${p.url}"><button class="photo-remove" onclick="removeInspectionPhoto(${i})">✕</button></div>`).join('');if(insp.photos.length<6){html+=`<div class="photo-add" onclick="document.getElementById('insp-file-input').click()"><div style="font-size:22px">📷</div>Add Photo</div>`;}grid.innerHTML=html;}
+async function submitInspection(){if(!insp.jobId||!driverRecord)return;if(!sigHasContent){toast('Please sign to confirm the inspection','error');return;}const btn=document.getElementById('insp-submit-btn');btn.disabled=true;btn.textContent='Saving...';try{const paths=[];for(let i=0;i<insp.photos.length;i++){const path=`${insp.jobId}/${insp.type}/${Date.now()}_${i}.jpg`;const{error:upErr}=await sb.storage.from('inspection-photos').upload(path,insp.photos[i].blob,{contentType:'image/jpeg'});if(upErr)throw upErr;paths.push(path);}const sigCanvas=document.getElementById('insp-sig-canvas');const sigBlob=await new Promise(resolve=>sigCanvas.toBlob(resolve,'image/png'));if(sigBlob){const sigPath=`${insp.jobId}/${insp.type}/signature_${Date.now()}.png`;const{error:sigErr}=await sb.storage.from('inspection-photos').upload(sigPath,sigBlob,{contentType:'image/png'});if(sigErr)throw sigErr;paths.push(sigPath);}const checklistText=insp.checklist.length?'Checklist: '+insp.checklist.map(item=>(item.checked?'✓':'✗')+' '+item.label).join(', '):'';const satisfactoryText='Condition of vehicle satisfactory: '+(document.getElementById('insp-satisfactory').checked?'Yes':'No');const userNotes=document.getElementById('insp-notes').value.trim();const combinedNotes=[checklistText,satisfactoryText,userNotes].filter(Boolean).join('\n')||null;const{error}=await sb.from('trip_inspections').insert({job_id:insp.jobId,driver_id:driverRecord.id,type:insp.type,photos:paths,notes:combinedNotes,has_damage:document.getElementById('insp-damage').checked});if(error)throw error;inspectionsDone.add(insp.jobId+'_'+insp.type);toast('✓ Inspection saved');closeInspection();renderJobs();}catch(e){toast('Error: '+(e.message||e),'error');btn.disabled=false;btn.textContent='Save Inspection';}}
+function renderJobs(){const sub=document.getElementById('jobs-sub');const activeContainer=document.getElementById('active-job-container');const listContainer=document.getElementById('jobs-list');if(!myJobs.length){sub.textContent='No active jobs assigned';activeContainer.innerHTML='';listContainer.innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>No jobs assigned yet</div><div>Check back soon</div></div>`;return;}sub.textContent=`${myJobs.length} job${myJobs.length>1?'s':''} assigned`;const active=myJobs.find(j=>j.status==='in_transit')||myJobs[0];activeContainer.innerHTML=renderJobCard(active,true);const others=myJobs.filter(j=>j.id!==active.id);listContainer.innerHTML=others.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Also Assigned</div>`+others.map(j=>renderJobCard(j,false)).join(''):'';}
+function renderJobCard(job,isActive){const pTag=job.priority==='urgent'?'<span class="tag tag-red">Urgent</span>':job.priority==='high'?'<span class="tag tag-orange">High</span>':'<span class="tag tag-muted">Normal</span>';let actions='';if(job.status==='assigned'){actions=`<div class="action-row"><button class="btn-action btn-primary" onclick="startJob('${job.id}')">✅ Accept Job</button><button class="btn-action btn-secondary" onclick="openMaps('${(job.pickup_address||'').replace(/'/g,"\\'")}')">🗺️ Navigate</button></div>`;}else if(job.status==='in_transit'){actions=`<div class="action-row"><button class="btn-action btn-green" onclick="completeJob('${job.id}')">✅ Mark Delivered</button><button class="btn-action btn-secondary" onclick="openMaps('${(job.drop_address||'').replace(/'/g,"\\'")}')">🗺️ Navigate</button></div>`;}return `<div class="job-card job-${job.priority||'normal'}" style="margin-bottom:12px"><div class="job-header"><span class="job-id">${job.job_number||job.id?.slice(0,8)}</span>${stTagFn(job.status)}</div><div class="job-body"><div class="route-display"><div class="route-point"><div class="route-label">Pickup</div><div class="route-addr">${job.pickup_address||'—'}</div></div><div class="route-arrow">→</div><div class="route-point"><div class="route-label">Dropoff</div><div class="route-addr">${job.drop_address||'—'}</div></div></div><div class="job-meta">${pTag}<span class="meta-pill" style="color:var(--text2)">${job.customer_name||'Customer'}</span>${job.scheduled_time?`<span class="meta-pill" style="color:var(--text3)">🕐 ${new Date(job.scheduled_time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>${actions}${inspRow(job)}</div></div>`;}
+function stTagFn(s){const m={in_transit:['tag-gold','In Transit'],assigned:['tag-blue','Assigned'],pending:['tag-muted','Pending'],delivered:['tag-green','Delivered']};const[c,l]=m[s]||['tag-muted',s];return `<span class="tag ${c}">${l}</span>`;}
+async function startJob(id){await updateJobStatus(id,'in_transit');toast('Job started — safe driving!');loadJobs();}
+async function completeJob(id){if(!confirm('Mark this shipment as delivered?'))return;await updateJobStatus(id,'delivered');toast('✅ Delivery confirmed!');loadJobs();loadHistory();}
+async function updateJobStatus(id,status){const patch={status};if(status==='in_transit')patch.picked_up_at=new Date().toISOString();if(status==='delivered')patch.delivered_at=new Date().toISOString();const{error}=await sb.from('jobs').update(patch).eq('id',id);if(error)toast('Error: '+error.message,'error');else loadJobs();}
+function openMaps(address){if(!address)return;window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`,'_blank');}
+async function loadHistory(){if(!driverRecord)return;const{data}=await sb.from('jobs').select('*').eq('assigned_driver',driverRecord.id).eq('status','delivered').order('delivered_at',{ascending:false}).limit(20);const el=document.getElementById('history-list');if(!data?.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>No deliveries yet</div></div>`;return;}el.innerHTML=data.map(j=>`<div class="history-item"><div class="history-icon">✅</div><div class="history-main"><div class="history-id">${j.job_number||j.id?.slice(0,8)}</div><div class="history-route">${j.pickup_address||'—'} → ${j.drop_address||'—'}</div><div class="history-time">${j.customer_name||'—'} · ${j.delivered_at?new Date(j.delivered_at).toLocaleDateString():''}</div></div><span class="tag tag-green">Done</span></div>`).join('');}
+function loadProfile(){const el=document.getElementById('profile-body');if(!driverRecord){el.innerHTML='<div class="loading">Loading...</div>';return;}el.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"><div style="width:52px;height:52px;border-radius:50%;background:var(--gold-glow);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:20px;font-weight:800;color:var(--gold)">${(driverRecord.full_name||'DR').split(' ').map(n=>n[0]).join('').slice(0,2)}</div><div><div style="font-family:var(--display);font-size:18px;font-weight:700">${driverRecord.full_name||'Driver'}</div><div style="font-size:12px;color:var(--text3);font-family:var(--mono)">${currentUser?.email||''}</div></div></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-family:var(--mono);font-size:11px">STATUS</span><span>${stTagFn(driverRecord.status||'active')}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-family:var(--mono);font-size:11px">LICENSE</span><span style="font-family:var(--mono);font-size:12px">${driverRecord.license_number||'—'}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0"><span style="color:var(--text3);font-family:var(--mono);font-size:11px">PHONE</span><span>${driverRecord.phone||'—'}</span></div></div>`;}
+function switchTab(tab){['jobs','history','truck','profile','pay'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'block':'none';document.getElementById('nav-'+t).classList.toggle('active',t===tab);});if(tab==='history')loadHistory();if(tab==='profile')loadProfile();if(tab==='truck')loadTruck();if(tab==='pay')loadPay();}
 function escHtml(s){return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async function openInspectionsModal(jobId,jobNumber){document.getElementById('insp-modal-title').textContent='Trip Inspections — '+(jobNumber||jobId.slice(0,8));const body=document.getElementById('insp-modal-body');body.innerHTML='<div class="loading">Loading...</div>';document.getElementById('modal-inspections').classList.add('open');const{data,error}=await sb.from('trip_inspections').select('*,drivers(full_name)').eq('job_id',jobId).order('created_at',{ascending:true});if(error){body.innerHTML='<div class="empty">Error: '+escHtml(error.message)+'</div>';return;}if(!data?.length){body.innerHTML='<div class="empty">No inspections logged for this shipment yet.</div>';return;}body.innerHTML=data.map(r=>{const photos=(r.photos||[]).map(p=>{const url=sb.storage.from('inspection-photos').getPublicUrl(p).data.publicUrl;return `<a href="${url}" target="_blank" rel="noopener"><img class="insp-photo" src="${url}"></a>`;}).join('');return `<div class="insp-card"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-family:var(--display);font-weight:700;font-size:14px">${r.type==='pre_trip'?'🚦 Pre-Trip':'🏁 Post-Trip'}</div>${r.has_damage?'<span class="tag tag-red">⚠ Damage Reported</span>':'<span class="tag tag-green">No Damage</span>'}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(r.drivers?.full_name||'Driver')} · ${new Date(r.created_at).toLocaleString()}</div>${r.notes?`<div style="font-size:13px;color:var(--text2)">${escHtml(r.notes)}</div>`:''}${photos?`<div style="display:flex;gap:8px;flex-wrap:wrap">${photos}</div>`:'<div style="font-size:12px;color:var(--text3)">No photos attached</div>'}</div>`;}).join('');}
-window.openInspectionsModal=openInspectionsModal;
-function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T00:00:00')-new Date(new Date().toDateString());return Math.round(ms/86400000);}
-function expiryBadge(dateStr){if(!dateStr)return '<span class="tag tag-muted">No Record</span>';const d=daysUntil(dateStr);if(d<0)return '<span class="tag tag-red">Expired</span>';if(d<=30)return `<span class="tag tag-orange">${d}d left</span>`;return `<span class="tag tag-green">${new Date(dateStr+'T00:00:00').toLocaleDateString()}</span>`;}
 function docTypeLabel(t){return {insurance:'Insurance',registration:'Registration',dot_inspection:'DOT Inspection',other:'Document'}[t]||t;}
-async function loadVehicles(){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="8"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('vehicles').select('*,drivers(full_name)').order('unit_number');if(error){document.getElementById('vehicles-table').innerHTML=`<tr><td colspan="8"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;document.getElementById('vehicles-alert').innerHTML='';return;}const vehicles=data||[];if(!vehicles.length){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="8"><div class="empty">No vehicles added yet</div></td></tr>';document.getElementById('vehicles-alert').innerHTML='';return;}const ids=vehicles.map(v=>v.id);const{data:docs}=await sb.from('vehicle_documents').select('*').in('vehicle_id',ids).order('created_at',{ascending:false});const current={};(docs||[]).forEach(d=>{current[d.vehicle_id]=current[d.vehicle_id]||{};if(!current[d.vehicle_id][d.doc_type])current[d.vehicle_id][d.doc_type]=d;});const alerts=[];(docs||[]).forEach(d=>{if(!d.expires_at)return;const days=daysUntil(d.expires_at);if(days<=30){const v=vehicles.find(v=>v.id===d.vehicle_id);alerts.push({unit:v?.unit_number||'—',type:d.doc_type,days});}});document.getElementById('vehicles-alert').innerHTML=alerts.length?`<div style="background:rgba(217,95,42,0.08);border:1px solid rgba(217,95,42,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--display);font-weight:700;font-size:13px;color:#F08060">⚠ ${alerts.length} document(s) need attention</div>${alerts.map(a=>`<div style="font-size:12px;color:var(--text2)">${escHtml(a.unit)} — ${docTypeLabel(a.type)}: ${a.days<0?'expired':a.days+'d left'}</div>`).join('')}</div>`:'';document.getElementById('vehicles-table').innerHTML=vehicles.map(v=>{const ins=current[v.id]?.insurance;const reg=current[v.id]?.registration;return `<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(v.unit_number)}</span></td><td class="td-primary">${escHtml([v.year,v.make,v.model].filter(Boolean).join(' '))||'—'}</td><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(v.vin||'—')}${v.plate?' · '+escHtml(v.plate):''}</td><td>${escHtml(v.drivers?.full_name||'Unassigned')}</td><td>${stTag(v.status)}</td><td>${expiryBadge(ins?.expires_at)}</td><td>${expiryBadge(reg?.expires_at)}</td><td>${myRole==='admin'?`<button class="action-btn-neutral" onclick="editVehicle('${v.id}')">✎ Edit</button>`:''}<button class="action-btn-neutral" onclick="openVehicleDocsModal('${v.id}','${escHtml(v.unit_number)}')">📄 Docs</button>${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteVehicle('${v.id}')">Delete</button>`:''}</td></tr>`;}).join('');}
-window.editVehicle=async(id)=>{const{data:v,error}=await sb.from('vehicles').select('*').eq('id',id).single();if(error||!v){toast('Error loading vehicle','error');return;}document.getElementById('modal-vehicle-title').textContent='Edit Vehicle';document.getElementById('v-id').value=v.id;document.getElementById('v-unit').value=v.unit_number||'';document.getElementById('v-make').value=v.make||'';document.getElementById('v-model').value=v.model||'';document.getElementById('v-year').value=v.year||'';document.getElementById('v-vin').value=v.vin||'';document.getElementById('v-plate').value=v.plate||'';document.getElementById('v-status').value=v.status||'active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>';sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data){sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sel.value=v.assigned_driver||'';}});document.getElementById('modal-vehicle').classList.add('open');};
-window.deleteVehicle=async(id)=>{if(!confirm('Delete this vehicle and all its documents?'))return;const{error}=await sb.from('vehicles').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Vehicle deleted');logActivity('Deleted vehicle','vehicle',id);loadVehicles();}};
-async function saveVehicle(){const id=document.getElementById('v-id').value||null;const unit=document.getElementById('v-unit').value.trim();if(!unit){toast('Unit number required','error');return;}const payload={unit_number:unit,make:document.getElementById('v-make').value.trim()||null,model:document.getElementById('v-model').value.trim()||null,year:document.getElementById('v-year').value?Number(document.getElementById('v-year').value):null,vin:document.getElementById('v-vin').value.trim()||null,plate:document.getElementById('v-plate').value.trim()||null,assigned_driver:document.getElementById('v-driver').value||null,status:document.getElementById('v-status').value,vehicle_code:unit,type:classifyVehicleType(document.getElementById('v-make').value,document.getElementById('v-model').value)};const btn=document.querySelector('#modal-vehicle .btn-save');if(btn){btn.disabled=true;btn.textContent='Saving...';}const{error}=id?await sb.from('vehicles').update(payload).eq('id',id):await sb.from('vehicles').insert(payload);if(btn){btn.disabled=false;btn.textContent='Save Vehicle';}if(error){toast('Error: '+error.message,'error');return;}toast('Vehicle saved ✓');logActivity(id?'Updated vehicle':'Added vehicle','vehicle',id||null,{unit_number:unit});closeModal('modal-vehicle');loadVehicles();}
-window.saveVehicle=saveVehicle;
-function csvEscape(v){v=v==null?'':String(v);if(/[",\n]/.test(v))return '"'+v.replace(/"/g,'""')+'"';return v;}
-function rowsToCSV(headers,rows){return headers.join(',')+'\n'+rows.map(r=>headers.map(h=>csvEscape(r[h])).join(',')).join('\n');}
-function downloadCSV(filename,content){const blob=new Blob([content],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
-const VEHICLE_CSV_COLS=['unit_number','year','make','model','vin','plate','status','assigned_driver_name'];
-window.exportVehiclesCSV=async function(){const{data,error}=await sb.from('vehicles').select('*,drivers(full_name)').order('unit_number');if(error){toast('Error: '+error.message,'error');return;}const rows=(data||[]).map(v=>({unit_number:v.unit_number,year:v.year||'',make:v.make||'',model:v.model||'',vin:v.vin||'',plate:v.plate||'',status:v.status||'active',assigned_driver_name:v.drivers?.full_name||''}));downloadCSV('bashka-vehicles-'+new Date().toISOString().slice(0,10)+'.csv',rowsToCSV(VEHICLE_CSV_COLS,rows));toast('Exported '+rows.length+' vehicle(s)');};
-window.downloadVehicleTemplate=function(){const sample=[{unit_number:'TRK-101',year:'2020',make:'Freightliner',model:'Cascadia',vin:'1FUJGHDV0LLXXXXXX',plate:'ABC1234',status:'active',assigned_driver_name:'John Smith'}];downloadCSV('bashka-vehicle-import-template.csv',rowsToCSV(VEHICLE_CSV_COLS,sample));toast('Template downloaded — fill it in and use Import CSV. Leave assigned_driver_name blank for unassigned; status can be active, idle, maintenance, or out_of_service.');};
-function classifyVehicleType(make,model){const boxModels=['m2','construction','999','md','anthem','40s','mv607','t680','lt'];const m=(model||'').trim().toLowerCase();return boxModels.includes(m)?'box_truck':'semi';}function parseCSV(text){const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim().length);if(!lines.length)return[];const parseLine=(line)=>{const out=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(inQ){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=c;}else{if(c==='"')inQ=true;else if(c===','){out.push(cur);cur='';}else cur+=c;}}out.push(cur);return out;};const headers=parseLine(lines[0]).map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));return lines.slice(1).map(line=>{const vals=parseLine(line);const row={};headers.forEach((h,i)=>row[h]=(vals[i]??'').trim());return row;});}
-window.handleVehicleImport=async function(input){const file=input.files[0];if(!file)return;const text=await file.text();let rows;try{rows=parseCSV(text);}catch(e){toast('Could not read CSV: '+e.message,'error');input.value='';return;}if(!rows.length){toast('No rows found in CSV','error');input.value='';return;}if(!confirm('Import '+rows.length+' vehicle row(s)? Existing vehicles with a matching Unit # will be updated — new ones will be added.')){input.value='';return;}const[{data:existing},{data:drivers}]=await Promise.all([sb.from('vehicles').select('id,unit_number'),sb.from('drivers').select('id,full_name')]);const existingByUnit={};(existing||[]).forEach(v=>existingByUnit[(v.unit_number||'').trim().toLowerCase()]=v.id);const driverByName={};(drivers||[]).forEach(d=>driverByName[(d.full_name||'').trim().toLowerCase()]=d.id);let created=0,updated=0,failed=0;const unmatchedDrivers=new Set();const errors=[];for(const r of rows){const unit=(r.unit_number||r.unit||'').trim();if(!unit){failed++;errors.push('Row missing unit_number');continue;}let assigned_driver=null;const dname=(r.assigned_driver_name||r.assigned_driver||r.driver||'').trim();if(dname){const match=driverByName[dname.toLowerCase()];if(match)assigned_driver=match;else unmatchedDrivers.add(dname);}const payload={unit_number:unit,year:r.year?Number(r.year):null,make:r.make||null,model:r.model||null,vin:r.vin||null,plate:r.plate||null,status:r.status||'active',assigned_driver,vehicle_code:unit,type:classifyVehicleType(r.make,r.model)};const existingId=existingByUnit[unit.toLowerCase()];const{error}=existingId?await sb.from('vehicles').update(payload).eq('id',existingId):await sb.from('vehicles').insert(payload);if(error){failed++;errors.push(unit+': '+error.message);}else{if(existingId)updated++;else created++;}}input.value='';logActivity('Bulk imported vehicles','vehicle',null,{created,updated,failed});let msg=`Import done: ${created} added, ${updated} updated`+(failed?`, ${failed} failed`:'');if(unmatchedDrivers.size)msg+=`. Driver name(s) not found (added as unassigned): ${[...unmatchedDrivers].join(', ')}`;toast(msg,failed?'error':'success');if(errors.length)console.warn('Vehicle import errors:',errors);loadVehicles();};
-async function openVehicleDocsModal(vehicleId,unitLabel){document.getElementById('vdocs-vehicle-id').value=vehicleId;document.getElementById('vdocs-title').textContent='Documents — '+unitLabel;['vd-number','vd-issued','vd-expires'].forEach(f=>document.getElementById(f).value='');document.getElementById('vd-file').value='';document.getElementById('vd-type').value='insurance';document.getElementById('modal-vehicle-docs').classList.add('open');await loadVehicleDocs(vehicleId);}
-window.openVehicleDocsModal=openVehicleDocsModal;
-async function loadVehicleDocs(vehicleId){const list=document.getElementById('vdocs-list');list.innerHTML='<div class="loading">Loading...</div>';const{data,error}=await sb.from('vehicle_documents').select('*').eq('vehicle_id',vehicleId).order('created_at',{ascending:false});if(error){list.innerHTML='<div class="empty">Error: '+escHtml(error.message)+'</div>';return;}if(!data?.length){list.innerHTML='<div class="empty">No documents uploaded yet</div>';return;}list.innerHTML=data.map(d=>`<div class="insp-card"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-family:var(--display);font-weight:700;font-size:13px">${docTypeLabel(d.doc_type)}${d.doc_number?' · '+escHtml(d.doc_number):''}</div>${expiryBadge(d.expires_at)}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${d.issued_date?'Issued '+new Date(d.issued_date+'T00:00:00').toLocaleDateString():''}${d.expires_at?' · Expires '+new Date(d.expires_at+'T00:00:00').toLocaleDateString():''}</div><div style="display:flex;gap:10px">${d.file_path?`<button class="action-btn-neutral" onclick="viewVehicleDoc('${d.file_path}')">View File</button>`:''}<button class="action-btn-danger" onclick="deleteVehicleDoc('${d.id}','${vehicleId}')">Delete</button></div></div>`).join('');}
-async function viewVehicleDoc(path){const{data,error}=await sb.storage.from('vehicle-documents').createSignedUrl(path,300);if(error){toast('Error: '+error.message,'error');return;}window.open(data.signedUrl,'_blank');}
-window.viewVehicleDoc=viewVehicleDoc;
-window.deleteVehicleDoc=async(id,vehicleId)=>{if(!confirm('Delete this document?'))return;const{error}=await sb.from('vehicle_documents').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Document deleted');loadVehicleDocs(vehicleId);loadVehicles();}};
-async function addVehicleDoc(){const vehicleId=document.getElementById('vdocs-vehicle-id').value;const file=document.getElementById('vd-file').files[0];const btn=document.getElementById('vd-add-btn');btn.disabled=true;btn.textContent='Uploading...';try{let filePath=null;if(file){const ext=(file.name.split('.').pop()||'dat').toLowerCase();filePath=`${vehicleId}/${Date.now()}.${ext}`;const{error:upErr}=await sb.storage.from('vehicle-documents').upload(filePath,file,{contentType:file.type||'application/octet-stream'});if(upErr)throw upErr;}const{error}=await sb.from('vehicle_documents').insert({vehicle_id:vehicleId,doc_type:document.getElementById('vd-type').value,doc_number:document.getElementById('vd-number').value.trim()||null,issued_date:document.getElementById('vd-issued').value||null,expires_at:document.getElementById('vd-expires').value||null,file_path:filePath});if(error)throw error;toast('✓ Document added');['vd-number','vd-issued','vd-expires'].forEach(f=>document.getElementById(f).value='');document.getElementById('vd-file').value='';loadVehicleDocs(vehicleId);loadVehicles();}catch(e){toast('Error: '+(e.message||e),'error');}btn.disabled=false;btn.textContent='Upload Document';}
-window.addVehicleDoc=addVehicleDoc;
-window.setShipFilter=(v,b)=>{shipFilter=v;loadShipments();};
-window.deleteShipment=async(id)=>{if(!confirm('Delete this shipment?'))return;const{error}=await sb.from('jobs').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Shipment deleted');logActivity('Deleted shipment','job',id);loadShipments();loadOverview();}};
-async function loadDrivers(){const{data,error}=await sb.from('drivers').select('*').order('full_name');if(error){toast('Error loading drivers: '+error.message,'error');return;}allDrivers=data||[];document.getElementById('drivers-list').innerHTML=data?.length?data.map(d=>`<div class="driver-item"><div class="driver-avatar">${(d.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}</div><div><div class="driver-name">${d.full_name}</div><div class="driver-sub">${d.phone||'No phone'} · ${d.license_number||'No license'}</div></div><div class="driver-status">${stTag(d.status)}<button class="action-btn-neutral" onclick="editDriver('${d.id}')">Edit</button>${(!d.profile_id&&myRole==='admin')?`<button class="action-btn-neutral" onclick="assignDriverLogin('${d.id}')">🔑 Login</button>`:''}${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteDriver('${d.id}')">✕</button>`:''}</div></div>`).join(''):'<div class="empty">No drivers yet.</div>';const active=data?.filter(d=>d.status==='active').length||0;const off=data?.filter(d=>d.status==='off_duty').length||0;document.getElementById('drivers-stats').innerHTML=`<div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Total Drivers</span><span style="font-weight:600">${data?.length||0}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Active</span><span style="color:var(--green);font-weight:600">${active}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Off Duty</span><span style="color:var(--text3);font-weight:600">${off}</span></div>`;}
-window.deleteDriver=async(id)=>{if(!confirm('Delete this driver?'))return;const{error}=await sb.from('drivers').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Driver deleted');logActivity('Deleted driver','driver',id);loadDrivers();}};
-async function loadTeam(){const{data,error}=await sb.from('profiles').select('*').in('role',['admin','dispatcher']).order('full_name');const tbody=document.getElementById('team-table');if(error){tbody.innerHTML=`<tr><td colspan="4"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}tbody.innerHTML=data?.length?data.map(p=>`<tr><td class="td-primary">${escHtml(p.full_name||'—')}</td><td>${p.role==='admin'?'<span class="tag tag-gold">Admin</span>':'<span class="tag tag-blue">Dispatcher</span>'}</td><td>${escHtml(p.phone||'—')}</td><td>${p.is_active===false?'<span class="tag tag-muted">Inactive</span>':'<span class="tag tag-green">Active</span>'}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty">No team accounts yet</div></td></tr>';}
-async function saveTeammate(){const full_name=document.getElementById('tm-name').value.trim();const email=document.getElementById('tm-email').value.trim();const phone=document.getElementById('tm-phone').value.trim();const role=document.getElementById('tm-role').value;if(!full_name||!email){toast('Name and email are required','error');return;}const{data:{session}}=await sb.auth.getSession();if(!session){toast('Session expired, please sign in again','error');return;}const btn=document.querySelector('#modal-team .btn-save');if(btn){btn.disabled=true;btn.textContent='Sending...';}try{const res=await fetch(INVITE_TEAMMATE_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify({full_name,email,phone,role})});const result=await res.json();if(!res.ok){toast('Error: '+(result.error||'Failed to invite teammate'),'error');if(btn){btn.disabled=false;btn.textContent='Send Invite';}return;}toast('Teammate added — invite sent to '+email+' ✓');logActivity('Invited teammate','profile',null,{full_name,email,role});closeModal('modal-team');loadTeam();sb.auth.resetPasswordForEmail(email).catch(()=>{});}catch(e){toast('Error: '+e.message,'error');}if(btn){btn.disabled=false;btn.textContent='Send Invite';}}
-async function loadActivityLog(){const tbody=document.getElementById('activity-table');tbody.innerHTML='<tr><td colspan="4"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('activity_log').select('*').order('created_at',{ascending:false}).limit(200);if(error){tbody.innerHTML=`<tr><td colspan="4"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}tbody.innerHTML=data?.length?data.map(a=>`<tr><td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${new Date(a.created_at).toLocaleString()}</td><td class="td-primary">${escHtml(a.user_name||'—')}</td><td>${escHtml(a.action||'—')}</td><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${a.details?escHtml(JSON.stringify(a.details)):''}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty">No activity logged yet</div></td></tr>';}
-async function loadCustomers(){const{data,error}=await sb.from('customers').select('*').order('name');if(error){toast('Error loading customers: '+error.message,'error');return;}document.getElementById('customers-table').innerHTML=(data&&data.length)?data.map(c=>`<tr><td class="td-primary">${escHtml(c.name)||'—'}</td><td style="font-family:var(--mono);font-size:11px">${escHtml(c.email)||'—'}</td><td>${escHtml(c.phone)||'—'}</td><td style="font-size:12px;color:var(--text3)">${escHtml(c.city)||'—'}</td><td>${(myRole==='admin'||myRole==='dispatcher')?`<button class="action-btn-danger" onclick="deleteCustomer('${c.id}')">Delete</button>`:''}</td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">No customers yet</div></td></tr>';}
-async function saveCustomer(){const name=document.getElementById('c-name').value.trim();const email=document.getElementById('c-email').value.trim()||null;const phone=document.getElementById('c-phone').value.trim()||null;const city=document.getElementById('c-city').value.trim()||null;if(!name){toast('Customer name required','error');return;}const{error}=await sb.from('customers').insert({name,email,phone,city});if(error){toast('Error: '+error.message,'error');return;}toast('Customer added ✓');closeModal('modal-customer');loadCustomers();}
-window.saveCustomer=saveCustomer;
-window.deleteCustomer=async(id)=>{if(!confirm('Delete this customer?'))return;const{error}=await sb.from('customers').delete().eq('id',id);if(error){toast('Error: '+error.message,'error');return;}toast('Customer deleted ✓');loadCustomers();};
-async function saveDriver(){const id=document.getElementById('d-id').value||null;const full_name=document.getElementById('d-name').value.trim();const phone=document.getElementById('d-phone').value.trim();const license_number=document.getElementById('d-license').value.trim();const status=document.getElementById('d-status').value;if(!full_name){toast('Name is required','error');return;}if(id){const{error}=await sb.from('drivers').update({full_name,phone:phone||null,license_number:license_number||null,status}).eq('id',id);if(error){toast('Error: '+error.message,'error');return;}toast('Driver updated ✓');logActivity('Updated driver','driver',id,{full_name});closeModal('modal-driver');loadDrivers();loadOverview();return;}const email=document.getElementById('d-email').value.trim();if(!email){toast('Email is required for new drivers','error');return;}const{data:{session}}=await sb.auth.getSession();if(!session){toast('Session expired, please sign in again','error');return;}try{const res=await fetch(CREATE_DRIVER_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify({full_name,phone,license_number,status,email})});const result=await res.json();if(!res.ok){toast('Error: '+(result.error||'Failed to create driver'),'error');return;}toast('Driver added — invite sent to '+email+' ✓');logActivity('Added driver','driver',null,{full_name,email});closeModal('modal-driver');loadDrivers();loadOverview();sb.auth.resetPasswordForEmail(email).catch(()=>{});}catch(e){toast('Error: '+e.message,'error');}}
-window.editDriver=(id)=>{const d=(allDrivers||[]).find(x=>x.id===id);if(!d){toast('Driver not found','error');return;}document.getElementById('modal-driver-title').textContent='Edit Driver';document.getElementById('d-id').value=d.id;document.getElementById('d-name').value=d.full_name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-license').value=d.license_number||'';document.getElementById('d-status').value=d.status||'active';document.getElementById('d-email').value='';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='none';document.getElementById('modal-driver').classList.add('open');};
-window.assignDriverLogin=async(id)=>{const d=(allDrivers||[]).find(x=>x.id===id);const email=(prompt('Enter email for '+(d?.full_name||'this driver')+"'s login:")||'').trim();if(!email)return;const{data:{session}}=await sb.auth.getSession();if(!session){toast('Session expired, please sign in again','error');return;}try{const res=await fetch(INVITE_DRIVER_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify({driver_id:id,email})});const result=await res.json();if(!res.ok){toast('Error: '+(result.error||'Failed to assign login'),'error');return;}toast('Login created — invite sent to '+email+' ✓');logActivity('Assigned driver login','driver',id,{email});loadDrivers();sb.auth.resetPasswordForEmail(email).catch(()=>{});}catch(e){toast('Error: '+e.message,'error');}};
-window.saveDriver=saveDriver;
-async function geocode(address){if(!address)return null;try{const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(address+', Minnesota'));const data=await res.json();if(data?.length)return{lat:parseFloat(data[0].lat),lng:parseFloat(data[0].lon)};}catch(e){}return null;}
-async function saveShipment(){const tracking=document.getElementById('s-tracking').value.trim();const customerName=document.getElementById('s-customer').value.trim();const origin=document.getElementById('s-origin').value.trim();const dest=document.getElementById('s-dest').value.trim();const driverId=document.getElementById('s-driver').value||null;const vehicleId=document.getElementById('s-vehicle').value||null;const routeId=document.getElementById('s-route').value||null;const payRate=document.getElementById('s-pay-rate').value||null;const pickup=document.getElementById('s-pickup').value||null;const delivery=document.getElementById('s-delivery').value||null;if(!tracking||!customerName){toast('Tracking # and customer required','error');return;}const saveBtn=document.querySelector('#modal-shipment .btn-save');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Saving...';}const[pickupGeo,dropGeo]=await Promise.all([geocode(origin),geocode(dest)]);const{error}=await sb.from('jobs').insert({job_number:tracking,customer_name:customerName,pickup_address:origin,pickup_lat:pickupGeo?pickupGeo.lat:null,pickup_lng:pickupGeo?pickupGeo.lng:null,drop_address:dest,drop_lat:dropGeo?dropGeo.lat:null,drop_lng:dropGeo?dropGeo.lng:null,assigned_driver:driverId,assigned_vehicle:vehicleId,route_id:routeId,status:driverId?'assigned':'pending',scheduled_time:pickup,scheduled_delivery_time:delivery});if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Save Shipment';}if(error){toast('Error: '+error.message,'error');return;}if(driverId&&routeId&&payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:driverId,p_route_id:routeId,p_date:(pickup?pickup.slice(0,10):new Date().toISOString().slice(0,10)),p_rate:Number(payRate),p_load_ref:tracking,p_note:'Auto-logged from shipment '+tracking});if(payErr){toast('Shipment created, but pay log failed: '+payErr.message,'error');}else{toast('Shipment created ✓ — pay logged');}}else{toast('Shipment created ✓');}logActivity('Created shipment','job',null,{tracking});closeModal('modal-shipment');loadShipments();loadOverview();}window.saveShipment=saveShipment;let assignJobId=null;async function openAssignModal(jobId){assignJobId=jobId;const{data:job,error}=await sb.from('jobs').select('id,job_number,customer_name,route_id').eq('id',jobId).single();if(error){toast('Error loading shipment: '+error.message,'error');return;}document.getElementById('as-tracking').textContent=job.job_number;document.getElementById('as-customer').textContent=job.customer_name||'—';const[{data:driversData},{data:vehiclesData}]=await Promise.all([sb.from('drivers').select('id,full_name').eq('status','active').order('full_name'),sb.from('vehicles').select('id,vehicle_code').order('vehicle_code')]);document.getElementById('as-driver').innerHTML='<option value="">— Select Driver —</option>'+(driversData||[]).map(d=>`<option value="${d.id}">${escHtml(d.full_name)}</option>`).join('');document.getElementById('as-vehicle').innerHTML='<option value="">— Select Truck —</option>'+(vehiclesData||[]).map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');let payRate='';if(job.route_id){const{data:route}=await sb.from('payroll_routes').select('price').eq('id',job.route_id).single();if(route&&route.price!=null)payRate=route.price;}document.getElementById('as-pay-rate').value=payRate;openModal('modal-assign-shipment');}window.openAssignModal=openAssignModal;async function saveAssignment(){const driverId=document.getElementById('as-driver').value||null;const vehicleId=document.getElementById('as-vehicle').value||null;const payRate=document.getElementById('as-pay-rate').value||null;if(!driverId){toast('Select a driver','error');return;}const{data:job,error:jobErr}=await sb.from('jobs').select('job_number,route_id').eq('id',assignJobId).single();if(jobErr){toast('Error: '+jobErr.message,'error');return;}const{error}=await sb.from('jobs').update({assigned_driver:driverId,assigned_vehicle:vehicleId,status:'assigned',assigned_by:currentUser?.id||null,assigned_by_name:document.getElementById('sidebar-user')?.textContent||null,assigned_at:new Date().toISOString()}).eq('id',assignJobId);if(error){toast('Error: '+error.message,'error');return;}if(job.route_id&&payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:driverId,p_route_id:job.route_id,p_date:new Date().toISOString().slice(0,10),p_rate:Number(payRate),p_load_ref:job.job_number,p_note:'Auto-logged from shipment assignment '+job.job_number});if(payErr){toast('Assigned, but pay log failed: '+payErr.message,'error');}else{toast('Shipment assigned ✓ — pay logged');}}else{toast('Shipment assigned ✓');}logActivity('Assigned shipment','job',assignJobId,{});closeModal('modal-assign-shipment');loadShipments();loadOverview();}window.saveAssignment=saveAssignment;
-let payRoutesCacheFull=[];
-function fmtTime12(t){if(!t)return'—';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const h12=h%12||12;return `${h12}:${String(m).padStart(2,'0')} ${ap}`;}
-async function loadRoutesTable(){const{data,error}=await sb.rpc('admin_list_payroll_routes');if(error){toast('Error loading routes: '+error.message,'error');return;}payRoutesCacheFull=data||[];const tbody=document.getElementById('routes-table');if(!tbody)return;tbody.innerHTML=payRoutesCacheFull.length?payRoutesCacheFull.map(r=>`<tr><td class="td-primary">${escHtml(r.name)}</td><td>${escHtml(r.customer_name||'—')}</td><td>${fmtMoneyPay(r.price)}</td><td>${fmtTime12(r.pickup_time)}</td><td>${fmtTime12(r.delivery_time)}</td><td>${r.active!==false?'<span style="color:var(--green)">Active</span>':'<span style="color:var(--text3)">Inactive</span>'}</td><td><button class="action-btn action-btn-sm" onclick="openRouteModal('${r.id}')">Edit</button> <button class="action-btn-neutral action-btn-sm" onclick="deleteRoute('${r.id}','${(r.name||'').replace(/'/g,"\'")}')">Delete</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state">No routes yet</div></td></tr>';}
-window.loadRoutesTable=loadRoutesTable;
-function openRouteModal(id){const r=id?payRoutesCacheFull.find(x=>x.id===id):null;document.getElementById('route-modal-title').textContent=r?'Edit Route':'Add Route';document.getElementById('route-id').value=r?r.id:'';document.getElementById('route-name').value=r?r.name:'';document.getElementById('route-customer').value=r?(r.customer_name||''):'';document.getElementById('route-price').value=r?r.price:'';document.getElementById('route-pickup-address').value=r?(r.pickup_address||''):'';document.getElementById('route-pickup-time').value=r?(r.pickup_time?r.pickup_time.slice(0,5):''):'';document.getElementById('route-drop-address').value=r?(r.drop_address||''):'';document.getElementById('route-delivery-time').value=r?(r.delivery_time?r.delivery_time.slice(0,5):''):'';document.getElementById('route-active').checked=r?r.active!==false:true;openModal('modal-route');}
-window.openRouteModal=openRouteModal;
-async function saveRoute(){const id=document.getElementById('route-id').value||null;const name=document.getElementById('route-name').value.trim();const customerName=document.getElementById('route-customer').value.trim()||null;const price=document.getElementById('route-price').value||0;const pickupAddress=document.getElementById('route-pickup-address').value.trim()||null;const pickupTime=document.getElementById('route-pickup-time').value||null;const dropAddress=document.getElementById('route-drop-address').value.trim()||null;const deliveryTime=document.getElementById('route-delivery-time').value||null;const active=document.getElementById('route-active').checked;if(!name){toast('Route name required','error');return;}const saveBtn=document.querySelector('#modal-route .btn-save');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Saving...';}const[pickupGeo,dropGeo]=await Promise.all([geocode(pickupAddress),geocode(dropAddress)]);if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Save Route';}const{error}=await sb.rpc('admin_upsert_payroll_route',{p_id:id,p_name:name,p_price:Number(price),p_active:active,p_customer_name:customerName,p_pickup_address:pickupAddress,p_pickup_lat:pickupGeo?pickupGeo.lat:null,p_pickup_lng:pickupGeo?pickupGeo.lng:null,p_drop_address:dropAddress,p_drop_lat:dropGeo?dropGeo.lat:null,p_drop_lng:dropGeo?dropGeo.lng:null,p_pickup_time:pickupTime,p_delivery_time:deliveryTime});if(error){toast('Error: '+error.message,'error');return;}logActivity(id?'Updated route':'Added route','route',id||null,{name,price});toast(id?'Route updated ✓':'Route added ✓');closeModal('modal-route');loadRoutesTable();loadPayTab();}
-window.saveRoute=saveRoute;
-async function deleteRoute(id,name){if(!confirm('Delete route "'+name+'"? Existing shipments keep their history but lose the route link.'))return;const{error}=await sb.rpc('admin_delete_payroll_route',{p_id:id});if(error){toast('Error: '+error.message,'error');return;}logActivity('Deleted route','route',id,{name});toast('Route deleted');loadRoutesTable();loadPayTab();}
-window.deleteRoute=deleteRoute;
-async function loadDriverHours(){const dateEl=document.getElementById('hours-date');if(!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);const day=dateEl.value;const start=new Date(day+'T00:00:00');const end=new Date(day+'T23:59:59.999');const tbody=document.getElementById('hours-table');tbody.innerHTML='<tr><td colspan="5"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('driver_shifts').select('id,clock_in_at,clock_out_at,drivers(full_name)').gte('clock_in_at',start.toISOString()).lte('clock_in_at',end.toISOString()).order('clock_in_at',{ascending:true});if(error){tbody.innerHTML=`<tr><td colspan="5"><div class="empty">Error loading hours: ${escHtml(error.message)}</div></td></tr>`;return;}if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">No clock-ins recorded for this day yet</div></td></tr>';return;}tbody.innerHTML=data.map(s=>{const inTime=new Date(s.clock_in_at);const outTime=s.clock_out_at?new Date(s.clock_out_at):null;const hrs=((outTime?outTime.getTime():Date.now())-inTime.getTime())/3600000;return `<tr><td class="td-primary">${escHtml(s.drivers?.full_name||'—')}</td><td>${inTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${outTime?outTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—'}</td><td>${hrs.toFixed(2)} hrs</td><td>${outTime?'<span class="tag tag-green">Complete</span>':'<span class="tag tag-gold">On Site</span>'}</td></tr>`;}).join('');}
-window.loadDriverHours=loadDriverHours;
-const ROUTE_CSV_COLS=['route_name','customer_name','pay_rate','pickup_address','pickup_time','drop_address','delivery_time','active'];
-window.downloadRouteTemplate=function(){const sample=[{route_name:'Minneapolis Loop',customer_name:'Nordic Wholesale',pay_rate:'150.00',pickup_address:'1700 Broadway St, Minneapolis, MN 55413',pickup_time:'06:00',drop_address:'Savage Depot, Savage, MN',delivery_time:'10:30',active:'true'}];downloadCSV('bashka-route-import-template.csv',rowsToCSV(ROUTE_CSV_COLS,sample));toast('Template downloaded — fill in your recurring routes with pickup/delivery addresses and times, then Import Routes. Times are 24-hour HH:MM.');};
-window.handleRouteImport=async function(input){const file=input.files[0];if(!file)return;const text=await file.text();let rows;try{rows=parseCSV(text);}catch(e){toast('Could not read CSV: '+e.message,'error');input.value='';return;}if(!rows.length){toast('No rows found in CSV','error');input.value='';return;}if(!confirm('Import '+rows.length+' route row(s)? Existing routes with a matching Route Name will be updated — new ones will be added. Addresses will be geocoded automatically.')){input.value='';return;}const{data:existingRoutes}=await sb.rpc('admin_list_payroll_routes');const existingByName={};(existingRoutes||[]).forEach(r=>existingByName[(r.name||'').trim().toLowerCase()]=r);let created=0,updated=0,failed=0;const errors=[];for(const r of rows){const name=(r.route_name||r.name||'').trim();if(!name){failed++;errors.push('Row missing route_name');continue;}const pickupAddress=(r.pickup_address||'').trim()||null;const dropAddress=(r.drop_address||r.delivery_address||'').trim()||null;const pickupTime=(r.pickup_time||'').trim()||null;const deliveryTime=(r.delivery_time||'').trim()||null;const customerName=(r.customer_name||'').trim()||null;const price=r.pay_rate||r.price||0;const active=String(r.active||'true').trim().toLowerCase()!=='false';const existing=existingByName[name.toLowerCase()];const[pickupGeo,dropGeo]=await Promise.all([geocode(pickupAddress),geocode(dropAddress)]);const{error}=await sb.rpc('admin_upsert_payroll_route',{p_id:existing?existing.id:null,p_name:name,p_price:Number(price)||0,p_active:active,p_customer_name:customerName,p_pickup_address:pickupAddress,p_pickup_lat:pickupGeo?pickupGeo.lat:null,p_pickup_lng:pickupGeo?pickupGeo.lng:null,p_drop_address:dropAddress,p_drop_lat:dropGeo?dropGeo.lat:null,p_drop_lng:dropGeo?dropGeo.lng:null,p_pickup_time:pickupTime,p_delivery_time:deliveryTime});if(error){failed++;errors.push(name+': '+error.message);}else{if(existing)updated++;else created++;}}input.value='';logActivity('Bulk imported routes','route',null,{created,updated,failed});toast(`Import done: ${created} added, ${updated} updated`+(failed?`, ${failed} failed`:''),failed?'error':'success');if(errors.length)console.warn('Route import errors:',errors);loadRoutesTable();loadPayTab();};
-function genJobNumber(prefix){return (prefix||'EX')+'-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();}
-async function openExtraWorkModal(){document.getElementById('ew-description').value='';document.getElementById('ew-pay-rate').value='';document.getElementById('ew-date').value=new Date().toISOString().slice(0,10);const[{data:driversData},{data:vehiclesData}]=await Promise.all([sb.from('drivers').select('id,full_name').eq('status','active').order('full_name'),sb.from('vehicles').select('id,vehicle_code').order('vehicle_code')]);document.getElementById('ew-driver').innerHTML='<option value="">— Select Driver —</option>'+(driversData||[]).map(d=>`<option value="${d.id}">${escHtml(d.full_name)}</option>`).join('');document.getElementById('ew-vehicle').innerHTML='<option value="">— Select Truck —</option>'+(vehiclesData||[]).map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');openModal('modal-extra-work');}
-window.openExtraWorkModal=openExtraWorkModal;
-async function saveExtraWork(){const description=document.getElementById('ew-description').value.trim();const date=document.getElementById('ew-date').value||new Date().toISOString().slice(0,10);const driverId=document.getElementById('ew-driver').value||null;const vehicleId=document.getElementById('ew-vehicle').value||null;const payRate=document.getElementById('ew-pay-rate').value||null;if(!description){toast('Description required','error');return;}const jobNumber=genJobNumber('EX');const byName=document.getElementById('sidebar-user')?.textContent||null;const{data:job,error}=await sb.from('jobs').insert({job_number:jobNumber,customer_name:description,pickup_address:'',drop_address:'',route_id:null,auto_generated:false,assigned_driver:driverId,assigned_vehicle:vehicleId,status:driverId?'assigned':'pending',assigned_at:driverId?new Date().toISOString():null,assigned_by:currentUser?.id||null,assigned_by_name:byName,scheduled_time:date}).select('id').single();if(error){toast('Error: '+error.message,'error');return;}if(driverId&&payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:driverId,p_route_id:null,p_date:date,p_rate:Number(payRate),p_load_ref:jobNumber,p_note:'Extra work: '+description});if(payErr)toast('Added, but pay log failed: '+payErr.message,'error');}logActivity('Added extra work','job',job.id,{description,date});toast('Extra work added ✓');closeModal('modal-extra-work');loadShipments();loadOverview();}
-window.saveExtraWork=saveExtraWork;
-function downloadAssignmentTemplate(){const headers=['route_name','date','driver_name','truck_unit','pay_rate','description'];const rows=[{route_name:'Minneapolis Loop',date:new Date().toISOString().slice(0,10),driver_name:'John Smith',truck_unit:'101',pay_rate:'150.00',description:''},{route_name:'',date:new Date().toISOString().slice(0,10),driver_name:'Jane Doe',truck_unit:'102',pay_rate:'80.00',description:'Extra pickup - Costco run'}];downloadCSV('assignment_import_template.csv',rowsToCSV(headers,rows));}
-window.downloadAssignmentTemplate=downloadAssignmentTemplate;
-let importReviewItems=[];
-window.handleAssignmentImport=async function(input){const file=input.files[0];if(!file)return;const text=await file.text();let rows;try{rows=parseCSV(text);}catch(e){toast('Could not read CSV: '+e.message,'error');input.value='';return;}if(!rows.length){toast('No rows found in CSV','error');input.value='';return;}const[{data:drivers},{data:vehicles},{data:routes},{data:pendingAuto}]=await Promise.all([sb.from('drivers').select('id,full_name').eq('status','active'),sb.from('vehicles').select('id,vehicle_code'),sb.rpc('admin_list_payroll_routes'),sb.from('jobs').select('id,job_number,route_id,scheduled_time').eq('auto_generated',true).eq('status','pending')]);const norm=s=>(s||'').trim().toLowerCase();importReviewItems=rows.map(row=>{const routeName=row.route_name||'';const routeMatch=(routes||[]).find(r=>norm(r.name)===norm(routeName));const driverMatch=(drivers||[]).find(d=>norm(d.full_name)===norm(row.driver_name));const vehicleMatch=(vehicles||[]).find(v=>norm(v.vehicle_code)===norm(row.truck_unit));const date=row.date||new Date().toISOString().slice(0,10);let type='invalid',jobMatch=null;if(routeMatch){type='route';jobMatch=(pendingAuto||[]).find(j=>j.route_id===routeMatch.id&&(j.scheduled_time||'').slice(0,10)===date);}else if(row.description){type='extra';}const payRate=row.pay_rate?Number(row.pay_rate):(routeMatch?routeMatch.price:null);let error='';if(type==='invalid')error='No matching route and no description given';else if(type==='route'&&!driverMatch)error='Driver not found: '+(row.driver_name||'(blank)');else if(row.truck_unit&&!vehicleMatch)error='Truck not found: '+row.truck_unit;return{routeName,routeMatch,driverName:row.driver_name,driverMatch,truckUnit:row.truck_unit,vehicleMatch,date,payRate,description:row.description,type,jobMatch,error,status:'pending'};});input.value='';renderImportReview();openModal('modal-import-review');};
-function renderImportReview(){const tbody=document.getElementById('import-review-table');document.getElementById('import-review-count').textContent=importReviewItems.length+' rows';tbody.innerHTML=importReviewItems.map((item,idx)=>{const label=item.type==='extra'?('Extra: '+escHtml(item.description||'')):escHtml(item.routeName||'—');const canAccept=item.status==='pending'&&item.type!=='invalid'&&!(item.type==='route'&&!item.driverMatch);let statusHtml;if(item.status==='accepted')statusHtml='<span style="color:var(--green)">✓ Accepted</span>';else if(item.status==='denied')statusHtml='<span style="color:var(--text3)">Denied</span>';else if(item.status==='error')statusHtml='<span style="color:var(--red)">Failed</span>';else statusHtml=item.error?`<span style="color:var(--red);font-size:11px">${escHtml(item.error)}</span>`:'<span style="color:var(--text3)">Ready</span>';const actions=item.status==='pending'?`<button class="action-btn action-btn-sm" ${canAccept?'':'disabled'} onclick="acceptImportRow(${idx})">Accept</button> <button class="action-btn-neutral action-btn-sm" onclick="denyImportRow(${idx})">Deny</button>`:'';return`<tr><td class="td-primary">${label}</td><td><input type="date" class="form-input" style="padding:4px 8px;font-size:12px" value="${escHtml(item.date)}" onchange="updateImportRowDate(${idx},this.value)"></td><td>${escHtml(item.driverName||'—')}</td><td>${escHtml(item.truckUnit||'—')}</td><td>${item.payRate?fmtMoneyPay(item.payRate):'—'}</td><td>${statusHtml}</td><td>${actions}</td></tr>`;}).join('');}
-async function acceptImportRow(idx){const item=importReviewItems[idx];if(!item||item.status!=='pending')return;const byName=document.getElementById('sidebar-user')?.textContent||null;const nowIso=new Date().toISOString();try{if(item.type==='route'){if(item.jobMatch){const{error}=await sb.from('jobs').update({assigned_driver:item.driverMatch.id,assigned_vehicle:item.vehicleMatch?item.vehicleMatch.id:null,status:'assigned',assigned_at:nowIso,assigned_by:currentUser?.id||null,assigned_by_name:byName}).eq('id',item.jobMatch.id);if(error)throw error;if(item.payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:item.driverMatch.id,p_route_id:item.routeMatch.id,p_date:item.date,p_rate:Number(item.payRate),p_load_ref:item.jobMatch.job_number,p_note:'Imported assignment'});if(payErr)toast('Assigned, but pay log failed: '+payErr.message,'error');}logActivity('Imported assignment','job',item.jobMatch.id,{route:item.routeName,driver:item.driverName,date:item.date});}else{const jobNumber=genJobNumber('RT');const{data:job,error}=await sb.from('jobs').insert({job_number:jobNumber,customer_name:item.routeMatch.name,pickup_address:'',drop_address:'',route_id:item.routeMatch.id,auto_generated:false,assigned_driver:item.driverMatch.id,assigned_vehicle:item.vehicleMatch?item.vehicleMatch.id:null,status:'assigned',assigned_at:nowIso,assigned_by:currentUser?.id||null,assigned_by_name:byName,scheduled_time:item.date}).select('id').single();if(error)throw error;if(item.payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:item.driverMatch.id,p_route_id:item.routeMatch.id,p_date:item.date,p_rate:Number(item.payRate),p_load_ref:jobNumber,p_note:'Imported assignment'});if(payErr)toast('Assigned, but pay log failed: '+payErr.message,'error');}logActivity('Imported assignment (new)','job',job.id,{route:item.routeName,driver:item.driverName,date:item.date});}}else if(item.type==='extra'){const jobNumber=genJobNumber('EX');const{data:job,error}=await sb.from('jobs').insert({job_number:jobNumber,customer_name:item.description,pickup_address:'',drop_address:'',route_id:null,auto_generated:false,assigned_driver:item.driverMatch?item.driverMatch.id:null,assigned_vehicle:item.vehicleMatch?item.vehicleMatch.id:null,status:item.driverMatch?'assigned':'pending',assigned_at:item.driverMatch?nowIso:null,assigned_by:currentUser?.id||null,assigned_by_name:byName,scheduled_time:item.date}).select('id').single();if(error)throw error;if(item.driverMatch&&item.payRate){const{error:payErr}=await sb.rpc('admin_add_payroll_load',{p_driver_id:item.driverMatch.id,p_route_id:null,p_date:item.date,p_rate:Number(item.payRate),p_load_ref:jobNumber,p_note:'Extra work (import): '+item.description});if(payErr)toast('Added, but pay log failed: '+payErr.message,'error');}logActivity('Imported extra work','job',job.id,{description:item.description,driver:item.driverName,date:item.date});}item.status='accepted';}catch(e){item.status='error';item.error=e.message;toast('Row failed: '+e.message,'error');}renderImportReview();loadShipments();loadOverview();}
-window.acceptImportRow=acceptImportRow;
-function denyImportRow(idx){const item=importReviewItems[idx];if(!item)return;item.status='denied';renderImportReview();}
-window.denyImportRow=denyImportRow;function updateImportRowDate(idx,val){const item=importReviewItems[idx];if(!item)return;item.date=val;}window.updateImportRowDate=updateImportRowDate;
-async function acceptAllImportRows(){for(let i=0;i<importReviewItems.length;i++){const item=importReviewItems[i];if(item.status==='pending'&&item.type!=='invalid'&&!(item.type==='route'&&!item.driverMatch)){await acceptImportRow(i);}}toast('Import batch complete');}
-window.acceptAllImportRows=acceptAllImportRows;
-async function loadSiteStats(){const{count:delivered}=await sb.from('jobs').select('*',{count:'exact',head:true}).eq('status','delivered');const{count:active}=await sb.from('drivers').select('*',{count:'exact',head:true}).eq('status','active');const{count:off}=await sb.from('drivers').select('*',{count:'exact',head:true}).eq('status','off_duty');const{count:total}=await sb.from('jobs').select('*',{count:'exact',head:true});document.getElementById('stat-deliveries').textContent=total?total+'+':'0';document.getElementById('fleet-active').textContent=active??'—';document.getElementById('fleet-off').textContent=off??'—';if(total){document.getElementById('fleet-jobs').textContent=total;document.getElementById('fleet-bar').style.width=Math.min((delivered/total)*100,100)+'%';}}
-async function sendContactForm(){const name=(document.getElementById('c-first').value+' '+document.getElementById('c-last').value).trim();const email=document.getElementById('c-email').value.trim();const company=document.getElementById('c-company').value.trim();const message=document.getElementById('c-msg').value.trim();if(!name||!email||!message){toast('Please fill all fields','error');return;}const{error}=await sb.from('notifications').insert({title:'Contact Form: '+name,message:`From: ${name} (${company}) <${email}>\n\n${message}`,type:'contact'});if(error){toast('Error sending message','error');return;}toast('Message sent!');['c-first','c-last','c-company','c-email','c-msg'].forEach(id=>document.getElementById(id).value='');}
-window.sendContactForm=sendContactForm;
-async function refreshAll(){await loadOverview();toast('Data refreshed');}
-window.refreshAll=refreshAll;
-function initMarquee(){const items=['GPS Tracking','Geofencing','Proof of Delivery','Real-Time Dispatch','Fleet Management','Driver Compliance'];document.getElementById('marquee').innerHTML=[...items,...items].map(t=>`<div class="marquee-item"><span>✦</span>${t}</div>`).join('');}
-function stTagPlain(s){const m={active:'Active',off_duty:'Off Duty',on_leave:'On Leave'};return m[s]||s;}
-function initMap(){if(!leafletMap){leafletMap=L.map('map-container').setView([44.86,-93.25],9);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(leafletMap);leafletMap.on('zoomend moveend',repositionTruckMarkers);}loadMapData();if(mapPollInterval)clearInterval(mapPollInterval);mapPollInterval=setInterval(loadMapData,15000);}
-window.initMap=initMap;
-function repositionTruckMarkers(){if(!leafletMap||!truckTruePositions.length)return;const pxThreshold=24;const pxSpread=16;const pts=truckTruePositions.map(p=>({...p,pt:leafletMap.latLngToContainerPoint([p.lat,p.lng])}));const clusters=[];pts.forEach(p=>{let found=null;for(const c of clusters){const dx=p.pt.x-c.pt.x,dy=p.pt.y-c.pt.y;if(Math.sqrt(dx*dx+dy*dy)<pxThreshold){found=c;break;}}if(found){found.items.push(p);}else{clusters.push({pt:p.pt,items:[p]});}});clusters.forEach(c=>{const n=c.items.length;if(n===1){const it=c.items[0];const m=truckMarkers[it.id];if(m)m.setLatLng([it.lat,it.lng]);return;}const avgX=c.items.reduce((s,i)=>s+i.pt.x,0)/n;const avgY=c.items.reduce((s,i)=>s+i.pt.y,0)/n;c.items.forEach((it,idx)=>{const angle=(2*Math.PI*idx)/n;const newPt=L.point(avgX+pxSpread*Math.cos(angle),avgY+pxSpread*Math.sin(angle));const newLatLng=leafletMap.containerPointToLatLng(newPt);const m=truckMarkers[it.id];if(m)m.setLatLng(newLatLng);});});}async function loadMapData(){if(!leafletMap)return;Object.values(driverMarkers).forEach(m=>leafletMap.removeLayer(m));driverMarkers={};Object.values(truckMarkers).forEach(m=>leafletMap.removeLayer(m));truckMarkers={};jobMarkers.forEach(m=>leafletMap.removeLayer(m));jobMarkers=[];const{data:drivers}=await sb.from('drivers').select('id,full_name,status,current_lat,current_lng,last_ping').not('current_lat','is',null).not('current_lng','is',null);(drivers||[]).forEach(d=>{const icon=L.divIcon({html:'<div style="width:30px;height:30px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;">👤</div>',className:'',iconSize:[30,30],iconAnchor:[15,15]});const m=L.marker([d.current_lat,d.current_lng],{icon}).addTo(leafletMap);m.bindPopup(`<b>${d.full_name}</b><br>${stTagPlain(d.status)}${d.last_ping?'<br><small>Updated '+new Date(d.last_ping).toLocaleTimeString()+'</small>':''}`);driverMarkers[d.id]=m;});const motiveAgo=(d)=>{const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return'just now';const m=Math.floor(s/60);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';};const{data:trucks}=await sb.from('vehicles').select('id,vehicle_code,motive_lat,motive_lng,motive_located_at').not('motive_lat','is',null).not('motive_lng','is',null);truckTruePositions=(trucks||[]).map(t=>({id:t.id,lat:t.motive_lat,lng:t.motive_lng}));(trucks||[]).forEach(t=>{const locDate=t.motive_located_at?new Date(t.motive_located_at):null;const stale=!locDate||(Date.now()-locDate.getTime())>6*3600*1000;const icon=L.divIcon({html:'<div style="width:30px;height:30px;border-radius:50%;background:#f59e0b;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;opacity:'+(stale?0.45:1)+'">🚛</div>',className:'',iconSize:[30,30],iconAnchor:[15,15]});const m=L.marker([t.motive_lat,t.motive_lng],{icon}).addTo(leafletMap);m.bindPopup(`<b>Truck ${t.vehicle_code}</b><br>Motive GPS · last seen ${locDate?motiveAgo(locDate):'unknown'}${stale?' <span style="color:#E8A020">(stale)</span>':''}`);truckMarkers[t.id]=m;});repositionTruckMarkers();const{data:jobsData}=await sb.from('jobs').select('id,job_number,status,pickup_address,pickup_lat,pickup_lng,drop_address,drop_lat,drop_lng').in('status',['pending','assigned','in_transit']);(jobsData||[]).forEach(j=>{if(j.pickup_lat&&j.pickup_lng){const pm=L.circleMarker([j.pickup_lat,j.pickup_lng],{radius:6,color:'#E8A020',fillColor:'#E8A020',fillOpacity:0.8}).addTo(leafletMap);pm.bindPopup(`<b>${j.job_number}</b><br>Pickup: ${j.pickup_address||''}`);jobMarkers.push(pm);}if(j.drop_lat&&j.drop_lng){const dm=L.circleMarker([j.drop_lat,j.drop_lng],{radius:6,color:'#1DB954',fillColor:'#1DB954',fillOpacity:0.8}).addTo(leafletMap);dm.bindPopup(`<b>${j.job_number}</b><br>Drop: ${j.drop_address||''}`);jobMarkers.push(dm);}});}
-window.loadMapData=loadMapData;
-function showRecoveryRequest(){document.getElementById('login-screen').style.display='none';document.getElementById('recovery-screen').style.display='flex';document.getElementById('recovery-step1').style.display='block';document.getElementById('recovery-step2').style.display='none';}
-function hideRecovery(){document.getElementById('recovery-screen').style.display='none';document.getElementById('login-screen').style.display='flex';}
-window.showRecoveryRequest=showRecoveryRequest;window.hideRecovery=hideRecovery;
-async function sendResetCode(){const email=document.getElementById('recovery-email').value.trim();const btn=document.getElementById('recovery-send-btn');const err=document.getElementById('recovery-err1');err.style.display='none';if(!email){err.textContent='Enter your email';err.style.display='block';return;}btn.disabled=true;btn.textContent='Sending...';const{error}=await sb.auth.resetPasswordForEmail(email);btn.disabled=false;btn.textContent='Send Code';if(error){err.textContent=error.message;err.style.display='block';return;}resetEmail=email;document.getElementById('recovery-step1').style.display='none';document.getElementById('recovery-step2').style.display='block';toast('Code sent - check your email');}
-window.sendResetCode=sendResetCode;
-async function doSetNewPassword(){const pass=document.getElementById('recovery-pass').value;const pass2=document.getElementById('recovery-pass2').value;const btn=document.getElementById('recovery-btn');const err=document.getElementById('recovery-err');err.style.display='none';if(!pass||pass.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return;}if(pass!==pass2){err.textContent='Passwords do not match';err.style.display='block';return;}btn.disabled=true;btn.textContent='Saving...';if(!inRecovery){const code=document.getElementById('recovery-code').value.trim();if(!code){err.textContent='Enter the code from your email';err.style.display='block';btn.disabled=false;btn.textContent='Set Password';return;}const{error:otpErr}=await sb.auth.verifyOtp({email:resetEmail,token:code,type:'recovery'});if(otpErr){err.textContent=otpErr.message;err.style.display='block';btn.disabled=false;btn.textContent='Set Password';return;}inRecovery=true;}const{data,error}=await sb.auth.updateUser({password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Set Password';return;}inRecovery=false;history.replaceState(null,'',window.location.pathname);toast('Password updated');onLogin(data.user);}
-window.doSetNewPassword=doSetNewPassword;
-let payRoutesCache=[];
-function fmtMoneyPay(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function payPayPeriod(d){d=d||new Date();const y=d.getFullYear(),m=d.getMonth(),day=d.getDate();if(day>=6&&day<=20){return{start:new Date(y,m,6),end:new Date(y,m,20),payday:new Date(y,m,25),label:'6th – 20th'};}if(day>=21){let py=y,pm=m+1;if(pm>11){pm=0;py=y+1;}return{start:new Date(y,m,21),end:new Date(py,pm,5),payday:new Date(py,pm,10),label:'21st – 5th'};}let py=y,pm=m-1;if(pm<0){pm=11;py=y-1;}return{start:new Date(py,pm,21),end:new Date(y,m,5),payday:new Date(y,m,10),label:'21st – 5th'};}
-async function loadPayTab(){const{data:driversData}=await sb.from('drivers').select('id,full_name,status').order('full_name');if(driversData)allDrivers=driversData;const dsel=document.getElementById('pay-driver');dsel.innerHTML='<option value="">— Select Driver —</option>'+(driversData||[]).map(d=>`<option value="${d.id}">${escHtml(d.full_name)}</option>`).join('');if(!document.getElementById('pay-date').value)document.getElementById('pay-date').value=new Date().toISOString().slice(0,10);const{data:routes,error:rerr}=await sb.rpc('admin_list_payroll_routes');if(!rerr&&routes){payRoutesCache=routes;const rsel=document.getElementById('pay-route');rsel.innerHTML='<option value="">— Select Route —</option>'+routes.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');}else if(rerr){toast('Error loading routes: '+rerr.message,'error');}loadPaySummary();loadRoutesTable();}
-window.loadPayTab=loadPayTab;
-function onShipmentRouteChange(){const sel=document.getElementById('s-route');const opt=sel.options[sel.selectedIndex];const price=opt?opt.getAttribute('data-price'):null;if(price!=null&&price!=='')document.getElementById('s-pay-rate').value=price;if(!opt||!opt.value)return;const customer=opt.getAttribute('data-customer');const pickupAddr=opt.getAttribute('data-pickup-address');const dropAddr=opt.getAttribute('data-drop-address');const pickupTime=opt.getAttribute('data-pickup-time');const deliveryTime=opt.getAttribute('data-delivery-time');const custEl=document.getElementById('s-customer');if(customer&&!custEl.value.trim())custEl.value=customer;const origEl=document.getElementById('s-origin');if(pickupAddr&&!origEl.value.trim())origEl.value=pickupAddr;const destEl=document.getElementById('s-dest');if(dropAddr&&!destEl.value.trim())destEl.value=dropAddr;const pickupEl=document.getElementById('s-pickup');const baseDate=(pickupEl.value?pickupEl.value.slice(0,10):new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10));if(pickupTime)pickupEl.value=baseDate+'T'+pickupTime.slice(0,5);const deliveryEl=document.getElementById('s-delivery');if(deliveryTime)deliveryEl.value=baseDate+'T'+deliveryTime.slice(0,5);}
-window.onShipmentRouteChange=onShipmentRouteChange;
-function onPayRouteChange(){const sel=document.getElementById('pay-route');const opt=sel.options[sel.selectedIndex];const price=opt?opt.getAttribute('data-price'):null;if(price!=null&&price!=='')document.getElementById('pay-rate').value=price;}
-window.onPayRouteChange=onPayRouteChange;
-async function logPayLoad(){const driverId=document.getElementById('pay-driver').value;const routeId=document.getElementById('pay-route').value;const date=document.getElementById('pay-date').value;const rate=document.getElementById('pay-rate').value;if(!driverId){toast('Select a driver','error');return;}if(!routeId){toast('Select a route','error');return;}if(!date){toast('Select a date','error');return;}if(rate===''||isNaN(Number(rate))){toast('Enter a valid rate','error');return;}const deduction=document.getElementById('pay-deduction').value;const loadRef=document.getElementById('pay-load-ref').value.trim()||null;const note=document.getElementById('pay-note').value.trim()||null;const{error}=await sb.rpc('admin_add_payroll_load',{p_driver_id:driverId,p_route_id:routeId,p_date:date,p_rate:Number(rate),p_deduction:deduction===''?0:Number(deduction),p_load_ref:loadRef,p_note:note});if(error){toast('Error: '+error.message,'error');return;}toast('Load logged ✓');logActivity('Logged driver pay load','payroll_load',null,{driver_id:driverId,route_id:routeId,date,rate});document.getElementById('pay-load-ref').value='';document.getElementById('pay-note').value='';document.getElementById('pay-deduction').value='';loadPaySummary();}
-window.logPayLoad=logPayLoad;
-async function loadPaySummary(){const period=payPayPeriod();const thisYear=new Date().getFullYear();document.getElementById('pay-period-label').textContent=`Pay period ${period.label} · Payday ${period.payday.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;document.getElementById('pay-year-label').textContent=thisYear+' Total (All Drivers)';const{data,error}=await sb.rpc('admin_get_pay_summary');if(error){document.getElementById('pay-driver-table').innerHTML=`<tr><td colspan="4"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;document.getElementById('pay-loads-table').innerHTML='';document.getElementById('pay-period-total').textContent='—';document.getElementById('pay-ytd-total').textContent='—';return;}const rows=(data||[]).map(l=>({...l,_date:new Date(l.load_date+'T00:00:00')}));const byDriver={};rows.forEach(l=>{const key=l.driver_name||'Unknown';byDriver[key]=byDriver[key]||{period:0,periodCount:0,ytd:0};const net=Number(l.rate||0)-Number(l.deduction||0);if(l._date>=period.start&&l._date<=period.end){byDriver[key].period+=net;byDriver[key].periodCount++;}if(l._date.getFullYear()===thisYear){byDriver[key].ytd+=net;}});const driverNames=Object.keys(byDriver).sort();document.getElementById('pay-driver-table').innerHTML=driverNames.length?driverNames.map(name=>{const r=byDriver[name];return `<tr><td class="td-primary">${escHtml(name)}</td><td>${r.periodCount}</td><td style="font-family:var(--mono);color:var(--gold)">${fmtMoneyPay(r.period)}</td><td style="font-family:var(--mono)">${fmtMoneyPay(r.ytd)}</td></tr>`;}).join(''):'<tr><td colspan="4"><div class="empty">No loads logged yet</div></td></tr>';const periodTotal=driverNames.reduce((s,n)=>s+byDriver[n].period,0);const ytdTotal=driverNames.reduce((s,n)=>s+byDriver[n].ytd,0);document.getElementById('pay-period-total').textContent=fmtMoneyPay(periodTotal);document.getElementById('pay-ytd-total').textContent=fmtMoneyPay(ytdTotal);const recent=rows.slice().sort((a,b)=>b._date-a._date).slice(0,50);document.getElementById('pay-loads-table').innerHTML=recent.length?recent.map(l=>`<tr><td style="font-family:var(--mono);font-size:11px">${l._date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td><td>${escHtml(l.driver_name||'—')}</td><td>${escHtml(l.route_name||'—')}</td><td style="font-family:var(--mono)">${fmtMoneyPay(l.rate)}</td><td style="font-family:var(--mono)">${fmtMoneyPay(l.deduction)}</td><td style="font-family:var(--mono);color:var(--green)">${fmtMoneyPay(Number(l.rate||0)-Number(l.deduction||0))}</td><td style="font-size:11px;color:var(--text3)">${escHtml(l.load_ref||'—')}</td></tr>`).join(''):'<tr><td colspan="7"><div class="empty">No loads yet</div></td></tr>';}
-window.loadPaySummary=loadPaySummary;
+function daysUntilTruck(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T00:00:00')-new Date(new Date().toDateString());return Math.round(ms/86400000);}
+function truckExpiryTag(dateStr){if(!dateStr)return '<span class="tag tag-muted">No Record</span>';const d=daysUntilTruck(dateStr);if(d<0)return '<span class="tag tag-red">Expired</span>';if(d<=30)return `<span class="tag tag-orange">${d}d left</span>`;return `<span class="tag tag-green">Valid</span>`;}
+async function loadTruck(){const body=document.getElementById('truck-body');if(!driverRecord)return;body.innerHTML='<div class="loading">Loading...</div>';const{data:vehicle,error}=await sb.from('vehicles').select('*').eq('assigned_driver',driverRecord.id).maybeSingle();if(error||!vehicle){body.innerHTML=`<div class="empty-state"><div class="empty-icon">🚚</div><div>No truck assigned to you yet</div></div>`;return;}const{data:docs}=await sb.from('vehicle_documents').select('*').eq('vehicle_id',vehicle.id).order('created_at',{ascending:false});const seen={};const currentDocs=(docs||[]).filter(d=>{if(seen[d.doc_type])return false;seen[d.doc_type]=true;return true;});const docsHtml=currentDocs.length?currentDocs.map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${docTypeLabel(d.doc_type)}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${d.expires_at?'Expires '+new Date(d.expires_at+'T00:00:00').toLocaleDateString():'No expiry set'}</div></div><div style="display:flex;align-items:center;gap:8px">${truckExpiryTag(d.expires_at)}${d.file_path?`<button class="btn-action btn-secondary" style="padding:8px 12px" onclick="viewTruckDoc('${d.file_path}')">View</button>`:''}</div></div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:10px 0">No documents on file yet</div>';body.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"><div style="width:52px;height:52px;border-radius:14px;background:var(--gold-glow);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:22px">🚚</div><div><div style="font-family:var(--display);font-size:18px;font-weight:700">${escHtml(vehicle.unit_number)}</div><div style="font-size:12px;color:var(--text3);font-family:var(--mono)">${escHtml([vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(' ')||'—')}</div></div></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--text3);font-family:var(--mono);font-size:11px">VIN</span><span style="font-family:var(--mono);font-size:12px">${escHtml(vehicle.vin||'—')}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-family:var(--mono);font-size:11px">PLATE</span><span style="font-family:var(--mono);font-size:12px">${escHtml(vehicle.plate||'—')}</span></div><div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Paperwork</div>${docsHtml}</div></div>`;}
+async function viewTruckDoc(path){const{data,error}=await sb.storage.from('vehicle-documents').createSignedUrl(path,300);if(error){toast('Error: '+error.message,'error');return;}window.open(data.signedUrl,'_blank');}
+function fmtMoney(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDateShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function currentPayPeriod(d){d=d||new Date();const y=d.getFullYear(),m=d.getMonth(),day=d.getDate();if(day>=6&&day<=20){return{start:new Date(y,m,6),end:new Date(y,m,20),payday:new Date(y,m,25),label:'6th – 20th'};}if(day>=21){let py=y,pm=m+1;if(pm>11){pm=0;py=y+1;}return{start:new Date(y,m,21),end:new Date(py,pm,5),payday:new Date(py,pm,10),label:'21st – 5th'};}let py=y,pm=m-1;if(pm<0){pm=11;py=y-1;}return{start:new Date(py,pm,21),end:new Date(y,m,5),payday:new Date(y,m,10),label:'21st – 5th'};}
+async function loadPay(){const sub=document.getElementById('pay-sub');const periodBody=document.getElementById('pay-period-body');const ytdBody=document.getElementById('pay-ytd-body');sub.textContent='Loading...';periodBody.innerHTML='<div class="loading">Loading...</div>';ytdBody.innerHTML='';const{data,error}=await sb.rpc('driver_get_my_pay_summary');if(error||!data){periodBody.innerHTML=`<div class="empty-state"><div class="empty-icon">💰</div><div>Pay history isn't linked to your account yet</div></div>`;sub.textContent='';return;}const loads=data.map(l=>({...l,_date:new Date(l.load_date+'T00:00:00')}));const period=currentPayPeriod();const inPeriod=loads.filter(l=>l._date>=period.start&&l._date<=period.end);const periodTotal=inPeriod.reduce((s,l)=>s+Number(l.rate||0)-Number(l.deduction||0),0);sub.textContent=`Pay period ${period.label} · Payday ${fmtDateShort(period.payday)}`;const header=`<div style="text-align:center;padding:10px 0 16px;${inPeriod.length?'border-bottom:1px solid var(--border);margin-bottom:6px':''}"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Current Period Earnings</div><div style="font-family:var(--display);font-size:32px;font-weight:800;color:var(--gold)">${fmtMoney(periodTotal)}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${inPeriod.length} load${inPeriod.length===1?'':'s'} · pays ${fmtDateShort(period.payday)}</div></div>`;periodBody.innerHTML=inPeriod.length?header+inPeriod.map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${escHtml(l.route_name||'Load')}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${fmtDateShort(l._date)}${l.load_ref?' · '+escHtml(l.load_ref):''}</div></div><div style="font-family:var(--mono);font-size:13px;color:var(--green)">${fmtMoney(Number(l.rate||0)-Number(l.deduction||0))}</div></div>`).join(''):header+`<div class="empty-state" style="padding:6px 0"><div>No loads logged this period yet</div></div>`;const thisYear=new Date().getFullYear();const ytdLoads=loads.filter(l=>l._date.getFullYear()===thisYear);const ytdTotal=ytdLoads.reduce((s,l)=>s+Number(l.rate||0)-Number(l.deduction||0),0);ytdBody.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">${thisYear} Total</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${ytdLoads.length} load${ytdLoads.length===1?'':'s'} this year</div></div><div style="font-family:var(--display);font-size:22px;font-weight:800">${fmtMoney(ytdTotal)}</div></div>`;}
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doSetNewPassword();});
-(async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user && !inRecovery){onLogin(session.user);}})();
+(async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user)onLogin(session.user);})();
 </script>
-
-
-</body></html>
+</body>
+</html>
