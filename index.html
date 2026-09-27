@@ -295,6 +295,19 @@ select.form-input{appearance:none}
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="modal-override">
+  <div class="modal">
+    <div class="modal-title">Edit route for one day</div>
+    <div class="form-group"><div class="form-label">Driver</div><div id="override-driver-label" class="td-primary"></div></div>
+    <div class="form-group"><div class="form-label">Date</div><div id="override-date-label" class="td-primary"></div></div>
+    <div class="form-group"><div class="form-label">Route for this day only</div><select class="form-input" id="override-route"><option value="">— No route (day off) —</option></select></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="clearOverride()">Revert to default</button>
+      <button class="btn-cancel" onclick="closeModal('modal-override')">Cancel</button>
+      <button class="btn-save" onclick="saveOverride()">Save</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-route">
   <div class="modal">
     <div class="modal-title" id="route-modal-title">Add Route</div>
@@ -485,6 +498,7 @@ select.form-input{appearance:none}
       <button class="sidebar-item" onclick="showDash('customers',this)">🏢 Customers</button>
       <button class="sidebar-item" onclick="showDash('map',this)">🗺️ Live Map</button>
       <button class="sidebar-item" onclick="showDash('vehicles',this)">🚚 Vehicles</button>
+      <button class="sidebar-item" onclick="showDash('assign',this)">🗓️ Route Assignments</button>
       <button class="sidebar-item" onclick="showDash('pay',this)">💰 Driver Pay</button>
       <button class="sidebar-item" onclick="showDash('hours',this)">⏱️ Driver Hours</button>
       <button class="sidebar-item admin-only" id="nav-team" onclick="showDash('team',this)" style="display:none">👥 Team</button>
@@ -566,6 +580,34 @@ select.form-input{appearance:none}
               <thead><tr><th>Unit #</th><th>Vehicle</th><th>VIN / Plate</th><th>Assigned Driver</th><th>Status</th><th>Insurance</th><th>Registration</th><th></th></tr></thead>
               <tbody id="vehicles-table"><tr><td colspan="8"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
+          </div>
+        </div>
+        <div id="dash-assign" class="dash-section">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Default Routes — set each driver's standing route once</div></div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead><tr><th>Driver</th><th>Default Route</th></tr></thead>
+                <tbody id="default-routes-table"><tr><td colspan="2"><div class="loading">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">This Week's Assignments (Mon–Fri)</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button class="action-btn-neutral action-btn-sm" onclick="shiftAssignWeek(-1)">‹ Prev</button>
+                <div id="assign-week-label" style="font-family:var(--mono);font-size:12px;color:var(--text3)">—</div>
+                <button class="action-btn-neutral action-btn-sm" onclick="shiftAssignWeek(1)">Next ›</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Click any cell to change that driver's route for that day only — it won't change their default going forward.</p>
+              <table class="data-table">
+                <thead id="week-assign-head"><tr><th>Driver</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th></tr></thead>
+                <tbody id="week-assign-table"><tr><td colspan="6"><div class="loading">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
           </div>
         </div>
         <div id="dash-pay" class="dash-section">
@@ -698,8 +740,8 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log'};
-function showDash(n,b){document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log'};
+function showDash(n,b){document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -765,6 +807,24 @@ async function saveRoute(){const id=document.getElementById('route-id').value||n
 window.saveRoute=saveRoute;
 async function deleteRoute(id,name){if(!confirm('Delete route "'+name+'"? Existing shipments keep their history but lose the route link.'))return;const{error}=await sb.rpc('admin_delete_payroll_route',{p_id:id});if(error){toast('Error: '+error.message,'error');return;}logActivity('Deleted route','route',id,{name});toast('Route deleted');loadRoutesTable();loadPayTab();}
 window.deleteRoute=deleteRoute;
+let assignRoutesCache=[];function mondayOf(d){const date=new Date(d);const day=date.getDay();const diff=(day===0?-6:1-day);date.setDate(date.getDate()+diff);date.setHours(0,0,0,0);return date;}let assignWeekStart=mondayOf(new Date());function fmtDateISO(d){return d.toISOString().slice(0,10);}
+async function loadAssignTab(){await loadDefaultRoutesTable();await loadWeekAssignments();}
+window.loadAssignTab=loadAssignTab;
+async function loadDefaultRoutesTable(){const tbody=document.getElementById('default-routes-table');const[{data:defaults,error:derr},{data:routes,error:rerr}]=await Promise.all([sb.rpc('admin_list_driver_defaults'),sb.rpc('admin_list_payroll_routes')]);if(derr){tbody.innerHTML=`<tr><td colspan="2"><div class="empty">Error: ${escHtml(derr.message)}</div></td></tr>`;return;}assignRoutesCache=(routes||[]).filter(r=>r.active!==false);tbody.innerHTML=(defaults||[]).length?defaults.map(d=>`<tr><td class="td-primary">${escHtml(d.driver_name)}</td><td><select class="form-input" style="max-width:280px" onchange="saveDefaultRoute('${d.driver_id}',this.value)"><option value="">— No default —</option>${assignRoutesCache.map(r=>`<option value="${r.id}" ${r.id===d.route_id?'selected':''}>${escHtml(r.name)}</option>`).join('')}</select></td></tr>`).join(''):'<tr><td colspan="2"><div class="empty">No active drivers</div></td></tr>';}
+window.loadDefaultRoutesTable=loadDefaultRoutesTable;
+async function saveDefaultRoute(driverId,routeId){const{error}=await sb.rpc('admin_set_driver_default_route',{p_driver_id:driverId,p_route_id:routeId||null});if(error){toast('Error: '+error.message,'error');return;}toast('Default route saved ✓');logActivity('Set default route','driver',driverId,{route_id:routeId});loadWeekAssignments();}
+window.saveDefaultRoute=saveDefaultRoute;
+function shiftAssignWeek(delta){assignWeekStart.setDate(assignWeekStart.getDate()+delta*7);loadWeekAssignments();}
+window.shiftAssignWeek=shiftAssignWeek;
+async function loadWeekAssignments(){const label=document.getElementById('assign-week-label');const start=new Date(assignWeekStart);const end=new Date(assignWeekStart);end.setDate(end.getDate()+4);if(label)label.textContent=start.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});const{data,error}=await sb.rpc('admin_get_week_route_assignments',{p_week_start:fmtDateISO(assignWeekStart)});const tbody=document.getElementById('week-assign-table');if(error){tbody.innerHTML=`<tr><td colspan="6"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}const byDriver={};(data||[]).forEach(row=>{byDriver[row.driver_id]=byDriver[row.driver_id]||{name:row.driver_name,days:{}};byDriver[row.driver_id].days[row.assignment_date]=row;});const driverIds=Object.keys(byDriver).sort((a,b)=>byDriver[a].name.localeCompare(byDriver[b].name));const days=[0,1,2,3,4].map(i=>{const d=new Date(assignWeekStart);d.setDate(d.getDate()+i);return fmtDateISO(d);});tbody.innerHTML=driverIds.length?driverIds.map(id=>{const drv=byDriver[id];const cells=days.map(dateStr=>{const cell=drv.days[dateStr];const routeName=cell&&cell.route_name?escHtml(cell.route_name):'<span style="color:var(--text3)">—</span>';const overrideTag=cell&&cell.is_override?' <span style="font-size:9px;background:#374151;color:#9ca3af;padding:1px 4px;border-radius:4px">edited</span>':'';return `<td style="cursor:pointer" onclick="openOverrideModal('${id}','${escHtml(drv.name).replace(/'/g,"\\'")}','${dateStr}')">${routeName}${overrideTag}</td>`;}).join('');return `<tr><td class="td-primary">${escHtml(drv.name)}</td>${cells}</tr>`;}).join(''):'<tr><td colspan="6"><div class="empty">No active drivers</div></td></tr>';}
+window.loadWeekAssignments=loadWeekAssignments;
+let overrideCtx=null;
+function openOverrideModal(driverId,driverName,dateStr){overrideCtx={driverId,dateStr};document.getElementById('override-driver-label').textContent=driverName;document.getElementById('override-date-label').textContent=new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});const sel=document.getElementById('override-route');sel.innerHTML='<option value="">— No route (day off) —</option>'+assignRoutesCache.map(r=>`<option value="${r.id}">${escHtml(r.name)}</option>`).join('');openModal('modal-override');}
+window.openOverrideModal=openOverrideModal;
+async function saveOverride(){if(!overrideCtx)return;const routeId=document.getElementById('override-route').value||null;const{error}=await sb.rpc('admin_set_route_override',{p_driver_id:overrideCtx.driverId,p_date:overrideCtx.dateStr,p_route_id:routeId,p_note:null});if(error){toast('Error: '+error.message,'error');return;}toast('Assignment updated ✓');logActivity('Edited route assignment','driver',overrideCtx.driverId,{date:overrideCtx.dateStr,route_id:routeId});closeModal('modal-override');loadWeekAssignments();}
+window.saveOverride=saveOverride;
+async function clearOverride(){if(!overrideCtx)return;const{error}=await sb.rpc('admin_clear_route_override',{p_driver_id:overrideCtx.driverId,p_date:overrideCtx.dateStr});if(error){toast('Error: '+error.message,'error');return;}toast('Reverted to default ✓');closeModal('modal-override');loadWeekAssignments();}
+window.clearOverride=clearOverride;
 async function loadDriverHours(){const dateEl=document.getElementById('hours-date');if(!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);const day=dateEl.value;const start=new Date(day+'T00:00:00');const end=new Date(day+'T23:59:59.999');const tbody=document.getElementById('hours-table');tbody.innerHTML='<tr><td colspan="5"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('driver_shifts').select('id,clock_in_at,clock_out_at,drivers(full_name)').gte('clock_in_at',start.toISOString()).lte('clock_in_at',end.toISOString()).order('clock_in_at',{ascending:true});if(error){tbody.innerHTML=`<tr><td colspan="5"><div class="empty">Error loading hours: ${escHtml(error.message)}</div></td></tr>`;return;}if(!data||!data.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">No clock-ins recorded for this day yet</div></td></tr>';return;}tbody.innerHTML=data.map(s=>{const inTime=new Date(s.clock_in_at);const outTime=s.clock_out_at?new Date(s.clock_out_at):null;const hrs=((outTime?outTime.getTime():Date.now())-inTime.getTime())/3600000;return `<tr><td class="td-primary">${escHtml(s.drivers?.full_name||'—')}</td><td>${inTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${outTime?outTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—'}</td><td>${hrs.toFixed(2)} hrs</td><td>${outTime?'<span class="tag tag-green">Complete</span>':'<span class="tag tag-gold">On Site</span>'}</td></tr>`;}).join('');}
 window.loadDriverHours=loadDriverHours;
 const ROUTE_CSV_COLS=['route_name','customer_name','pay_rate','pickup_address','pickup_time','drop_address','delivery_time','active'];
