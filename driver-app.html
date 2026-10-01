@@ -126,6 +126,10 @@ body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:1
 .insp-checklist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .checklist-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:12px;cursor:pointer}
 .checklist-item input{width:16px;height:16px;flex-shrink:0}
+.pw-wrap{position:relative}
+.pw-wrap .form-input{padding-right:42px}
+.pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#9ca3af;padding:8px;line-height:1;user-select:none}
+.pw-toggle:hover{color:#fff}
 </style>
 </head>
 <body>
@@ -135,7 +139,7 @@ body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:1
   <div><div class="login-title">Driver Portal</div><div class="login-sub" style="margin-top:6px">Sign in to start your shift</div></div>
   <div class="login-err" id="login-err"></div>
   <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="login-email" placeholder="driver@bashkaexpress.com" autocomplete="email"></div>
-  <div class="form-group"><div class="form-label">Password</div><input class="form-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+  <div class="form-group"><div class="form-label">Password</div><div class="pw-wrap"><input class="form-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('login-pass',this)">👁</button></div></div>
   <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button>
 </div>
 <div id="app" style="display:none">
@@ -230,6 +234,8 @@ let currentUser=null,driverRecord=null,myJobs=[],watchId=null,myLat=null,myLng=n
 const PRETRIP_CHECKLIST=['Tires & Wheels','Windshield & Wipers','Brakes','Coupling Devices','Lights & Reflectors','Emergency Equipment','Steering','Exhaust System','Suspension','Belts & Hoses','Mirrors','Battery','Fluid Levels','Leaks / Other Issues','Horn'];
 let insp={jobId:null,type:null,photos:[],checklist:[]},inspectionsDone=new Set();
 function toast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
+function togglePwVis(id,btn){const el=document.getElementById(id);if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁';}}
+window.togglePwVis=togglePwVis;
 async function doLogin(){const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const btn=document.getElementById('login-btn');const err=document.getElementById('login-err');err.style.display='none';btn.disabled=true;btn.textContent='Signing in...';const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;btn.textContent='Sign In';}else{onLogin(data.user);}}
 async function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('driver-name-pill').textContent=user.email.split('@')[0];const{data:driver,error}=await sb.from('drivers').select('*').eq('profile_id',user.id).maybeSingle();if(error||!driver){toast('No driver profile linked to this account','error');return;}driverRecord=driver;await loadOpenShift();startGPS();loadJobs();setInterval(loadJobs,30000);}
 async function loadOpenShift(){if(!driverRecord)return;try{const{data}=await sb.from('driver_shifts').select('id').eq('driver_id',driverRecord.id).is('clock_out_at',null).order('clock_in_at',{ascending:false}).limit(1).maybeSingle();currentShiftId=data?data.id:null;}catch(e){currentShiftId=null;}}
