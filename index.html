@@ -210,6 +210,8 @@ select.form-input{appearance:none}
 .ai-chat-inputrow textarea{flex:1;resize:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--body);font-size:13px;padding:9px 11px;max-height:90px}
 .ai-chat-inputrow button{background:var(--gold);color:#000;border:none;border-radius:8px;padding:0 16px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
 .ai-chat-inputrow button:disabled{opacity:0.5;cursor:not-allowed}
+.ai-chat-mic-btn{background:var(--surface3)!important;color:var(--text)!important;padding:0 12px!important;font-size:16px!important}
+.ai-chat-mic-btn.listening{background:var(--red)!important;color:#fff!important;animation:voicePulse 1.4s infinite}
 .ai-typing{align-self:flex-start;font-family:var(--mono);font-size:11px;color:var(--text3)}
 /* ===== Mobile responsive: dispatch portal ===== */
 .mobile-menu-btn{display:none;background:none;border:1px solid var(--border2);color:var(--text2);width:34px;height:34px;border-radius:8px;font-size:16px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0}
@@ -248,6 +250,7 @@ select.form-input{appearance:none}
   <div id="ai-chat-messages" class="ai-chat-messages"><div class="ai-msg ai-msg-assistant">Hi — ask me things like "who's unassigned today", "how much did Mohamed earn this week", or "assign Ahmed to the Fargo route".</div></div>
   <div class="ai-chat-inputrow">
     <textarea id="ai-chat-input" rows="1" placeholder="Ask the dispatch assistant..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+    <button id="ai-chat-mic-btn" class="ai-chat-mic-btn" type="button" title="Speak your question" onclick="toggleAiVoiceListening()">🎙️</button>
     <button id="ai-chat-send" onclick="sendAiMessage()">Send</button>
   </div>
 </div>
@@ -1057,7 +1060,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
 (async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user && !inRecovery){onLogin(session.user);}})();
 
 /* ===== Voice Control (read-only by default; any data change requires an on-screen confirm click, never voice alone) ===== */
-let voiceRecognition=null,voiceListening=false,voiceDriversCache=[],voiceRoutesCache=[],voiceSpeakEnabled=true;
+let voiceRecognition=null,voiceListening=false,voiceDriversCache=[],voiceRoutesCache=[],voiceSpeakEnabled=true,voiceTarget='control';
 async function loadVoiceTab(){
   const btn=document.getElementById('voice-mic-btn');
   const status=document.getElementById('voice-status');
@@ -1085,15 +1088,15 @@ function ensureVoiceRecognition(){
   if(!SR)return null;
   const r=new SR();
   r.lang='en-US';r.continuous=false;r.interimResults=true;r.maxAlternatives=1;
-  r.onstart=()=>{voiceListening=true;const b=document.getElementById('voice-mic-btn');if(b)b.classList.add('listening');const s=document.getElementById('voice-status');if(s)s.textContent='Listening...';};
-  r.onresult=(e)=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t;else interim+=t;}const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='block';tEl.textContent=final||interim;}if(final.trim())runVoiceCommand(final.trim());};
-  r.onerror=(e)=>{const s=document.getElementById('voice-status');if(s)s.textContent=e.error==='not-allowed'?'Microphone access denied. Check your browser permissions.':'Voice error: '+e.error;stopVoiceUI();};
+  r.onstart=()=>{voiceListening=true;if(voiceTarget==='ai-chat'){const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.add('listening');}else{const b=document.getElementById('voice-mic-btn');if(b)b.classList.add('listening');const s=document.getElementById('voice-status');if(s)s.textContent='Listening...';}};
+  r.onresult=(e)=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t;else interim+=t;}if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=final||interim;if(final.trim()){input.value=final.trim();sendAiMessage();}}else{const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='block';tEl.textContent=final||interim;}if(final.trim())runVoiceCommand(final.trim());}};
+  r.onerror=(e)=>{if(voiceTarget==='ai-chat'){if(e.error==='not-allowed')aiAppendBubble('error','Microphone access denied. Check your browser permissions.');else if(e.error!=='no-speech'&&e.error!=='aborted')aiAppendBubble('error','Voice error: '+e.error);}else{const s=document.getElementById('voice-status');if(s)s.textContent=e.error==='not-allowed'?'Microphone access denied. Check your browser permissions.':'Voice error: '+e.error;}stopVoiceUI();};
   r.onend=()=>{stopVoiceUI();};
   voiceRecognition=r;
   return r;
 }
-function stopVoiceUI(){voiceListening=false;const b=document.getElementById('voice-mic-btn');if(b)b.classList.remove('listening');const s=document.getElementById('voice-status');if(s&&s.textContent==='Listening...')s.textContent='Tap the mic and speak a command';}
-function toggleVoiceListening(){const r=ensureVoiceRecognition();if(!r)return;if(voiceListening){r.stop();return;}const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='none';tEl.textContent='';}const rp=document.getElementById('voice-response');if(rp)rp.style.display='none';try{r.start();}catch(e){}}
+function stopVoiceUI(){voiceListening=false;const b1=document.getElementById('voice-mic-btn');if(b1)b1.classList.remove('listening');const b2=document.getElementById('ai-chat-mic-btn');if(b2)b2.classList.remove('listening');const s=document.getElementById('voice-status');if(s&&s.textContent==='Listening...')s.textContent='Tap the mic and speak a command';}
+function toggleVoiceListening(){voiceTarget='control';const r=ensureVoiceRecognition();if(!r)return;if(voiceListening){r.stop();return;}const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='none';tEl.textContent='';}const rp=document.getElementById('voice-response');if(rp)rp.style.display='none';try{r.start();}catch(e){}}
 window.toggleVoiceListening=toggleVoiceListening;
 function speakVoice(text){if(!voiceSpeakEnabled)return;try{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.02;window.speechSynthesis.speak(u);}catch(e){}}
 function showVoiceResponse(html){const p=document.getElementById('voice-response'),b=document.getElementById('voice-response-body');if(b)b.innerHTML=html;if(p)p.style.display='';}
@@ -1168,7 +1171,9 @@ window.confirmVoiceAssign=confirmVoiceAssign;
    change comes back as a confirm card and only applies after an explicit click here) ===== */
 const DISPATCH_ASSISTANT_FN=SUPABASE_URL+'/functions/v1/dispatch-assistant';
 let aiMessages=[],aiPendingAction=null,aiBusy=false;
-function toggleAiChat(){const p=document.getElementById('ai-chat-panel');const open=p.style.display==='flex';p.style.display=open?'none':'flex';if(!open)document.getElementById('ai-chat-input').focus();}
+function toggleAiVoiceListening(){voiceTarget='ai-chat';const r=ensureVoiceRecognition();if(!r){aiAppendBubble('error',"Voice input isn't supported in this browser. Try Chrome or Safari.");return;}if(voiceListening){r.stop();return;}try{r.start();}catch(e){}}
+window.toggleAiVoiceListening=toggleAiVoiceListening;
+function toggleAiChat(){const p=document.getElementById('ai-chat-panel');const open=p.style.display==='flex';p.style.display=open?'none':'flex';if(!open)document.getElementById('ai-chat-input').focus();else if(voiceTarget==='ai-chat'&&voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}}
 window.toggleAiChat=toggleAiChat;
 function aiAppendBubble(role,text){const box=document.getElementById('ai-chat-messages');const div=document.createElement('div');div.className='ai-msg '+(role==='user'?'ai-msg-user':role==='error'?'ai-msg-error':'ai-msg-assistant');div.textContent=text;box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
 function aiAppendConfirmCard(text,toolName,toolInput){const box=document.getElementById('ai-chat-messages');const div=document.createElement('div');div.className='ai-msg ai-msg-assistant';const summary=aiSummarizeAction(toolName,toolInput);div.innerHTML=`${text?escHtml(text)+'<br>':''}<div class="voice-confirm-card" style="margin-top:6px"><div>${summary}</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Nothing changes until you confirm — the assistant never applies this on its own.</div><div class="voice-confirm-actions"><button class="btn-voice-confirm" onclick="confirmAiAction(true)">✓ Confirm</button><button class="btn-voice-cancel" onclick="confirmAiAction(false)">Cancel</button></div></div>`;box.appendChild(div);box.scrollTop=box.scrollHeight;}
