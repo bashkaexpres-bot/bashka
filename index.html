@@ -185,19 +185,11 @@ select.form-input{appearance:none}
 .toast.success{border-color:rgba(29,185,84,0.4);color:var(--green)}
 .toast.error{border-color:rgba(229,53,53,0.4);color:#FF7070}
 .map-box{height:560px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.voice-mic-btn{width:84px;height:84px;border-radius:50%;background:var(--gold);border:none;font-size:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .15s}
-.voice-mic-btn:hover{filter:brightness(1.08)}
-.voice-mic-btn.listening{background:var(--red);animation:voicePulse 1.4s infinite}
-.voice-mic-btn:disabled{opacity:0.4;cursor:not-allowed}
 @keyframes voicePulse{0%{box-shadow:0 0 0 0 rgba(229,53,53,0.5)}70%{box-shadow:0 0 0 22px rgba(229,53,53,0)}100%{box-shadow:0 0 0 0 rgba(229,53,53,0)}}
-.voice-status{font-family:var(--mono);font-size:12px;color:var(--text3);text-align:center}
-.voice-transcript{font-family:var(--body);font-size:15px;color:var(--text);max-width:460px;text-align:center}
-.voice-example{font-family:var(--mono);font-size:12px;color:var(--text2);padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
 .voice-confirm-card{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .voice-confirm-actions{display:flex;gap:8px}
 .btn-voice-confirm{background:var(--gold);color:#000;border:none;padding:8px 16px;border-radius:7px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
 .btn-voice-cancel{background:var(--surface3);color:var(--text2);border:1px solid var(--border2);padding:8px 16px;border-radius:7px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
-.voice-response-float{position:fixed;bottom:24px;right:24px;width:380px;max-width:calc(100vw - 32px);max-height:min(70vh,560px);overflow-y:auto;z-index:9998;box-shadow:0 14px 36px rgba(0,0,0,.5)}
 .ai-chat-fab{position:fixed;bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;background:var(--gold);border:none;font-size:26px;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:9997;transition:filter .15s}
 .ai-chat-fab:hover{filter:brightness(1.08)}
 .ai-chat-panel{position:fixed;bottom:96px;right:24px;width:400px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 140px));z-index:9997;display:none;flex-direction:column;box-shadow:0 14px 36px rgba(0,0,0,.5);overflow:hidden}
@@ -240,10 +232,6 @@ select.form-input{appearance:none}
 </head>
 <body>
 <div class="toast" id="toast"></div>
-<div id="voice-response" class="panel voice-response-float" style="display:none">
-  <div class="panel-header"><div class="panel-title">🎙️ Voice Assistant</div><button class="action-btn action-btn-sm" style="background:var(--surface3);color:var(--text2)" onclick="document.getElementById('voice-response').style.display='none'">✕ Dismiss</button></div>
-  <div id="voice-response-body" style="padding:16px 18px"></div>
-</div>
 <button id="ai-chat-fab" class="ai-chat-fab" title="AI Dispatch Assistant" onclick="toggleAiChat()">🤖</button>
 <div id="ai-chat-panel" class="panel ai-chat-panel">
   <div class="panel-header"><div class="panel-title">🤖 Dispatch Assistant</div><button class="action-btn action-btn-sm" style="background:var(--surface3);color:var(--text2)" onclick="toggleAiChat()">✕ Close</button></div>
@@ -588,7 +576,6 @@ select.form-input{appearance:none}
       <div class="dash-sidebar-logo"><div style="width:26px;height:26px;background:var(--gold);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000">BE</div>Dispatch</div>
       <div class="sidebar-section-label">Navigation</div>
       <button class="sidebar-item active" onclick="showDash('overview',this)">📊 Overview</button>
-      <button class="sidebar-item" onclick="showDash('voice',this)">🎙️ Voice Control</button>
       <button class="sidebar-item" onclick="showDash('shipments',this)">📦 Shipments</button>
       <button class="sidebar-item" onclick="showDash('drivers',this)">👤 Drivers</button>
       <button class="sidebar-item" onclick="showDash('customers',this)">🏢 Customers</button>
@@ -808,29 +795,6 @@ select.form-input{appearance:none}
             </table>
           </div>
         </div>
-        <div id="dash-voice" class="dash-section">
-          <div class="panel" style="margin-bottom:18px">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 18px">
-              <button id="voice-mic-btn" class="voice-mic-btn" onclick="toggleVoiceListening()">🎙️</button>
-              <div id="voice-status" class="voice-status">Tap the mic and speak a command</div>
-              <div id="voice-transcript" class="voice-transcript" style="display:none"></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Try saying...</div></div>
-            <div style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">
-              <div class="voice-example">"Show route assignments"</div>
-              <div class="voice-example">"Show drivers"</div>
-              <div class="voice-example">"Show driver pay"</div>
-              <div class="voice-example">"Show vehicles"</div>
-              <div class="voice-example">"Show driver hours"</div>
-              <div class="voice-example">"Who's late"</div>
-              <div class="voice-example">"Find route to Fargo"</div>
-              <div class="voice-example">"Call [driver name]"</div>
-              <div class="voice-example">"Assign [driver name] to [route name]" — asks for on-screen confirmation before anything changes</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -883,12 +847,12 @@ function togglePwVis(id,btn){const el=document.getElementById(id);if(el.type==='
 async function onLogin(user){currentUser=user;document.getElementById('login-screen').style.display='none';document.getElementById('recovery-screen').style.display='none';document.getElementById('sys-bar').style.display='flex';document.getElementById('user-email-display').textContent=user.email.split('@')[0];document.getElementById('sidebar-user').textContent=user.email.split('@')[0];const{data:profile}=await sb.from('profiles').select('role,full_name').eq('id',user.id).maybeSingle();myRole=profile?.role||null;if(!['admin','dispatcher'].includes(myRole)){currentUser=null;await sb.auth.signOut();document.getElementById('sys-bar').style.display='none';document.getElementById('login-screen').style.display='flex';const le=document.getElementById('login-err');le.textContent='Access denied: this portal is for admins and dispatchers only. Drivers, please use the driver app.';le.style.display='block';const lb=document.getElementById('login-btn');if(lb){lb.disabled=false;lb.textContent='Sign In';}return;}if(profile?.full_name){document.getElementById('sidebar-user').textContent=profile.full_name;}applyRoleUI();showScreen('dash');refreshAll();initMarquee();loadSiteStats();const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='flex';}
 function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll('.admin-only').forEach(el=>{el.style.display=isAdmin?'':'none';});if(isAdmin){refreshMessagesBadge();refreshDriverSubmissionsBadge();}}
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
-async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});const vr=document.getElementById('voice-response');if(vr)vr.style.display='none';if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
+async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',voice:'Voice Control',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n==='voice')loadVoiceTab();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}if(n!=='voice'&&voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}}
+function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1059,168 +1023,72 @@ document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key===
 document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doSetNewPassword();});
 (async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user && !inRecovery){onLogin(session.user);}})();
 
-/* ===== Voice Control (read-only by default; any data change requires an on-screen confirm click, never voice alone) ===== */
-let voiceRecognition=null,voiceListening=false,voiceDriversCache=[],voiceRoutesCache=[],voiceSpeakEnabled=true,voiceTarget='control',voiceAccumulatedFinal='',voiceSilenceTimer=null;
-async function loadVoiceTab(){
-  const btn=document.getElementById('voice-mic-btn');
-  const status=document.getElementById('voice-status');
-  try{
-    const{data:drivers}=await sb.from('drivers').select('id,full_name,phone,status').order('full_name');
-    voiceDriversCache=drivers||[];
-  }catch(e){}
-  try{
-    const{data:routes,error}=await sb.rpc('admin_list_payroll_routes');
-    if(!error&&routes)voiceRoutesCache=routes;
-  }catch(e){}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){
-    if(btn){btn.disabled=true;}
-    if(status)status.textContent="Voice control isn't supported in this browser. Try Chrome or Safari.";
-    return;
-  }
-  if(btn)btn.disabled=false;
-  if(status&&!voiceListening)status.textContent='Tap the mic and speak a command';
-}
-window.loadVoiceTab=loadVoiceTab;
+/* ===== Voice input for the AI Dispatch Assistant (shared Web Speech API; any data change
+   still requires an on-screen confirm click before it's applied) ===== */
+let voiceRecognition=null,voiceListening=false,voiceSpeakEnabled=true,voiceAccumulatedFinal='',voiceSilenceTimer=null,voiceAltsBuffer=[];
 function ensureVoiceRecognition(){
   if(voiceRecognition)return voiceRecognition;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR)return null;
   const r=new SR();
-  r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
-  r.onstart=()=>{voiceListening=true;voiceAccumulatedFinal='';if(voiceSilenceTimer){clearTimeout(voiceSilenceTimer);voiceSilenceTimer=null;}if(voiceTarget==='ai-chat'){const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.add('listening');}else{const b=document.getElementById('voice-mic-btn');if(b)b.classList.add('listening');const s=document.getElementById('voice-status');if(s)s.textContent='Listening...';}};
+  // maxAlternatives>1 so an accented or unclear word gets a few guesses instead of just the
+  // single top (often wrong) one — the extra guesses are sent along to the AI as context so
+  // it can cross-check misheard names/routes against the real data instead of taking the
+  // literal transcript at face value.
+  r.lang=navigator.language&&navigator.language.toLowerCase().startsWith('en')?navigator.language:'en-US';
+  r.continuous=true;r.interimResults=true;r.maxAlternatives=5;
+  r.onstart=()=>{voiceListening=true;voiceAccumulatedFinal='';voiceAltsBuffer=[];if(voiceSilenceTimer){clearTimeout(voiceSilenceTimer);voiceSilenceTimer=null;}const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.add('listening');};
   r.onresult=(e)=>{
     let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)voiceAccumulatedFinal+=(voiceAccumulatedFinal?' ':'')+t.trim();else interim+=t;}
-    const combined=(voiceAccumulatedFinal+(interim?' '+interim:'')).trim();
-    if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=combined;}
-    else{const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='block';tEl.textContent=combined;}}
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const res=e.results[i];
+      const t=res[0].transcript;
+      if(res.isFinal){
+        voiceAccumulatedFinal+=(voiceAccumulatedFinal?' ':'')+t.trim();
+        const alts=[];
+        for(let j=1;j<res.length;j++){if(res[j]&&res[j].transcript&&res[j].transcript.trim())alts.push(res[j].transcript.trim());}
+        if(alts.length)voiceAltsBuffer.push(...alts);
+      }else interim+=t;
+    }
+    const input=document.getElementById('ai-chat-input');if(input)input.value=(voiceAccumulatedFinal+(interim?' '+interim:'')).trim();
     // Give the speaker a couple seconds of silence before treating the thought as finished —
     // avoids cutting people off mid-sentence. Every new word pushes this back out.
     if(voiceSilenceTimer)clearTimeout(voiceSilenceTimer);
     voiceSilenceTimer=setTimeout(()=>{try{r.stop();}catch(e){}},2500);
   };
-  r.onerror=(e)=>{if(voiceTarget==='ai-chat'){if(e.error==='not-allowed')aiAppendBubble('error','Microphone access denied. Check your browser permissions.');else if(e.error!=='no-speech'&&e.error!=='aborted')aiAppendBubble('error','Voice error: '+e.error);}else{const s=document.getElementById('voice-status');if(s)s.textContent=e.error==='not-allowed'?'Microphone access denied. Check your browser permissions.':'Voice error: '+e.error;}};
+  r.onerror=(e)=>{if(e.error==='not-allowed')aiAppendBubble('error','Microphone access denied. Check your browser permissions.');else if(e.error!=='no-speech'&&e.error!=='aborted')aiAppendBubble('error','Voice error: '+e.error);};
   r.onend=()=>{
     if(voiceSilenceTimer){clearTimeout(voiceSilenceTimer);voiceSilenceTimer=null;}
     const finalText=voiceAccumulatedFinal.trim();
-    voiceAccumulatedFinal='';
+    const alts=voiceAltsBuffer.slice(0,8);
+    voiceAccumulatedFinal='';voiceAltsBuffer=[];
     stopVoiceUI();
     if(!finalText)return;
-    if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=finalText;sendAiMessage(true);}
-    else runVoiceCommand(finalText);
+    const input=document.getElementById('ai-chat-input');if(input)input.value=finalText;
+    sendAiMessage(true,alts);
   };
   voiceRecognition=r;
   return r;
 }
-function stopVoiceUI(){voiceListening=false;const b1=document.getElementById('voice-mic-btn');if(b1)b1.classList.remove('listening');const b2=document.getElementById('ai-chat-mic-btn');if(b2)b2.classList.remove('listening');const s=document.getElementById('voice-status');if(s&&s.textContent==='Listening...')s.textContent='Tap the mic and speak a command';}
-function toggleVoiceListening(){voiceTarget='control';const r=ensureVoiceRecognition();if(!r)return;if(voiceListening){r.stop();return;}const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='none';tEl.textContent='';}const rp=document.getElementById('voice-response');if(rp)rp.style.display='none';try{r.start();}catch(e){}}
-window.toggleVoiceListening=toggleVoiceListening;
+function stopVoiceUI(){voiceListening=false;const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.remove('listening');}
 function speakVoice(text){if(!voiceSpeakEnabled)return;try{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.02;window.speechSynthesis.speak(u);}catch(e){}}
-function showVoiceResponse(html){const p=document.getElementById('voice-response'),b=document.getElementById('voice-response-body');if(b)b.innerHTML=html;if(p)p.style.display='';}
-function navFromVoice(tabName){const btn=document.querySelector(`.sidebar-item[onclick*="showDash('${tabName}'"]`);showDash(tabName,btn||null);}
-function runVoiceCommand(text){
-  const raw=text,t=text.toLowerCase().trim();
-  const status=document.getElementById('voice-status');
-  if(status)status.textContent='Heard: "'+raw+'"';
-  const navMap=[
-    [/route assignment|today'?s routes?|show routes?/,'assign','Showing route assignments.'],
-    [/driver hours|show hours/,'hours','Showing driver hours.'],
-    [/driver pay|payroll/,'pay','Showing driver pay.'],
-    [/show drivers?|driver list/,'drivers','Showing drivers.'],
-    [/vehicles?|fleet/,'vehicles','Showing fleet vehicles.'],
-    [/shipments?/,'shipments','Showing shipments.'],
-    [/customers?/,'customers','Showing customers.'],
-    [/live map/,'map','Showing the live map.'],
-    [/overview|dashboard|go home|home screen/,'overview','Showing the overview.']
-  ];
-  for(const[re,tab,say] of navMap){
-    if(re.test(t)){navFromVoice(tab);showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:var(--text2)">→ Navigated to <b style="color:var(--gold)">${TITLES[tab]||tab}</b></div>`);speakVoice(say);return;}
-  }
-  if(/who'?s late|late (shipments?|drivers?|jobs?|deliveries)|any late/.test(t)){
-    navFromVoice('overview');
-    setTimeout(()=>{const lateEl=document.getElementById('kpi-late');const n=lateEl?lateEl.textContent:'—';showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:var(--text2)"><b style="color:var(--red);font-size:20px">${n}</b> shipment(s) currently running late.</div>`);speakVoice(n==='0'?'Nothing is running late right now.':n+' shipments are running late.');},500);
-    return;
-  }
-  let m=t.match(/(?:find|search|look up)\s+(?:a\s+)?route\s+(?:to|for|in)?\s*(.+)/)||t.match(/route to (.+)/);
-  if(m){
-    const q=m[1].trim();
-    const matches=(voiceRoutesCache||[]).filter(r=>(r.name||'').toLowerCase().includes(q));
-    if(matches.length){showVoiceResponse(matches.map(r=>`<div class="voice-confirm-card" style="margin-bottom:8px"><div><b>${escHtml(r.name)}</b></div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">${escHtml(r.pickup_address||'')} → ${escHtml(r.drop_address||'')}</div></div>`).join(''));speakVoice(matches.length+' route'+(matches.length>1?'s':'')+' found matching '+q+'.');}
-    else{showVoiceResponse(`<div class="empty">No routes found matching "${escHtml(q)}"</div>`);speakVoice('No routes found matching '+q+'.');}
-    return;
-  }
-  m=t.match(/^call\s+(?:driver\s+)?(.+)/);
-  if(m){
-    const q=m[1].trim();
-    const found=(voiceDriversCache||[]).find(d=>(d.full_name||'').toLowerCase().includes(q));
-    if(found&&found.phone){showVoiceResponse(`<div class="voice-confirm-card"><div>Call <b>${escHtml(found.full_name)}</b> at <span style="font-family:var(--mono)">${escHtml(found.phone)}</span>?</div><div class="voice-confirm-actions"><a class="btn-voice-confirm" href="tel:${escHtml(found.phone)}">📞 Call Now</a><button class="btn-voice-cancel" onclick="document.getElementById('voice-response').style.display='none'">Cancel</button></div></div>`);speakVoice('Found '+found.full_name+'. Tap call now to dial.');}
-    else if(found){showVoiceResponse(`<div class="empty">${escHtml(found.full_name)} has no phone number on file.</div>`);speakVoice(found.full_name+' has no phone number on file.');}
-    else{showVoiceResponse(`<div class="empty">No driver found matching "${escHtml(q)}"</div>`);speakVoice('No driver found matching '+q+'.');}
-    return;
-  }
-  m=t.match(/assign\s+(?:driver\s+)?(.+?)\s+to\s+(.+)/);
-  if(m){
-    const dq=m[1].trim(),rq=m[2].trim();
-    const driver=(voiceDriversCache||[]).find(d=>(d.full_name||'').toLowerCase().includes(dq));
-    const route=(voiceRoutesCache||[]).find(r=>(r.name||'').toLowerCase().includes(rq));
-    if(!driver){showVoiceResponse(`<div class="empty">No driver found matching "${escHtml(dq)}"</div>`);speakVoice('No driver found matching '+dq+'.');return;}
-    if(!route){showVoiceResponse(`<div class="empty">No route found matching "${escHtml(rq)}"</div>`);speakVoice('No route found matching '+rq+'.');return;}
-    showVoiceResponse(`<div class="voice-confirm-card"><div>Set <b>${escHtml(driver.full_name)}</b>'s default route to <b>${escHtml(route.name)}</b>?</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Nothing changes until you confirm below — voice alone never applies this.</div><div class="voice-confirm-actions"><button class="btn-voice-confirm" onclick="confirmVoiceAssign('${driver.id}','${route.id}')">✓ Confirm Assign</button><button class="btn-voice-cancel" onclick="document.getElementById('voice-response').style.display='none'">Cancel</button></div></div>`);
-    speakVoice('Ready to assign '+driver.full_name+' to '+route.name+'. Please confirm on screen.');
-    return;
-  }
-  aiVoiceFallback(raw);
-}
-async function aiVoiceFallback(raw){
-  showVoiceResponse('<div style="font-family:var(--mono);font-size:13px;color:var(--text3)">Thinking...</div>');
-  aiMessages=[...aiMessages,{role:'user',content:raw}];
-  try{
-    const result=await aiCallFunction({messages:aiMessages});
-    if(!result)return;
-    aiMessages=result.messages||aiMessages;
-    if(result.type==='confirm'){
-      aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};
-      aiPendingSource='voice';
-      const summary=aiSummarizeAction(result.tool_name,result.tool_input);
-      showVoiceResponse(`${result.text?`<div style="font-family:var(--mono);font-size:13px;color:var(--text2);margin-bottom:8px">${escHtml(result.text)}</div>`:''}<div class="voice-confirm-card"><div>${summary}</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Nothing changes until you confirm — voice alone never applies this.</div><div class="voice-confirm-actions"><button class="btn-voice-confirm" onclick="confirmAiAction(true)">✓ Confirm</button><button class="btn-voice-cancel" onclick="confirmAiAction(false)">Cancel</button></div></div>`);
-      speakVoice(result.text||'Please confirm on screen.');
-    }else{
-      showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:var(--text2);white-space:pre-wrap">${escHtml(result.text||'')}</div>`);
-      speakVoice(result.text||'');
-    }
-  }catch(e){
-    showVoiceResponse(`<div class="empty">Error: ${escHtml(e.message)}</div>`);
-  }
-}
-async function confirmVoiceAssign(driverId,routeId){
-  const driver=(voiceDriversCache||[]).find(d=>d.id===driverId);
-  const route=(voiceRoutesCache||[]).find(r=>r.id===routeId);
-  const driverName=driver?driver.full_name:'driver',routeName=route?route.name:'route';
-  const{error}=await sb.rpc('admin_set_driver_default_route',{p_driver_id:driverId,p_route_id:routeId});
-  if(error){showVoiceResponse(`<div class="empty">Error: ${escHtml(error.message)}</div>`);return;}
-  showVoiceResponse(`<div class="voice-confirm-card"><div style="color:var(--green)">✓ ${escHtml(driverName)} assigned to ${escHtml(routeName)}.</div></div>`);
-  speakVoice(driverName+' has been assigned to '+routeName+'.');
-  logActivity('Assigned default route via voice control','driver_route_default',driverId,{route_id:routeId});
-}
-window.confirmVoiceAssign=confirmVoiceAssign;
 
 /* ===== AI Dispatch Assistant (Claude-powered chat; read tools run automatically, any data
    change comes back as a confirm card and only applies after an explicit click here) ===== */
 const DISPATCH_ASSISTANT_FN=SUPABASE_URL+'/functions/v1/dispatch-assistant';
-let aiMessages=[],aiPendingAction=null,aiPendingSource='chat',aiPendingSpeak=false,aiBusy=false;
-function toggleAiVoiceListening(){voiceTarget='ai-chat';const r=ensureVoiceRecognition();if(!r){aiAppendBubble('error',"Voice input isn't supported in this browser. Try Chrome or Safari.");return;}if(voiceListening){r.stop();return;}try{r.start();}catch(e){}}
+let aiMessages=[],aiPendingAction=null,aiPendingSpeak=false,aiBusy=false;
+function toggleAiVoiceListening(){const r=ensureVoiceRecognition();if(!r){aiAppendBubble('error',"Voice input isn't supported in this browser. Try Chrome or Safari.");return;}if(voiceListening){r.stop();return;}try{r.start();}catch(e){}}
 window.toggleAiVoiceListening=toggleAiVoiceListening;
-function toggleAiChat(){const p=document.getElementById('ai-chat-panel');const open=p.style.display==='flex';p.style.display=open?'none':'flex';if(!open)document.getElementById('ai-chat-input').focus();else if(voiceTarget==='ai-chat'&&voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}}
+function toggleAiChat(){const p=document.getElementById('ai-chat-panel');const open=p.style.display==='flex';p.style.display=open?'none':'flex';if(!open)document.getElementById('ai-chat-input').focus();else if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}}
 window.toggleAiChat=toggleAiChat;
 function aiAppendBubble(role,text){const box=document.getElementById('ai-chat-messages');const div=document.createElement('div');div.className='ai-msg '+(role==='user'?'ai-msg-user':role==='error'?'ai-msg-error':'ai-msg-assistant');div.textContent=text;box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
 function aiAppendConfirmCard(text,toolName,toolInput){const box=document.getElementById('ai-chat-messages');const div=document.createElement('div');div.className='ai-msg ai-msg-assistant';const summary=aiSummarizeAction(toolName,toolInput);div.innerHTML=`${text?escHtml(text)+'<br>':''}<div class="voice-confirm-card" style="margin-top:6px"><div>${summary}</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Nothing changes until you confirm — the assistant never applies this on its own.</div><div class="voice-confirm-actions"><button class="btn-voice-confirm" onclick="confirmAiAction(true)">✓ Confirm</button><button class="btn-voice-cancel" onclick="confirmAiAction(false)">Cancel</button></div></div>`;box.appendChild(div);box.scrollTop=box.scrollHeight;}
 function aiSummarizeAction(name,input){if(name==='assign_driver_to_job')return `Assign <b>${escHtml(input.driver_name)}</b> to shipment <b>${escHtml(input.job_number)}</b>${input.pay_rate?` at $${Number(input.pay_rate).toFixed(2)}`:''}?`;if(name==='set_driver_default_route')return `Set <b>${escHtml(input.driver_name)}</b>'s default route to <b>${escHtml(input.route_name)}</b>?`;if(name==='mark_job_delivered')return `Mark shipment <b>${escHtml(input.job_number)}</b> as delivered?`;return 'Apply this change?';}
 function aiSetBusy(busy){aiBusy=busy;document.getElementById('ai-chat-send').disabled=busy;document.getElementById('ai-chat-input').disabled=busy;let t=document.getElementById('ai-typing-indicator');if(busy){if(!t){t=document.createElement('div');t.id='ai-typing-indicator';t.className='ai-typing';t.textContent='Thinking...';document.getElementById('ai-chat-messages').appendChild(t);document.getElementById('ai-chat-messages').scrollTop=9e9;}}else if(t)t.remove();}
 async function aiCallFunction(payload){const{data:{session}}=await sb.auth.getSession();if(!session){aiAppendBubble('error','Session expired — please sign in again.');return null;}const res=await fetch(DISPATCH_ASSISTANT_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify(payload)});const result=await res.json();if(!res.ok){aiAppendBubble('error','Error: '+(result.error||'Something went wrong'));return null;}return result;}
-async function sendAiMessage(viaVoice){if(aiBusy)return;const input=document.getElementById('ai-chat-input');const text=input.value.trim();if(!text)return;input.value='';aiAppendBubble('user',text);aiMessages=[...aiMessages,{role:'user',content:text}];aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;if(result.type==='confirm'){aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};aiPendingSource='chat';aiPendingSpeak=!!viaVoice;aiAppendConfirmCard(result.text,result.tool_name,result.tool_input);if(viaVoice)speakVoice(result.text||'Please confirm on screen.');}else{aiAppendBubble('assistant',result.text||'(no response)');if(viaVoice)speakVoice(result.text||'');}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
+async function sendAiMessage(viaVoice,altHints){if(aiBusy)return;const input=document.getElementById('ai-chat-input');const text=input.value.trim();if(!text)return;input.value='';aiAppendBubble('user',text);let content=text;if(viaVoice){content='[Voice message, transcribed by speech-to-text — the speaker may have an accent, so names/words below may be misheard]\n'+text;if(altHints&&altHints.length)content+='\n(other possible transcriptions of parts of this, in case the above misheard something: '+altHints.join('; ')+')';}aiMessages=[...aiMessages,{role:'user',content}];aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;if(result.type==='confirm'){aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};aiPendingSpeak=!!viaVoice;aiAppendConfirmCard(result.text,result.tool_name,result.tool_input);if(viaVoice)speakVoice(result.text||'Please confirm on screen.');}else{aiAppendBubble('assistant',result.text||'(no response)');if(viaVoice)speakVoice(result.text||'');}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
 window.sendAiMessage=sendAiMessage;
-async function confirmAiAction(approved){if(!aiPendingAction||aiBusy)return;const pending=aiPendingAction;const source=aiPendingSource;const speak=aiPendingSpeak;aiPendingAction=null;aiPendingSource='chat';aiPendingSpeak=false;document.querySelectorAll('.voice-confirm-actions').forEach(el=>{el.innerHTML=approved?'<span style="font-size:12px;color:var(--text3)">Applying...</span>':'<span style="font-size:12px;color:var(--text3)">Cancelled</span>';});aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages,confirmed:approved,tool_use_id:pending.tool_use_id,tool_name:pending.tool_name,tool_input:pending.tool_input});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;const text=result.text||(approved?'Done.':'Cancelled.');if(source==='voice'){showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:${approved?'var(--green)':'var(--text2)'}">${escHtml(text)}</div>`);speakVoice(text);}else{aiAppendBubble('assistant',text);if(speak)speakVoice(text);}if(approved){loadOverview();const active=document.querySelector('.dash-section.active');if(active){const id=active.id.replace('dash-','');if(id==='shipments')loadShipments();else if(id==='drivers')loadDrivers();else if(id==='assign')loadAssignTab();else if(id==='pay')loadPayTab();}}}catch(e){if(source==='voice')showVoiceResponse(`<div class="empty">Error: ${escHtml(e.message)}</div>`);else aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
+async function confirmAiAction(approved){if(!aiPendingAction||aiBusy)return;const pending=aiPendingAction;const speak=aiPendingSpeak;aiPendingAction=null;aiPendingSpeak=false;document.querySelectorAll('.voice-confirm-actions').forEach(el=>{el.innerHTML=approved?'<span style="font-size:12px;color:var(--text3)">Applying...</span>':'<span style="font-size:12px;color:var(--text3)">Cancelled</span>';});aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages,confirmed:approved,tool_use_id:pending.tool_use_id,tool_name:pending.tool_name,tool_input:pending.tool_input});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;const text=result.text||(approved?'Done.':'Cancelled.');aiAppendBubble('assistant',text);if(speak)speakVoice(text);if(approved){loadOverview();const active=document.querySelector('.dash-section.active');if(active){const id=active.id.replace('dash-','');if(id==='shipments')loadShipments();else if(id==='drivers')loadDrivers();else if(id==='assign')loadAssignTab();else if(id==='pay')loadPayTab();}}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
 window.confirmAiAction=confirmAiAction;
 </script>
 </body>
