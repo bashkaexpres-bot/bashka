@@ -1060,7 +1060,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
 (async()=>{const{data:{session}}=await sb.auth.getSession();if(session?.user && !inRecovery){onLogin(session.user);}})();
 
 /* ===== Voice Control (read-only by default; any data change requires an on-screen confirm click, never voice alone) ===== */
-let voiceRecognition=null,voiceListening=false,voiceDriversCache=[],voiceRoutesCache=[],voiceSpeakEnabled=true,voiceTarget='control';
+let voiceRecognition=null,voiceListening=false,voiceDriversCache=[],voiceRoutesCache=[],voiceSpeakEnabled=true,voiceTarget='control',voiceAccumulatedFinal='',voiceSilenceTimer=null;
 async function loadVoiceTab(){
   const btn=document.getElementById('voice-mic-btn');
   const status=document.getElementById('voice-status');
@@ -1087,11 +1087,29 @@ function ensureVoiceRecognition(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR)return null;
   const r=new SR();
-  r.lang='en-US';r.continuous=false;r.interimResults=true;r.maxAlternatives=1;
-  r.onstart=()=>{voiceListening=true;if(voiceTarget==='ai-chat'){const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.add('listening');}else{const b=document.getElementById('voice-mic-btn');if(b)b.classList.add('listening');const s=document.getElementById('voice-status');if(s)s.textContent='Listening...';}};
-  r.onresult=(e)=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t;else interim+=t;}if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=final||interim;if(final.trim()){input.value=final.trim();sendAiMessage();}}else{const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='block';tEl.textContent=final||interim;}if(final.trim())runVoiceCommand(final.trim());}};
-  r.onerror=(e)=>{if(voiceTarget==='ai-chat'){if(e.error==='not-allowed')aiAppendBubble('error','Microphone access denied. Check your browser permissions.');else if(e.error!=='no-speech'&&e.error!=='aborted')aiAppendBubble('error','Voice error: '+e.error);}else{const s=document.getElementById('voice-status');if(s)s.textContent=e.error==='not-allowed'?'Microphone access denied. Check your browser permissions.':'Voice error: '+e.error;}stopVoiceUI();};
-  r.onend=()=>{stopVoiceUI();};
+  r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+  r.onstart=()=>{voiceListening=true;voiceAccumulatedFinal='';if(voiceSilenceTimer){clearTimeout(voiceSilenceTimer);voiceSilenceTimer=null;}if(voiceTarget==='ai-chat'){const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.add('listening');}else{const b=document.getElementById('voice-mic-btn');if(b)b.classList.add('listening');const s=document.getElementById('voice-status');if(s)s.textContent='Listening...';}};
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)voiceAccumulatedFinal+=(voiceAccumulatedFinal?' ':'')+t.trim();else interim+=t;}
+    const combined=(voiceAccumulatedFinal+(interim?' '+interim:'')).trim();
+    if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=combined;}
+    else{const tEl=document.getElementById('voice-transcript');if(tEl){tEl.style.display='block';tEl.textContent=combined;}}
+    // Give the speaker a couple seconds of silence before treating the thought as finished —
+    // avoids cutting people off mid-sentence. Every new word pushes this back out.
+    if(voiceSilenceTimer)clearTimeout(voiceSilenceTimer);
+    voiceSilenceTimer=setTimeout(()=>{try{r.stop();}catch(e){}},2500);
+  };
+  r.onerror=(e)=>{if(voiceTarget==='ai-chat'){if(e.error==='not-allowed')aiAppendBubble('error','Microphone access denied. Check your browser permissions.');else if(e.error!=='no-speech'&&e.error!=='aborted')aiAppendBubble('error','Voice error: '+e.error);}else{const s=document.getElementById('voice-status');if(s)s.textContent=e.error==='not-allowed'?'Microphone access denied. Check your browser permissions.':'Voice error: '+e.error;}};
+  r.onend=()=>{
+    if(voiceSilenceTimer){clearTimeout(voiceSilenceTimer);voiceSilenceTimer=null;}
+    const finalText=voiceAccumulatedFinal.trim();
+    voiceAccumulatedFinal='';
+    stopVoiceUI();
+    if(!finalText)return;
+    if(voiceTarget==='ai-chat'){const input=document.getElementById('ai-chat-input');if(input)input.value=finalText;sendAiMessage(true);}
+    else runVoiceCommand(finalText);
+  };
   voiceRecognition=r;
   return r;
 }
@@ -1152,8 +1170,28 @@ function runVoiceCommand(text){
     speakVoice('Ready to assign '+driver.full_name+' to '+route.name+'. Please confirm on screen.');
     return;
   }
-  showVoiceResponse(`<div class="empty">Didn't catch a command in "${escHtml(raw)}". Try one of the examples below.</div>`);
-  speakVoice("Sorry, I didn't understand that.");
+  aiVoiceFallback(raw);
+}
+async function aiVoiceFallback(raw){
+  showVoiceResponse('<div style="font-family:var(--mono);font-size:13px;color:var(--text3)">Thinking...</div>');
+  aiMessages=[...aiMessages,{role:'user',content:raw}];
+  try{
+    const result=await aiCallFunction({messages:aiMessages});
+    if(!result)return;
+    aiMessages=result.messages||aiMessages;
+    if(result.type==='confirm'){
+      aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};
+      aiPendingSource='voice';
+      const summary=aiSummarizeAction(result.tool_name,result.tool_input);
+      showVoiceResponse(`${result.text?`<div style="font-family:var(--mono);font-size:13px;color:var(--text2);margin-bottom:8px">${escHtml(result.text)}</div>`:''}<div class="voice-confirm-card"><div>${summary}</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Nothing changes until you confirm — voice alone never applies this.</div><div class="voice-confirm-actions"><button class="btn-voice-confirm" onclick="confirmAiAction(true)">✓ Confirm</button><button class="btn-voice-cancel" onclick="confirmAiAction(false)">Cancel</button></div></div>`);
+      speakVoice(result.text||'Please confirm on screen.');
+    }else{
+      showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:var(--text2);white-space:pre-wrap">${escHtml(result.text||'')}</div>`);
+      speakVoice(result.text||'');
+    }
+  }catch(e){
+    showVoiceResponse(`<div class="empty">Error: ${escHtml(e.message)}</div>`);
+  }
 }
 async function confirmVoiceAssign(driverId,routeId){
   const driver=(voiceDriversCache||[]).find(d=>d.id===driverId);
@@ -1170,7 +1208,7 @@ window.confirmVoiceAssign=confirmVoiceAssign;
 /* ===== AI Dispatch Assistant (Claude-powered chat; read tools run automatically, any data
    change comes back as a confirm card and only applies after an explicit click here) ===== */
 const DISPATCH_ASSISTANT_FN=SUPABASE_URL+'/functions/v1/dispatch-assistant';
-let aiMessages=[],aiPendingAction=null,aiBusy=false;
+let aiMessages=[],aiPendingAction=null,aiPendingSource='chat',aiPendingSpeak=false,aiBusy=false;
 function toggleAiVoiceListening(){voiceTarget='ai-chat';const r=ensureVoiceRecognition();if(!r){aiAppendBubble('error',"Voice input isn't supported in this browser. Try Chrome or Safari.");return;}if(voiceListening){r.stop();return;}try{r.start();}catch(e){}}
 window.toggleAiVoiceListening=toggleAiVoiceListening;
 function toggleAiChat(){const p=document.getElementById('ai-chat-panel');const open=p.style.display==='flex';p.style.display=open?'none':'flex';if(!open)document.getElementById('ai-chat-input').focus();else if(voiceTarget==='ai-chat'&&voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}}
@@ -1180,9 +1218,9 @@ function aiAppendConfirmCard(text,toolName,toolInput){const box=document.getElem
 function aiSummarizeAction(name,input){if(name==='assign_driver_to_job')return `Assign <b>${escHtml(input.driver_name)}</b> to shipment <b>${escHtml(input.job_number)}</b>${input.pay_rate?` at $${Number(input.pay_rate).toFixed(2)}`:''}?`;if(name==='set_driver_default_route')return `Set <b>${escHtml(input.driver_name)}</b>'s default route to <b>${escHtml(input.route_name)}</b>?`;if(name==='mark_job_delivered')return `Mark shipment <b>${escHtml(input.job_number)}</b> as delivered?`;return 'Apply this change?';}
 function aiSetBusy(busy){aiBusy=busy;document.getElementById('ai-chat-send').disabled=busy;document.getElementById('ai-chat-input').disabled=busy;let t=document.getElementById('ai-typing-indicator');if(busy){if(!t){t=document.createElement('div');t.id='ai-typing-indicator';t.className='ai-typing';t.textContent='Thinking...';document.getElementById('ai-chat-messages').appendChild(t);document.getElementById('ai-chat-messages').scrollTop=9e9;}}else if(t)t.remove();}
 async function aiCallFunction(payload){const{data:{session}}=await sb.auth.getSession();if(!session){aiAppendBubble('error','Session expired — please sign in again.');return null;}const res=await fetch(DISPATCH_ASSISTANT_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify(payload)});const result=await res.json();if(!res.ok){aiAppendBubble('error','Error: '+(result.error||'Something went wrong'));return null;}return result;}
-async function sendAiMessage(){if(aiBusy)return;const input=document.getElementById('ai-chat-input');const text=input.value.trim();if(!text)return;input.value='';aiAppendBubble('user',text);aiMessages=[...aiMessages,{role:'user',content:text}];aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;if(result.type==='confirm'){aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};aiAppendConfirmCard(result.text,result.tool_name,result.tool_input);}else{aiAppendBubble('assistant',result.text||'(no response)');}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
+async function sendAiMessage(viaVoice){if(aiBusy)return;const input=document.getElementById('ai-chat-input');const text=input.value.trim();if(!text)return;input.value='';aiAppendBubble('user',text);aiMessages=[...aiMessages,{role:'user',content:text}];aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;if(result.type==='confirm'){aiPendingAction={tool_use_id:result.tool_use_id,tool_name:result.tool_name,tool_input:result.tool_input};aiPendingSource='chat';aiPendingSpeak=!!viaVoice;aiAppendConfirmCard(result.text,result.tool_name,result.tool_input);if(viaVoice)speakVoice(result.text||'Please confirm on screen.');}else{aiAppendBubble('assistant',result.text||'(no response)');if(viaVoice)speakVoice(result.text||'');}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
 window.sendAiMessage=sendAiMessage;
-async function confirmAiAction(approved){if(!aiPendingAction||aiBusy)return;const pending=aiPendingAction;aiPendingAction=null;document.querySelectorAll('.voice-confirm-actions').forEach(el=>{el.innerHTML=approved?'<span style="font-size:12px;color:var(--text3)">Applying...</span>':'<span style="font-size:12px;color:var(--text3)">Cancelled</span>';});aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages,confirmed:approved,tool_use_id:pending.tool_use_id,tool_name:pending.tool_name,tool_input:pending.tool_input});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;aiAppendBubble('assistant',result.text||(approved?'Done.':'Cancelled.'));if(approved){loadOverview();const active=document.querySelector('.dash-section.active');if(active){const id=active.id.replace('dash-','');if(id==='shipments')loadShipments();else if(id==='drivers')loadDrivers();else if(id==='assign')loadAssignTab();else if(id==='pay')loadPayTab();}}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
+async function confirmAiAction(approved){if(!aiPendingAction||aiBusy)return;const pending=aiPendingAction;const source=aiPendingSource;const speak=aiPendingSpeak;aiPendingAction=null;aiPendingSource='chat';aiPendingSpeak=false;document.querySelectorAll('.voice-confirm-actions').forEach(el=>{el.innerHTML=approved?'<span style="font-size:12px;color:var(--text3)">Applying...</span>':'<span style="font-size:12px;color:var(--text3)">Cancelled</span>';});aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages,confirmed:approved,tool_use_id:pending.tool_use_id,tool_name:pending.tool_name,tool_input:pending.tool_input});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;const text=result.text||(approved?'Done.':'Cancelled.');if(source==='voice'){showVoiceResponse(`<div style="font-family:var(--mono);font-size:13px;color:${approved?'var(--green)':'var(--text2)'}">${escHtml(text)}</div>`);speakVoice(text);}else{aiAppendBubble('assistant',text);if(speak)speakVoice(text);}if(approved){loadOverview();const active=document.querySelector('.dash-section.active');if(active){const id=active.id.replace('dash-','');if(id==='shipments')loadShipments();else if(id==='drivers')loadDrivers();else if(id==='assign')loadAssignTab();else if(id==='pay')loadPayTab();}}}catch(e){if(source==='voice')showVoiceResponse(`<div class="empty">Error: ${escHtml(e.message)}</div>`);else aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
 window.confirmAiAction=confirmAiAction;
 </script>
 </body>
