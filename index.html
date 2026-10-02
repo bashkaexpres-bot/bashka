@@ -1071,7 +1071,34 @@ function ensureVoiceRecognition(){
   return r;
 }
 function stopVoiceUI(){voiceListening=false;const b=document.getElementById('ai-chat-mic-btn');if(b)b.classList.remove('listening');}
-function speakVoice(text){if(!voiceSpeakEnabled)return;try{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.02;window.speechSynthesis.speak(u);}catch(e){}}
+let voicesReadyPromise=null;
+function waitForVoices(){
+  if(voicesReadyPromise)return voicesReadyPromise;
+  voicesReadyPromise=new Promise((resolve)=>{
+    const existing=window.speechSynthesis.getVoices();
+    if(existing.length){resolve(existing);return;}
+    window.speechSynthesis.onvoiceschanged=()=>resolve(window.speechSynthesis.getVoices());
+    setTimeout(()=>resolve(window.speechSynthesis.getVoices()),1500);
+  });
+  return voicesReadyPromise;
+}
+async function speakVoice(text){
+  if(!voiceSpeakEnabled||!text)return;
+  try{
+    if(!window.speechSynthesis)return;
+    const voices=await waitForVoices();
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1.02;
+    const preferred=voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith('en')&&!/^Google/.test(v.name))||voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith('en'));
+    if(preferred)u.voice=preferred;
+    // Chrome's speech queue can go to sleep after an idle gap (e.g. the time spent
+    // waiting on the AI's response) and silently drop the next speak() call —
+    // resume() first is the standard workaround.
+    window.speechSynthesis.resume();
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
 
 /* ===== AI Dispatch Assistant (Claude-powered chat; read tools run automatically, any data
    change comes back as a confirm card and only applies after an explicit click here) ===== */
