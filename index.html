@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0032)https://bashka-three.vercel.app/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bashka Express — Logistics Platform</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="./Bashka Express — Logistics Platform_files/css2" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -237,7 +237,7 @@ select.form-input{appearance:none}
   <div class="panel-header"><div class="panel-title">🤖 Dispatch Assistant</div><button class="action-btn action-btn-sm" style="background:var(--surface3);color:var(--text2)" onclick="toggleAiChat()">✕ Close</button></div>
   <div id="ai-chat-messages" class="ai-chat-messages"><div class="ai-msg ai-msg-assistant">Hi — ask me things like "who's unassigned today", "how much did Mohamed earn this week", or "assign Ahmed to the Fargo route".</div></div>
   <div class="ai-chat-inputrow">
-    <textarea id="ai-chat-input" rows="1" placeholder="Ask the dispatch assistant..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+    <textarea id="ai-chat-input" rows="1" placeholder="Ask the dispatch assistant..." onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
     <button id="ai-chat-mic-btn" class="ai-chat-mic-btn" type="button" title="Speak your question" onclick="toggleAiVoiceListening()">🎙️</button>
     <button id="ai-chat-send" onclick="sendAiMessage()">Send</button>
   </div>
@@ -248,8 +248,8 @@ select.form-input{appearance:none}
     <div><div class="login-title">Welcome back</div><div class="login-sub">Sign in to access the dispatch portal</div></div>
     <div class="login-err" id="login-err"></div>
     <div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="login-email" placeholder="dispatch@bashkaexpress.com"></div>
-    <div class="form-group"><div class="form-label">Password</div><div class="pw-wrap"><input class="form-input" type="password" id="login-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('login-pass',this)">👁</button></div></div>
-    <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button><div style="text-align:center;margin-top:12px"><a href="#" onclick="showRecoveryRequest();return false;" style="color:#9ca3af;font-size:13px">Forgot password?</a></div></div></div><div class="login-screen" id="recovery-screen" style="display:none"><div class="login-box"><div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div><div id="recovery-step1"><div><div class="login-title">Reset Password</div><div class="login-sub">Enter your email to receive a reset code</div></div><div class="login-err" id="recovery-err1"></div><div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="recovery-email" placeholder="you@example.com"></div><button class="btn-gold" id="recovery-send-btn" onclick="sendResetCode()">Send Code</button><div style="text-align:center;margin-top:12px"><a href="#" onclick="hideRecovery();return false;" style="color:#9ca3af;font-size:13px">Back to Sign In</a></div></div><div id="recovery-step2" style="display:none"><div><div class="login-title">Set New Password</div><div class="login-sub">Choose a new password for your account</div></div><div class="login-err" id="recovery-err"></div><div class="form-group"><div class="form-label">Reset Code</div><input class="form-input" type="text" id="recovery-code" placeholder="123456" inputmode="numeric"></div><div class="form-group"><div class="form-label">New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('recovery-pass',this)">👁</button></div></div><div class="form-group"><div class="form-label">Confirm Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass2" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('recovery-pass2',this)">👁</button></div></div><button class="btn-gold" id="recovery-btn" onclick="doSetNewPassword()">Set Password</button></div></div></div><div class="modal-overlay" id="modal-driver">
+    <div class="form-group"><div class="form-label">Password</div><div class="pw-wrap"><input class="form-input" type="password" id="login-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;login-pass&#39;,this)">👁</button></div></div>
+    <button class="btn-gold" id="login-btn" onclick="doLogin()">Sign In</button><div style="text-align:center;margin-top:12px"><a href="https://bashka-three.vercel.app/#" onclick="showRecoveryRequest();return false;" style="color:#9ca3af;font-size:13px">Forgot password?</a></div></div></div><div class="login-screen" id="recovery-screen" style="display:none"><div class="login-box"><div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div><div id="recovery-step1"><div><div class="login-title">Reset Password</div><div class="login-sub">Enter your email to receive a reset code</div></div><div class="login-err" id="recovery-err1"></div><div class="form-group"><div class="form-label">Email</div><input class="form-input" type="email" id="recovery-email" placeholder="you@example.com"></div><button class="btn-gold" id="recovery-send-btn" onclick="sendResetCode()">Send Code</button><div style="text-align:center;margin-top:12px"><a href="https://bashka-three.vercel.app/#" onclick="hideRecovery();return false;" style="color:#9ca3af;font-size:13px">Back to Sign In</a></div></div><div id="recovery-step2" style="display:none"><div><div class="login-title">Set New Password</div><div class="login-sub">Choose a new password for your account</div></div><div class="login-err" id="recovery-err"></div><div class="form-group"><div class="form-label">Reset Code</div><input class="form-input" type="text" id="recovery-code" placeholder="123456" inputmode="numeric"></div><div class="form-group"><div class="form-label">New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;recovery-pass&#39;,this)">👁</button></div></div><div class="form-group"><div class="form-label">Confirm Password</div><div class="pw-wrap"><input class="form-input" type="password" id="recovery-pass2" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;recovery-pass2&#39;,this)">👁</button></div></div><button class="btn-gold" id="recovery-btn" onclick="doSetNewPassword()">Set Password</button></div></div></div><div class="modal-overlay" id="modal-driver">
   <div class="modal">
     <div class="modal-title" id="modal-driver-title">Add Driver</div>
     <input type="hidden" id="d-id" value="">
@@ -265,7 +265,7 @@ select.form-input{appearance:none}
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-driver')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-driver&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
@@ -278,7 +278,7 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Match to Driver</div><select class="form-input" id="as-driver-select"><option value="">— Select Driver —</option></select></div>
     <div style="font-size:11px;color:var(--text3);margin-top:8px">This updates the selected driver's phone and license number with the submitted values.</div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-apply-driver')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-apply-driver&#39;)">Cancel</button>
       <button class="btn-save" onclick="confirmApplyToDriver()">Apply to Driver</button>
     </div>
   </div>
@@ -303,7 +303,7 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Scheduled Pickup</div><input class="form-input" type="datetime-local" id="s-pickup"></div>
     <div class="form-group"><div class="form-label">Scheduled Delivery</div><input class="form-input" type="datetime-local" id="s-delivery"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-shipment')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-shipment&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveShipment()">Save Shipment</button>
     </div>
   </div>
@@ -329,8 +329,27 @@ select.form-input{appearance:none}
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-vehicle')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-vehicle&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveVehicle()">Save Vehicle</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-trailer">
+  <div class="modal">
+    <div class="modal-title" id="modal-trailer-title">Add Trailer</div>
+    <input type="hidden" id="t-id">
+    <div class="form-group"><div class="form-label">Unit Number</div><input class="form-input" id="t-unit" placeholder="Trailer 228"></div>
+    <div class="form-group"><div class="form-label">Trailer Type</div><input class="form-input" id="t-type" placeholder="Dry Van / Reefer / Flatbed"></div>
+    <div class="form-group"><div class="form-label">Status</div>
+      <select class="form-input" id="t-status">
+        <option value="active">Active</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="out_of_service">Out of Service</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-trailer&#39;)">Cancel</button>
+      <button class="btn-save" onclick="saveTrailer()">Save Trailer</button>
     </div>
   </div>
 </div>
@@ -342,7 +361,7 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Phone</div><input class="form-input" id="c-phone" placeholder="(612) 555-0100"></div>
     <div class="form-group"><div class="form-label">City</div><input class="form-input" id="c-city" placeholder="Eagan, MN"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-customer')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-customer&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveCustomer()">Save Customer</button>
     </div>
   </div>
@@ -356,7 +375,7 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Assign Truck</div><select class="form-input" id="as-vehicle"><option value="">— Select Truck —</option></select></div>
     <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="as-pay-rate" placeholder="0.00"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-assign-shipment')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-assign-shipment&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveAssignment()">Assign</button>
     </div>
   </div>
@@ -376,7 +395,7 @@ select.form-input{appearance:none}
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="clearOverride()">Revert to default</button>
-      <button class="btn-cancel" onclick="closeModal('modal-override')">Close</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-override&#39;)">Close</button>
     </div>
   </div>
 </div>
@@ -386,7 +405,7 @@ select.form-input{appearance:none}
     <div id="genpay-summary" style="font-size:12px;color:var(--text2)"></div>
     <div id="genpay-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-generate-pay')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-generate-pay&#39;)">Cancel</button>
       <button class="btn-save" id="genpay-confirm-btn" onclick="confirmGeneratePay()">Log Selected Loads</button>
     </div>
   </div>
@@ -404,9 +423,9 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Delivery Time (daily)</div><input class="form-input" type="time" id="route-delivery-time"></div>
     <div class="form-group"><div class="form-label">Extra Stop Address (optional)</div><input class="form-input" id="route-stop2-address" placeholder="Leave blank if this route has no extra stop"></div>
     <div class="form-group"><div class="form-label">Extra Stop Time (optional)</div><input class="form-input" type="time" id="route-stop2-time"></div>
-    <div class="form-group"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" id="route-active" checked style="width:auto"> Active</label></div>
+    <div class="form-group"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" id="route-active" checked="" style="width:auto"> Active</label></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-route')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-route&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveRoute()">Save Route</button>
     </div>
   </div>
@@ -420,7 +439,7 @@ select.form-input{appearance:none}
     <div class="form-group"><div class="form-label">Assign Truck</div><select class="form-input" id="ew-vehicle"><option value="">— Select Truck —</option></select></div>
     <div class="form-group"><div class="form-label">Driver Pay Amount</div><input class="form-input" type="number" step="0.01" id="ew-pay-rate" placeholder="0.00"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-extra-work')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-extra-work&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveExtraWork()">Add Extra Work</button>
     </div>
   </div>
@@ -436,7 +455,7 @@ select.form-input{appearance:none}
     </div>
     <div class="modal-footer" style="justify-content:space-between">
       <button class="action-btn action-btn-sm" onclick="acceptAllImportRows()">✓ Accept All Valid Rows</button>
-      <button class="btn-cancel" onclick="closeModal('modal-import-review')">Close</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-import-review&#39;)">Close</button>
     </div>
   </div>
 </div>
@@ -464,7 +483,7 @@ select.form-input{appearance:none}
       <button class="btn-save" id="vd-add-btn" onclick="addVehicleDoc()">Upload Document</button>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-vehicle-docs')">Close</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-vehicle-docs&#39;)">Close</button>
     </div>
   </div>
 </div>
@@ -473,15 +492,15 @@ select.form-input{appearance:none}
     <div class="modal-title" id="insp-modal-title">Trip Inspections</div>
     <div id="insp-modal-body" style="display:flex;flex-direction:column;gap:14px;max-height:60vh;overflow-y:auto"></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-inspections')">Close</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-inspections&#39;)">Close</button>
     </div>
   </div>
 </div>
 <div class="sys-bar" id="sys-bar" style="display:none">
   <div class="sys-logo"><div class="sys-logo-badge">BE</div>Bashka Express</div>
   <div class="sys-tabs">
-    <button class="sys-tab active" onclick="showScreen('site')">🌐 Marketing Site</button>
-    <button class="sys-tab" onclick="showScreen('dash')">⚙️ Dispatch Portal</button>
+    <button class="sys-tab active" onclick="showScreen(&#39;site&#39;)">🌐 Marketing Site</button>
+    <button class="sys-tab" onclick="showScreen(&#39;dash&#39;)">⚙️ Dispatch Portal</button>
   </div>
   <div class="sys-right">
     <div class="live-pill"><div class="dot"></div>Live</div>
@@ -497,7 +516,7 @@ select.form-input{appearance:none}
         <h1 class="hero-h1">Moving <em>Minnesota</em> Forward, Every Mile</h1>
         <p class="hero-sub">Bashka Express LLC delivers dependable freight, last-mile, and regional logistics solutions across Minnesota and the Upper Midwest.</p>
         <div class="hero-ctas">
-          <button class="btn-hero" onclick="showScreen('dash')">Launch Dispatch Portal</button>
+          <button class="btn-hero" onclick="showScreen(&#39;dash&#39;)">Launch Dispatch Portal</button>
           <button class="btn-ghost">Request a Quote</button>
         </div>
         <div class="hero-stats">
@@ -575,21 +594,22 @@ select.form-input{appearance:none}
     <div class="dash-sidebar">
       <div class="dash-sidebar-logo"><div style="width:26px;height:26px;background:var(--gold);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000">BE</div>Dispatch</div>
       <div class="sidebar-section-label">Navigation</div>
-      <button class="sidebar-item active" onclick="showDash('overview',this)">📊 Overview</button>
-      <button class="sidebar-item" onclick="showDash('shipments',this)">📦 Shipments</button>
-      <button class="sidebar-item" onclick="showDash('drivers',this)">👤 Drivers</button>
-      <button class="sidebar-item" onclick="showDash('customers',this)">🏢 Customers</button>
-      <button class="sidebar-item" onclick="showDash('map',this)">🗺️ Live Map</button>
-      <button class="sidebar-item" onclick="showDash('vehicles',this)">🚚 Vehicles</button>
-      <button class="sidebar-item" onclick="showDash('assign',this)">🗓️ Route Assignments</button>
-      <button class="sidebar-item" onclick="showDash('pay',this)">💰 Driver Pay</button>
-      <button class="sidebar-item" onclick="showDash('hours',this)">⏱️ Driver Hours</button>
-      <button class="sidebar-item admin-only" id="nav-team" onclick="showDash('team',this)" style="display:none">👥 Team</button>
-      <button class="sidebar-item admin-only" id="nav-messages" onclick="showDash('messages',this)" style="display:none">✉️ Messages<span id="messages-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
-      <button class="sidebar-item admin-only" id="nav-driversubs" onclick="showDash('driversubs',this)" style="display:none">🪪 Driver Submissions<span id="driversubs-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
-      <button class="sidebar-item admin-only" id="nav-activity" onclick="showDash('activity',this)" style="display:none">📜 Activity Log</button>
+      <button class="sidebar-item active" onclick="showDash(&#39;overview&#39;,this)">📊 Overview</button>
+      <button class="sidebar-item" onclick="showDash(&#39;shipments&#39;,this)">📦 Shipments</button>
+      <button class="sidebar-item" onclick="showDash(&#39;drivers&#39;,this)">👤 Drivers</button>
+      <button class="sidebar-item" onclick="showDash(&#39;customers&#39;,this)">🏢 Customers</button>
+      <button class="sidebar-item" onclick="showDash(&#39;map&#39;,this)">🗺️ Live Map</button>
+      <button class="sidebar-item" onclick="showDash(&#39;vehicles&#39;,this)">🚚 Vehicles</button>
+      <button class="sidebar-item" onclick="showDash(&#39;trailers&#39;,this)">🚛 Trailers</button>
+      <button class="sidebar-item" onclick="showDash(&#39;assign&#39;,this)">🗓️ Route Assignments</button>
+      <button class="sidebar-item" onclick="showDash(&#39;pay&#39;,this)">💰 Driver Pay</button>
+      <button class="sidebar-item" onclick="showDash(&#39;hours&#39;,this)">⏱️ Driver Hours</button>
+      <button class="sidebar-item admin-only" id="nav-team" onclick="showDash(&#39;team&#39;,this)" style="display:none">👥 Team</button>
+      <button class="sidebar-item admin-only" id="nav-messages" onclick="showDash(&#39;messages&#39;,this)" style="display:none">✉️ Messages<span id="messages-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
+      <button class="sidebar-item admin-only" id="nav-driversubs" onclick="showDash(&#39;driversubs&#39;,this)" style="display:none">🪪 Driver Submissions<span id="driversubs-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
+      <button class="sidebar-item admin-only" id="nav-activity" onclick="showDash(&#39;activity&#39;,this)" style="display:none">📜 Activity Log</button>
       <div class="sidebar-section-label">System</div>
-      <button class="sidebar-item" onclick="openModal('modal-change-password')">🔑 Change Password</button>
+      <button class="sidebar-item" onclick="openModal(&#39;modal-change-password&#39;)">🔑 Change Password</button>
       <button class="sidebar-item" onclick="doLogout()">🚪 Sign Out</button>
       <div class="sidebar-footer"><div style="font-weight:600;font-size:13px;color:var(--text2);margin-bottom:2px" id="sidebar-user">Admin</div><div style="font-family:var(--mono);font-size:10px">Eagan, MN</div></div>
     </div>
@@ -615,7 +635,7 @@ select.form-input{appearance:none}
             <div class="kpi-card red"><div class="kpi-icon">⏰</div><div class="kpi-label">Running Late</div><div class="kpi-val" id="kpi-late">—</div><div class="kpi-delta">past scheduled time</div></div>
           </div>
           <div class="dash-grid-2">
-            <div class="panel"><div class="panel-header"><div class="panel-title">Recent Shipments</div><button class="action-btn action-btn-sm" onclick="showDash('shipments',null)">View All</button></div><table class="data-table"><thead><tr><th>Tracking</th><th>Customer</th><th>Status</th></tr></thead><tbody id="overview-shipments"><tr><td colspan="3"><div class="loading">Loading...</div></td></tr></tbody></table></div>
+            <div class="panel"><div class="panel-header"><div class="panel-title">Recent Shipments</div><button class="action-btn action-btn-sm" onclick="showDash(&#39;shipments&#39;,null)">View All</button></div><table class="data-table"><thead><tr><th>Tracking</th><th>Customer</th><th>Status</th></tr></thead><tbody id="overview-shipments"><tr><td colspan="3"><div class="loading">Loading...</div></td></tr></tbody></table></div>
             <div class="panel"><div class="panel-header"><div class="panel-title">Driver Status</div></div><div id="overview-drivers"><div class="loading">Loading...</div></div></div>
           </div>
         </div>
@@ -625,7 +645,7 @@ select.form-input{appearance:none}
               <div class="panel-title">All Shipments</div>
               <div style="display:flex;gap:8px;align-items:center">
                 <div class="filter-tabs" id="ship-filters"></div>
-                <button class="action-btn action-btn-sm" onclick="openModal('modal-shipment','new')">+ New Shipment</button><input type="file" id="import-assign-file" accept=".csv" style="display:none" onchange="handleAssignmentImport(this)"><button class="action-btn action-btn-sm" onclick="downloadAssignmentTemplate()">⬇ Template</button><button class="action-btn action-btn-sm" onclick="document.getElementById('import-assign-file').click()">⬆ Import Assignments</button><button class="action-btn action-btn-sm" onclick="openExtraWorkModal()">+ Extra Work</button>
+                <button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-shipment&#39;,&#39;new&#39;)">+ New Shipment</button><input type="file" id="import-assign-file" accept=".csv" style="display:none" onchange="handleAssignmentImport(this)"><button class="action-btn action-btn-sm" onclick="downloadAssignmentTemplate()">⬇ Template</button><button class="action-btn action-btn-sm" onclick="document.getElementById(&#39;import-assign-file&#39;).click()">⬆ Import Assignments</button><button class="action-btn action-btn-sm" onclick="openExtraWorkModal()">+ Extra Work</button>
               </div>
             </div>
             <table class="data-table">
@@ -637,7 +657,7 @@ select.form-input{appearance:none}
         <div id="dash-drivers" class="dash-section">
           <div class="dash-grid-2">
             <div class="panel">
-              <div class="panel-header"><div class="panel-title">Driver Roster</div><button class="action-btn action-btn-sm admin-only" id="btn-add-driver" style="display:none" onclick="openModal('modal-driver','new')">+ Add Driver</button></div>
+              <div class="panel-header"><div class="panel-title">Driver Roster</div><button class="action-btn action-btn-sm admin-only" id="btn-add-driver" style="display:none" onclick="openModal(&#39;modal-driver&#39;,&#39;new&#39;)">+ Add Driver</button></div>
               <div id="drivers-list"><div class="loading">Loading...</div></div>
             </div>
             <div class="panel">
@@ -648,7 +668,7 @@ select.form-input{appearance:none}
         </div>
         <div id="dash-customers" class="dash-section">
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Customers</div><button class="action-btn action-btn-sm" onclick="openModal('modal-customer')">+ Add Customer</button></div>
+            <div class="panel-header"><div class="panel-title">Customers</div><button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-customer&#39;)">+ Add Customer</button></div>
             <table class="data-table">
               <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>City</th><th></th></tr></thead>
               <tbody id="customers-table"><tr><td colspan="5"><div class="loading">Loading...</div></td></tr></tbody>
@@ -664,10 +684,20 @@ select.form-input{appearance:none}
         <div id="dash-vehicles" class="dash-section">
           <div id="vehicles-alert"></div>
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Fleet Vehicles</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="exportVehiclesCSV()">⬇ Export CSV</button><button class="action-btn action-btn-sm admin-only" style="display:none" onclick="downloadVehicleTemplate()">📋 Import Template</button><input type="file" id="vehicle-import-input" accept=".csv" style="display:none" onchange="handleVehicleImport(this)"><button class="action-btn action-btn-sm admin-only" id="btn-import-vehicles" style="display:none" onclick="document.getElementById('vehicle-import-input').click()">⬆ Import CSV</button><button class="action-btn action-btn-sm admin-only" id="btn-add-vehicle" style="display:none" onclick="openModal('modal-vehicle','new')">+ Add Vehicle</button></div></div>
+            <div class="panel-header"><div class="panel-title">Fleet Vehicles</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="exportVehiclesCSV()">⬇ Export CSV</button><button class="action-btn action-btn-sm admin-only" style="display:none" onclick="downloadVehicleTemplate()">📋 Import Template</button><input type="file" id="vehicle-import-input" accept=".csv" style="display:none" onchange="handleVehicleImport(this)"><button class="action-btn action-btn-sm admin-only" id="btn-import-vehicles" style="display:none" onclick="document.getElementById(&#39;vehicle-import-input&#39;).click()">⬆ Import CSV</button><button class="action-btn action-btn-sm admin-only" id="btn-add-vehicle" style="display:none" onclick="openModal(&#39;modal-vehicle&#39;,&#39;new&#39;)">+ Add Vehicle</button></div></div>
             <table class="data-table">
-              <thead><tr><th>Unit #</th><th>Vehicle</th><th>VIN / Plate</th><th>Assigned Driver</th><th>Status</th><th>Insurance</th><th>Registration</th><th></th></tr></thead>
-              <tbody id="vehicles-table"><tr><td colspan="8"><div class="loading">Loading...</div></td></tr></tbody>
+              <thead><tr><th>Unit #</th><th>Vehicle</th><th>VIN / Plate</th><th>Assigned Driver</th><th>Status</th><th>Insurance</th><th>Registration</th><th>DOT Inspection</th><th></th></tr></thead>
+              <tbody id="vehicles-table"><tr><td colspan="9"><div class="loading">Loading...</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="dash-trailers" class="dash-section">
+          <div id="trailers-alert"></div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Trailers</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm admin-only" style="display:none" id="btn-add-trailer" onclick="openModal(&#39;modal-trailer&#39;,&#39;new&#39;)">+ Add Trailer</button></div></div>
+            <table class="data-table">
+              <thead><tr><th>Unit #</th><th>Type</th><th>Status</th><th>DOT Inspection</th><th></th></tr></thead>
+              <tbody id="trailers-table"><tr><td colspan="5"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -741,7 +771,7 @@ select.form-input{appearance:none}
             </table>
           </div>
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Routes</div><div style="display:flex;gap:8px"><input type="file" id="import-route-file" accept=".csv" style="display:none" onchange="handleRouteImport(this)"><button class="action-btn-neutral action-btn-sm" onclick="downloadRouteTemplate()">⬇ Template</button><button class="action-btn-neutral action-btn-sm" onclick="document.getElementById('import-route-file').click()">⬆ Import Routes</button><button class="action-btn action-btn-sm" onclick="openRouteModal()">+ Add Route</button></div></div>
+            <div class="panel-header"><div class="panel-title">Routes</div><div style="display:flex;gap:8px"><input type="file" id="import-route-file" accept=".csv" style="display:none" onchange="handleRouteImport(this)"><button class="action-btn-neutral action-btn-sm" onclick="downloadRouteTemplate()">⬇ Template</button><button class="action-btn-neutral action-btn-sm" onclick="document.getElementById(&#39;import-route-file&#39;).click()">⬆ Import Routes</button><button class="action-btn action-btn-sm" onclick="openRouteModal()">+ Add Route</button></div></div>
             <div class="panel-body">
               <table class="data-table">
                 <thead><tr><th>Route</th><th>Customer</th><th>Pay Rate</th><th>Pickup</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
@@ -761,7 +791,7 @@ select.form-input{appearance:none}
         </div>
         <div id="dash-team" class="dash-section">
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Team Accounts</div><button class="action-btn action-btn-sm" onclick="openModal('modal-team','new')">+ Invite Teammate</button></div>
+            <div class="panel-header"><div class="panel-title">Team Accounts</div><button class="action-btn action-btn-sm" onclick="openModal(&#39;modal-team&#39;,&#39;new&#39;)">+ Invite Teammate</button></div>
             <table class="data-table">
               <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th></tr></thead>
               <tbody id="team-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
@@ -803,10 +833,10 @@ select.form-input{appearance:none}
   <div class="modal">
     <div class="modal-title">Change Password</div>
     <div class="login-err" id="cp-err" style="display:none"></div>
-    <div class="form-group"><div class="form-label">New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="cp-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('cp-pass',this)">👁</button></div></div>
-    <div class="form-group"><div class="form-label">Confirm New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="cp-pass2" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis('cp-pass2',this)">👁</button></div></div>
+    <div class="form-group"><div class="form-label">New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="cp-pass" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;cp-pass&#39;,this)">👁</button></div></div>
+    <div class="form-group"><div class="form-label">Confirm New Password</div><div class="pw-wrap"><input class="form-input" type="password" id="cp-pass2" placeholder="••••••••"><button type="button" class="pw-toggle" tabindex="-1" onclick="togglePwVis(&#39;cp-pass2&#39;,this)">👁</button></div></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-change-password')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-change-password&#39;)">Cancel</button>
       <button class="btn-save" id="cp-save-btn" onclick="changeOwnPassword()">Save Password</button>
     </div>
   </div>
@@ -824,7 +854,7 @@ select.form-input{appearance:none}
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('modal-team')">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-team&#39;)">Cancel</button>
       <button class="btn-save" onclick="saveTeammate()">Send Invite</button>
     </div>
   </div>
@@ -849,12 +879,12 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
-function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
+function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-trailer'){document.getElementById('modal-trailer-title').textContent='Add Trailer';document.getElementById('t-id').value='';['t-unit','t-type'].forEach(f=>document.getElementById(f).value='');document.getElementById('t-status').value='active';}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 window.openModal=openModal;window.closeModal=closeModal;
 function stTag(s){const m={in_transit:['tag-gold','In Transit'],delivered:['tag-green','Delivered'],pending:['tag-red','Pending'],assigned:['tag-blue','Assigned'],active:['tag-green','Active'],off_duty:['tag-muted','Off Duty'],on_leave:['tag-orange','On Leave'],cancelled:['tag-red','Cancelled'],failed:['tag-red','Failed'],maintenance:['tag-orange','Maintenance'],out_of_service:['tag-red','Out of Service']};const[c,l]=m[s]||['tag-muted',s];return `<span class="tag ${c}">${l}</span>`;}
@@ -870,7 +900,8 @@ window.openInspectionsModal=openInspectionsModal;
 function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T00:00:00')-new Date(new Date().toDateString());return Math.round(ms/86400000);}
 function expiryBadge(dateStr){if(!dateStr)return '<span class="tag tag-muted">No Record</span>';const d=daysUntil(dateStr);if(d<0)return '<span class="tag tag-red">Expired</span>';if(d<=30)return `<span class="tag tag-orange">${d}d left</span>`;return `<span class="tag tag-green">${new Date(dateStr+'T00:00:00').toLocaleDateString()}</span>`;}
 function docTypeLabel(t){return {insurance:'Insurance',registration:'Registration',dot_inspection:'DOT Inspection',other:'Document'}[t]||t;}
-async function loadVehicles(){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="8"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('vehicles').select('*,drivers(full_name)').order('unit_number');if(error){document.getElementById('vehicles-table').innerHTML=`<tr><td colspan="8"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;document.getElementById('vehicles-alert').innerHTML='';return;}const vehicles=data||[];if(!vehicles.length){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="8"><div class="empty">No vehicles added yet</div></td></tr>';document.getElementById('vehicles-alert').innerHTML='';return;}const ids=vehicles.map(v=>v.id);const{data:docs}=await sb.from('vehicle_documents').select('*').in('vehicle_id',ids).order('created_at',{ascending:false});const current={};(docs||[]).forEach(d=>{current[d.vehicle_id]=current[d.vehicle_id]||{};if(!current[d.vehicle_id][d.doc_type])current[d.vehicle_id][d.doc_type]=d;});const alerts=[];(docs||[]).forEach(d=>{if(!d.expires_at)return;const days=daysUntil(d.expires_at);if(days<=30){const v=vehicles.find(v=>v.id===d.vehicle_id);alerts.push({unit:v?.unit_number||'—',type:d.doc_type,days});}});document.getElementById('vehicles-alert').innerHTML=alerts.length?`<div style="background:rgba(217,95,42,0.08);border:1px solid rgba(217,95,42,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--display);font-weight:700;font-size:13px;color:#F08060">⚠ ${alerts.length} document(s) need attention</div>${alerts.map(a=>`<div style="font-size:12px;color:var(--text2)">${escHtml(a.unit)} — ${docTypeLabel(a.type)}: ${a.days<0?'expired':a.days+'d left'}</div>`).join('')}</div>`:'';document.getElementById('vehicles-table').innerHTML=vehicles.map(v=>{const ins=current[v.id]?.insurance;const reg=current[v.id]?.registration;return `<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(v.unit_number)}</span></td><td class="td-primary">${escHtml([v.year,v.make,v.model].filter(Boolean).join(' '))||'—'}</td><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(v.vin||'—')}${v.plate?' · '+escHtml(v.plate):''}</td><td>${escHtml(v.drivers?.full_name||'Unassigned')}</td><td>${stTag(v.status)}</td><td>${expiryBadge(ins?.expires_at)}</td><td>${expiryBadge(reg?.expires_at)}</td><td>${myRole==='admin'?`<button class="action-btn-neutral" onclick="editVehicle('${v.id}')">✎ Edit</button>`:''}<button class="action-btn-neutral" onclick="openVehicleDocsModal('${v.id}','${escHtml(v.unit_number)}')">📄 Docs</button>${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteVehicle('${v.id}')">Delete</button>`:''}</td></tr>`;}).join('');}
+async function loadVehicles(){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="9"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('vehicles').select('*,drivers(full_name)').order('unit_number');if(error){document.getElementById('vehicles-table').innerHTML=`<tr><td colspan="9"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;document.getElementById('vehicles-alert').innerHTML='';return;}const vehicles=data||[];if(!vehicles.length){document.getElementById('vehicles-table').innerHTML='<tr><td colspan="9"><div class="empty">No vehicles added yet</div></td></tr>';document.getElementById('vehicles-alert').innerHTML='';return;}const ids=vehicles.map(v=>v.id);const{data:docs}=await sb.from('vehicle_documents').select('*').in('vehicle_id',ids).order('created_at',{ascending:false});const current={};(docs||[]).forEach(d=>{current[d.vehicle_id]=current[d.vehicle_id]||{};if(!current[d.vehicle_id][d.doc_type])current[d.vehicle_id][d.doc_type]=d;});const alerts=[];(docs||[]).forEach(d=>{if(!d.expires_at)return;const v=vehicles.find(v=>v.id===d.vehicle_id);if(v&&v.status==='out_of_service')return;const days=daysUntil(d.expires_at);if(days<=30){alerts.push({unit:v?.unit_number||'—',type:d.doc_type,days});}});document.getElementById('vehicles-alert').innerHTML=alerts.length?`<div style="background:rgba(217,95,42,0.08);border:1px solid rgba(217,95,42,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--display);font-weight:700;font-size:13px;color:#F08060">⚠ ${alerts.length} document(s) need attention</div>${alerts.map(a=>`<div style="font-size:12px;color:var(--text2)">${escHtml(a.unit)} — ${docTypeLabel(a.type)}: ${a.days<0?'expired':a.days+'d left'}</div>`).join('')}</div>`:'';document.getElementById('vehicles-table').innerHTML=vehicles.map(v=>{const ins=current[v.id]?.insurance;const reg=current[v.id]?.registration;const dot=current[v.id]?.dot_inspection;return `<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(v.unit_number)}</span></td><td class="td-primary">${escHtml([v.year,v.make,v.model].filter(Boolean).join(' '))||'—'}</td><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(v.vin||'—')}${v.plate?' · '+escHtml(v.plate):''}</td><td>${escHtml(v.drivers?.full_name||'Unassigned')}</td><td>${stTag(v.status)}</td><td>${expiryBadge(ins?.expires_at)}</td><td>${expiryBadge(reg?.expires_at)}</td><td>${expiryBadge(dot?.expires_at)}</td><td style="display:flex;gap:6px;flex-wrap:wrap">${v.status!=='out_of_service'?`<button class="action-btn-neutral" onclick="renewVehicleDot('${v.id}','${escHtml(v.unit_number)}')">↻ Renew DOT 1yr</button>`:''}${myRole==='admin'?`<button class="action-btn-neutral" onclick="editVehicle('${v.id}')">✎ Edit</button>`:''}<button class="action-btn-neutral" onclick="openVehicleDocsModal('${v.id}','${escHtml(v.unit_number)}')">📄 Docs</button>${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteVehicle('${v.id}')">Delete</button>`:''}</td></tr>`;}).join('');}
+window.renewVehicleDot=async(id,unitLabel)=>{if(!confirm(`Set DOT inspection for ${unitLabel} to expire exactly 1 year from today?`))return;const today=new Date();const iso=today.toISOString().slice(0,10);const expiry=new Date(today);expiry.setFullYear(expiry.getFullYear()+1);const expiryIso=expiry.toISOString().slice(0,10);const{error}=await sb.from('vehicle_documents').insert({vehicle_id:id,doc_type:'dot_inspection',issued_date:iso,expires_at:expiryIso});if(error){toast('Error: '+error.message,'error');return;}toast(`DOT renewed for ${unitLabel} — expires ${new Date(expiryIso+'T00:00:00').toLocaleDateString()} ✓`);logActivity('Renewed DOT inspection (1yr)','vehicle',id,{unit_number:unitLabel,expires_at:expiryIso});loadVehicles();};
 window.editVehicle=async(id)=>{const{data:v,error}=await sb.from('vehicles').select('*').eq('id',id).single();if(error||!v){toast('Error loading vehicle','error');return;}document.getElementById('modal-vehicle-title').textContent='Edit Vehicle';document.getElementById('v-id').value=v.id;document.getElementById('v-unit').value=v.unit_number||'';document.getElementById('v-make').value=v.make||'';document.getElementById('v-model').value=v.model||'';document.getElementById('v-year').value=v.year||'';document.getElementById('v-vin').value=v.vin||'';document.getElementById('v-plate').value=v.plate||'';document.getElementById('v-status').value=v.status||'active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>';sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data){sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sel.value=v.assigned_driver||'';}});document.getElementById('modal-vehicle').classList.add('open');};
 window.deleteVehicle=async(id)=>{if(!confirm('Delete this vehicle and all its documents?'))return;const{error}=await sb.from('vehicles').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Vehicle deleted');logActivity('Deleted vehicle','vehicle',id);loadVehicles();}};
 async function saveVehicle(){const id=document.getElementById('v-id').value||null;const unit=document.getElementById('v-unit').value.trim();if(!unit){toast('Unit number required','error');return;}const payload={unit_number:unit,make:document.getElementById('v-make').value.trim()||null,model:document.getElementById('v-model').value.trim()||null,year:document.getElementById('v-year').value?Number(document.getElementById('v-year').value):null,vin:document.getElementById('v-vin').value.trim()||null,plate:document.getElementById('v-plate').value.trim()||null,assigned_driver:document.getElementById('v-driver').value||null,status:document.getElementById('v-status').value,vehicle_code:unit,type:classifyVehicleType(document.getElementById('v-make').value,document.getElementById('v-model').value)};const btn=document.querySelector('#modal-vehicle .btn-save');if(btn){btn.disabled=true;btn.textContent='Saving...';}const{error}=id?await sb.from('vehicles').update(payload).eq('id',id):await sb.from('vehicles').insert(payload);if(btn){btn.disabled=false;btn.textContent='Save Vehicle';}if(error){toast('Error: '+error.message,'error');return;}toast('Vehicle saved ✓');logActivity(id?'Updated vehicle':'Added vehicle','vehicle',id||null,{unit_number:unit});closeModal('modal-vehicle');loadVehicles();}
@@ -892,6 +923,12 @@ window.deleteVehicleDoc=async(id,vehicleId)=>{if(!confirm('Delete this document?
 async function addVehicleDoc(){const vehicleId=document.getElementById('vdocs-vehicle-id').value;const file=document.getElementById('vd-file').files[0];const btn=document.getElementById('vd-add-btn');btn.disabled=true;btn.textContent='Uploading...';try{let filePath=null;if(file){const ext=(file.name.split('.').pop()||'dat').toLowerCase();filePath=`${vehicleId}/${Date.now()}.${ext}`;const{error:upErr}=await sb.storage.from('vehicle-documents').upload(filePath,file,{contentType:file.type||'application/octet-stream'});if(upErr)throw upErr;}const{error}=await sb.from('vehicle_documents').insert({vehicle_id:vehicleId,doc_type:document.getElementById('vd-type').value,doc_number:document.getElementById('vd-number').value.trim()||null,issued_date:document.getElementById('vd-issued').value||null,expires_at:document.getElementById('vd-expires').value||null,file_path:filePath});if(error)throw error;toast('✓ Document added');['vd-number','vd-issued','vd-expires'].forEach(f=>document.getElementById(f).value='');document.getElementById('vd-file').value='';loadVehicleDocs(vehicleId);loadVehicles();}catch(e){toast('Error: '+(e.message||e),'error');}btn.disabled=false;btn.textContent='Upload Document';}
 window.addVehicleDoc=addVehicleDoc;
 window.setShipFilter=(v,b)=>{shipFilter=v;loadShipments();};
+async function loadTrailers(){document.getElementById('trailers-table').innerHTML='<tr><td colspan="5"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('trailers').select('*').order('unit_number');if(error){document.getElementById('trailers-table').innerHTML=`<tr><td colspan="5"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;document.getElementById('trailers-alert').innerHTML='';return;}const trailers=data||[];if(!trailers.length){document.getElementById('trailers-table').innerHTML='<tr><td colspan="5"><div class="empty">No trailers added yet</div></td></tr>';document.getElementById('trailers-alert').innerHTML='';return;}const alerts=[];trailers.forEach(t=>{if(t.status==='out_of_service'||!t.dot_expiration)return;const days=daysUntil(t.dot_expiration);if(days<=30)alerts.push({unit:t.unit_number||'—',days});});document.getElementById('trailers-alert').innerHTML=alerts.length?`<div style="background:rgba(217,95,42,0.08);border:1px solid rgba(217,95,42,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--display);font-weight:700;font-size:13px;color:#F08060">⚠ ${alerts.length} trailer DOT inspection(s) need attention</div>${alerts.map(a=>`<div style="font-size:12px;color:var(--text2)">${escHtml(a.unit)} — DOT Inspection: ${a.days<0?'expired':a.days+'d left'}</div>`).join('')}</div>`:'';document.getElementById('trailers-table').innerHTML=trailers.map(t=>`<tr><td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(t.unit_number)}</span></td><td class="td-primary">${escHtml(t.trailer_type||'—')}</td><td>${stTag(t.status)}</td><td>${expiryBadge(t.dot_expiration)}</td><td style="display:flex;gap:6px;flex-wrap:wrap">${t.status!=='out_of_service'?`<button class="action-btn-neutral" onclick="renewTrailerDot('${t.id}','${escHtml(t.unit_number)}')">↻ Renew DOT 1yr</button>`:''}${myRole==='admin'?`<button class="action-btn-neutral" onclick="editTrailer('${t.id}')">✎ Edit</button><button class="action-btn-danger" onclick="deleteTrailer('${t.id}')">Delete</button>`:''}</td></tr>`).join('');}
+window.editTrailer=async(id)=>{const{data:t,error}=await sb.from('trailers').select('*').eq('id',id).single();if(error||!t){toast('Error loading trailer','error');return;}document.getElementById('modal-trailer-title').textContent='Edit Trailer';document.getElementById('t-id').value=t.id;document.getElementById('t-unit').value=t.unit_number||'';document.getElementById('t-type').value=t.trailer_type||'';document.getElementById('t-status').value=t.status||'active';document.getElementById('modal-trailer').classList.add('open');};
+window.deleteTrailer=async(id)=>{if(!confirm('Delete this trailer?'))return;const{error}=await sb.from('trailers').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Trailer deleted');logActivity('Deleted trailer','trailer',id);loadTrailers();}};
+async function saveTrailer(){const id=document.getElementById('t-id').value||null;const unit=document.getElementById('t-unit').value.trim();if(!unit){toast('Unit number required','error');return;}const payload={unit_number:unit,trailer_type:document.getElementById('t-type').value.trim()||null,status:document.getElementById('t-status').value};const btn=document.querySelector('#modal-trailer .btn-save');if(btn){btn.disabled=true;btn.textContent='Saving...';}const{error}=id?await sb.from('trailers').update(payload).eq('id',id):await sb.from('trailers').insert(payload);if(btn){btn.disabled=false;btn.textContent='Save Trailer';}if(error){toast('Error: '+error.message,'error');return;}toast('Trailer saved ✓');logActivity(id?'Updated trailer':'Added trailer','trailer',id||null,{unit_number:unit});closeModal('modal-trailer');loadTrailers();}
+window.saveTrailer=saveTrailer;
+window.renewTrailerDot=async(id,unitLabel)=>{if(!confirm(`Set DOT inspection for trailer ${unitLabel} to expire exactly 1 year from today?`))return;const today=new Date();const expiry=new Date(today);expiry.setFullYear(expiry.getFullYear()+1);const expiryIso=expiry.toISOString().slice(0,10);const{error}=await sb.from('trailers').update({dot_expiration:expiryIso}).eq('id',id);if(error){toast('Error: '+error.message,'error');return;}toast(`DOT renewed for trailer ${unitLabel} — expires ${new Date(expiryIso+'T00:00:00').toLocaleDateString()} ✓`);logActivity('Renewed DOT inspection (1yr)','trailer',id,{unit_number:unitLabel,expires_at:expiryIso});loadTrailers();};
 window.deleteShipment=async(id)=>{if(!confirm('Delete this shipment?'))return;const{error}=await sb.from('jobs').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Shipment deleted');logActivity('Deleted shipment','job',id);loadShipments();loadOverview();}};
 async function loadDrivers(){const{data,error}=await sb.from('drivers').select('*').order('full_name');if(error){toast('Error loading drivers: '+error.message,'error');return;}allDrivers=data||[];document.getElementById('drivers-list').innerHTML=data?.length?data.map(d=>`<div class="driver-item"><div class="driver-avatar">${(d.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}</div><div><div class="driver-name">${d.full_name}</div><div class="driver-sub">${d.phone||'No phone'} · ${d.license_number||'No license'}</div></div><div class="driver-status">${stTag(d.status)}<button class="action-btn-neutral" onclick="editDriver('${d.id}')">Edit</button>${(!d.profile_id&&myRole==='admin')?`<button class="action-btn-neutral" onclick="assignDriverLogin('${d.id}')">🔑 Login</button>`:''}${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteDriver('${d.id}')">✕</button>`:''}</div></div>`).join(''):'<div class="empty">No drivers yet.</div>';const active=data?.filter(d=>d.status==='active').length||0;const off=data?.filter(d=>d.status==='off_duty').length||0;document.getElementById('drivers-stats').innerHTML=`<div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Total Drivers</span><span style="font-weight:600">${data?.length||0}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Active</span><span style="color:var(--green);font-weight:600">${active}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Off Duty</span><span style="color:var(--text3);font-weight:600">${off}</span></div>`;}
 window.deleteDriver=async(id)=>{if(!confirm('Delete this driver?'))return;const{error}=await sb.from('drivers').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Driver deleted');logActivity('Deleted driver','driver',id);loadDrivers();}};
@@ -1118,5 +1155,6 @@ window.sendAiMessage=sendAiMessage;
 async function confirmAiAction(approved){if(!aiPendingAction||aiBusy)return;const pending=aiPendingAction;const speak=aiPendingSpeak;aiPendingAction=null;aiPendingSpeak=false;document.querySelectorAll('.voice-confirm-actions').forEach(el=>{el.innerHTML=approved?'<span style="font-size:12px;color:var(--text3)">Applying...</span>':'<span style="font-size:12px;color:var(--text3)">Cancelled</span>';});aiSetBusy(true);try{const result=await aiCallFunction({messages:aiMessages,confirmed:approved,tool_use_id:pending.tool_use_id,tool_name:pending.tool_name,tool_input:pending.tool_input});if(!result){aiSetBusy(false);return;}aiMessages=result.messages||aiMessages;const text=result.text||(approved?'Done.':'Cancelled.');aiAppendBubble('assistant',text);if(speak)speakVoice(text);if(approved){loadOverview();const active=document.querySelector('.dash-section.active');if(active){const id=active.id.replace('dash-','');if(id==='shipments')loadShipments();else if(id==='drivers')loadDrivers();else if(id==='assign')loadAssignTab();else if(id==='pay')loadPayTab();}}}catch(e){aiAppendBubble('error','Error: '+e.message);}aiSetBusy(false);}
 window.confirmAiAction=confirmAiAction;
 </script>
-</body>
-</html>
+
+
+</body></html>
