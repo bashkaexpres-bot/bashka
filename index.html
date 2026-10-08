@@ -726,8 +726,8 @@ select.form-input{appearance:none}
           <div class="panel">
             <div class="panel-header"><div class="panel-title">Compliance Center</div><div style="font-size:11px;color:var(--text3)">Every truck, trailer, driver, and company policy expiration in one place</div></div>
             <table class="data-table">
-              <thead><tr><th>Category</th><th>Unit / Name</th><th>Item</th><th>Status</th></tr></thead>
-              <tbody id="compliance-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
+              <thead><tr><th>Category</th><th>Unit / Name</th><th>Items</th></tr></thead>
+              <tbody id="compliance-table"><tr><td colspan="3"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
           </div>
           <div class="panel" style="margin-top:20px">
@@ -970,7 +970,7 @@ window.renewTrailerDot=async(id,unitLabel)=>{const today=new Date();const defaul
 // --- COMPLIANCE CENTER (unified expiration tracking) ---
 async function loadCompliance(){
   const tbody=document.getElementById('compliance-table');
-  tbody.innerHTML='<tr><td colspan="4"><div class="loading">Loading...</div></td></tr>';
+  tbody.innerHTML='<tr><td colspan="3"><div class="loading">Loading...</div></td></tr>';
   const[{data:vehicles},{data:vdocs},{data:trailers},{data:drivers},{data:policies}]=await Promise.all([
     sb.from('vehicles').select('id,unit_number,status'),
     sb.from('vehicle_documents').select('*').order('created_at',{ascending:false}),
@@ -981,17 +981,58 @@ async function loadCompliance(){
   const items=[];
   const vcurrent={};
   (vdocs||[]).forEach(d=>{vcurrent[d.vehicle_id]=vcurrent[d.vehicle_id]||{};if(!vcurrent[d.vehicle_id][d.doc_type])vcurrent[d.vehicle_id][d.doc_type]=d;});
-  (vehicles||[]).forEach(v=>{if(v.status==='out_of_service')return;const c=vcurrent[v.id]||{};items.push({category:'Truck',unit:v.unit_number,item:'Insurance',date:c.insurance?.expires_at||null});items.push({category:'Truck',unit:v.unit_number,item:'Registration',date:c.registration?.expires_at||null});items.push({category:'Truck',unit:v.unit_number,item:'DOT Inspection',date:c.dot_inspection?.expires_at||null});});
-  (trailers||[]).forEach(t=>{if(t.status==='out_of_service')return;items.push({category:'Trailer',unit:t.unit_number,item:'DOT Inspection',date:t.dot_expiration||null});items.push({category:'Trailer',unit:t.unit_number,item:'Registration',date:t.registration_expiration||null});});
-  (drivers||[]).forEach(d=>{items.push({category:'Driver',unit:d.full_name,item:'Medical Card',date:d.medical_card_expiration||null});items.push({category:'Driver',unit:d.full_name,item:'License (DL)',date:d.license_expiration||null});});
-  (policies||[]).forEach(p=>{items.push({category:'Company Policy',unit:p.name,item:p.policy_number?('Policy #'+p.policy_number):'—',date:p.expires_at||null});});
-  items.sort((a,b)=>{if(!a.date&&!b.date)return 0;if(!a.date)return 1;if(!b.date)return -1;return a.date<b.date?-1:a.date>b.date?1:0;});
-  tbody.innerHTML=items.length?items.map(it=>`<tr><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(it.category)}</td><td class="td-primary">${escHtml(it.unit||'—')}</td><td style="font-size:12px;color:var(--text2)">${escHtml(it.item)}</td><td>${expiryBadge(it.date)}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty">Nothing to track yet</div></td></tr>';
+  (vehicles||[]).forEach(v=>{if(v.status==='out_of_service')return;const c=vcurrent[v.id]||{};items.push({category:'Truck',unit:v.unit_number,item:'Insurance',date:c.insurance?.expires_at||null,entity:'vehicle_insurance',id:v.id});items.push({category:'Truck',unit:v.unit_number,item:'Registration',date:c.registration?.expires_at||null,entity:'vehicle_registration',id:v.id});items.push({category:'Truck',unit:v.unit_number,item:'DOT Inspection',date:c.dot_inspection?.expires_at||null,entity:'vehicle_dot',id:v.id});});
+  (trailers||[]).forEach(t=>{if(t.status==='out_of_service')return;items.push({category:'Trailer',unit:t.unit_number,item:'DOT Inspection',date:t.dot_expiration||null,entity:'trailer_dot',id:t.id});items.push({category:'Trailer',unit:t.unit_number,item:'Registration',date:t.registration_expiration||null,entity:'trailer_registration',id:t.id});});
+  (drivers||[]).forEach(d=>{items.push({category:'Driver',unit:d.full_name,item:'Medical Card',date:d.medical_card_expiration||null,entity:'driver_medical',id:d.id});items.push({category:'Driver',unit:d.full_name,item:'License (DL)',date:d.license_expiration||null,entity:'driver_license',id:d.id});});
+  (policies||[]).forEach(p=>{items.push({category:'Company Policy',unit:p.name,item:p.policy_number?('Policy #'+p.policy_number):'Expiration',date:p.expires_at||null,entity:'policy_expiry',id:p.id});});
+  const groups={};const order=[];
+  items.forEach(it=>{const key=it.category+'|'+(it.unit||'—');if(!groups[key]){groups[key]={category:it.category,unit:it.unit||'—',rows:[]};order.push(key);}groups[key].rows.push(it);});
+  const grouped=order.map(k=>groups[k]);
+  grouped.forEach(g=>{g.soonest=null;g.rows.forEach(r=>{if(!r.date)return;if(g.soonest===null||r.date<g.soonest)g.soonest=r.date;});});
+  grouped.sort((a,b)=>{if(!a.soonest&&!b.soonest)return 0;if(!a.soonest)return 1;if(!b.soonest)return -1;return a.soonest<b.soonest?-1:a.soonest>b.soonest?1:0;});
+  window.__complianceItems=items;
+  tbody.innerHTML=grouped.length?grouped.map(g=>`<tr><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(g.category)}</td><td class="td-primary">${escHtml(g.unit)}</td><td style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">${g.rows.map(r=>`<span onclick="editComplianceItem(${items.indexOf(r)})" title="Click to edit date" style="cursor:pointer;font-size:12px;color:var(--text2);display:flex;gap:6px;align-items:center;padding:3px 6px;border-radius:6px;border:1px dashed transparent" onmouseover="this.style.borderColor='var(--border)'" onmouseout="this.style.borderColor='transparent'">${escHtml(r.item)}: ${expiryBadge(r.date)} <span style="font-size:10px;color:var(--text3)">✎</span></span>`).join('')}</td></tr>`).join(''):'<tr><td colspan="3"><div class="empty">Nothing to track yet</div></td></tr>';
   const urgent=items.filter(it=>it.date&&daysUntil(it.date)<=30).length;
   const badge=document.getElementById('compliance-badge');if(badge){if(urgent){badge.textContent=urgent;badge.style.display='inline-block';}else{badge.style.display='none';}}
   const pill=document.getElementById('compliance-pill');const pillCount=document.getElementById('compliance-pill-count');if(pill&&pillCount){if(urgent){pillCount.textContent=urgent;pill.style.display='flex';}else{pill.style.display='none';}}
   loadPolicies(policies||[]);
 }
+window.editComplianceItem=async(idx)=>{
+  const it=(window.__complianceItems||[])[idx];
+  if(!it)return;
+  const input=prompt(`${it.unit} — ${it.item}\nEnter expiration date (YYYY-MM-DD), or clear the field and OK to remove it:`,it.date||'');
+  if(input===null)return;
+  const val=input.trim();
+  if(val && !/^\d{4}-\d{2}-\d{2}$/.test(val)){toast('Use YYYY-MM-DD format','error');return;}
+  const newDate=val?val:null;
+  try{
+    if(it.entity==='vehicle_insurance'||it.entity==='vehicle_registration'||it.entity==='vehicle_dot'){
+      const docType=it.entity==='vehicle_insurance'?'insurance':it.entity==='vehicle_registration'?'registration':'dot_inspection';
+      if(newDate===null){toast('Remove truck docs from the Vehicles tab','error');return;}
+      const{error}=await sb.from('vehicle_documents').insert({vehicle_id:it.id,doc_type:docType,issued_date:null,expires_at:newDate});
+      if(error)throw error;
+      await logActivity('update_expiration','vehicle',it.id,{doc_type:docType,expires_at:newDate});
+    }else if(it.entity==='trailer_dot'||it.entity==='trailer_registration'){
+      const col=it.entity==='trailer_dot'?'dot_expiration':'registration_expiration';
+      const{error}=await sb.from('trailers').update({[col]:newDate}).eq('id',it.id);
+      if(error)throw error;
+      await logActivity('update_expiration','trailer',it.id,{[col]:newDate});
+    }else if(it.entity==='driver_medical'||it.entity==='driver_license'){
+      const col=it.entity==='driver_medical'?'medical_card_expiration':'license_expiration';
+      const{error}=await sb.from('drivers').update({[col]:newDate}).eq('id',it.id);
+      if(error)throw error;
+      await logActivity('update_expiration','driver',it.id,{[col]:newDate});
+    }else if(it.entity==='policy_expiry'){
+      const{error}=await sb.from('company_policies').update({expires_at:newDate}).eq('id',it.id);
+      if(error)throw error;
+      await logActivity('update_expiration','company_policy',it.id,{expires_at:newDate});
+    }
+    toast('Expiration updated','success');
+    loadCompliance();
+  }catch(e){
+    toast('Error updating expiration','error');
+  }
+};
 function loadPolicies(policies){const tbody=document.getElementById('policies-table');if(!policies.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">No policies added yet</div></td></tr>';return;}tbody.innerHTML=policies.map(p=>`<tr><td class="td-primary">${escHtml(p.name)}</td><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(p.policy_number||'—')}</td><td>${expiryBadge(p.expires_at)}</td><td style="font-size:12px;color:var(--text2)">${escHtml(p.notes||'—')}</td><td>${myRole==='admin'?`<button class="action-btn-neutral" onclick="editPolicy('${p.id}')">✎ Edit</button><button class="action-btn-danger" onclick="deletePolicy('${p.id}')">Delete</button>`:''}</td></tr>`).join('');}
 window.editPolicy=async(id)=>{const{data:p,error}=await sb.from('company_policies').select('*').eq('id',id).single();if(error||!p){toast('Error loading policy','error');return;}document.getElementById('modal-policy-title').textContent='Edit Policy';document.getElementById('cp-id').value=p.id;document.getElementById('cp-name').value=p.name||'';document.getElementById('cp-number').value=p.policy_number||'';document.getElementById('cp-expires').value=p.expires_at||'';document.getElementById('cp-notes').value=p.notes||'';document.getElementById('modal-policy').classList.add('open');};
 window.deletePolicy=async(id)=>{if(!confirm('Delete this policy?'))return;const{error}=await sb.from('company_policies').delete().eq('id',id);if(error){toast('Error: '+error.message,'error');return;}toast('Policy deleted');logActivity('Deleted company policy','company_policy',id);loadCompliance();};
