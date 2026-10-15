@@ -1,0 +1,1375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truck Return Inspection</title>
+<meta name="theme-color" content="#0B5C8A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Inspect">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root {
+  /* Layout: slim sticky header with progress, one column on phones, checklist and tires side by side on iPad, thumb-reach tab bar at the bottom.
+     Type: Barlow Condensed for headings (highway-sign letterforms), Barlow for everything you read and tap. */
+  color-scheme: light dark;
+  --bg: #EDF0F2;
+  --surface: #FFFFFF;
+  --surface-2: #F4F6F8;
+  --ink: #12202B;
+  --ink-2: #4B5C69;
+  --line: #D0D8DE;
+  --accent: #0B5C8A;
+  --accent-ink: #FFFFFF;
+  --ok: #16754A;
+  --ok-bg: #DDF1E6;
+  --ok-solid: #16754A;
+  --on-ok: #FFFFFF;
+  --warn: #7A4E00;
+  --warn-bg: #FFEDC2;
+  --bad: #B3261E;
+  --bad-bg: #FBE1DE;
+  --bad-solid: #B3261E;
+  --on-bad: #FFFFFF;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0D171F; --surface: #15222C; --surface-2: #1B2C38; --ink: #E7EEF3; --ink-2: #9CAFBC; --line: #2A3C48;
+    --accent: #62B8EA; --accent-ink: #06202F;
+    --ok: #5FD39A; --ok-bg: #123828; --ok-solid: #5FD39A; --on-ok: #07241A;
+    --warn: #F2C45C; --warn-bg: #3B2E0C;
+    --bad: #FF8F86; --bad-bg: #461B18; --bad-solid: #FF8F86; --on-bad: #2A0A08;
+  }
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+h1, h2, h3, p { margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main.wrap { padding-block: 16px; display: grid; gap: 16px; }
+
+/* header */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.top-in { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-block: 10px 8px; }
+.brand-name { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1; letter-spacing: .01em; text-transform: uppercase; }
+.today { white-space: nowrap; font-size: 14px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; display: grid; gap: 2px; justify-items: end; }
+.linkbtn { border: 0; background: none; padding: 4px 0; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; min-height: 28px; }
+.prog-in { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; }
+.bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; border: 1px solid var(--line); }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+#progText { font-size: 13px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* nav */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-in { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; padding-block: 8px; }
+.nav button {
+  min-height: 52px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2);
+  font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .04em; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.nav button[aria-current="page"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.badge { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--bad-solid); color: var(--on-bad); font-family: var(--font-body); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+
+/* login */
+.login { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.login-card { width: min(100%, 420px); gap: 12px; }
+
+/* shared */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.banner { padding: 12px 14px; border-radius: 10px; font-weight: 500; }
+.banner.warn { background: var(--warn-bg); color: var(--warn); }
+.banner.bad { background: var(--bad-bg); color: var(--bad); }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.1; letter-spacing: .02em; text-transform: uppercase; }
+.sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.sec-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ghost { min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.btn { min-height: 56px; padding: 0 20px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: .04em; text-transform: uppercase; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn.alt { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); min-height: 48px; font-size: 20px; }
+.btn.danger.sure { background: var(--bad-solid); color: var(--on-bad, #fff); }
+.delbox { display: grid; gap: 8px; margin-top: 4px; }
+.nav-in.four { gap: 6px; }
+.nav-in.four button { min-width: 0; padding: 0 4px; font-size: 16px; letter-spacing: .02em; }
+.pinbox { text-align: center; border: 2px solid var(--accent); }
+.pinbox .pin { font-family: var(--font-display); font-weight: 700; font-size: 60px; letter-spacing: .14em; line-height: 1.1; }
+.prow { display: flex; flex-wrap: wrap; gap: 8px; }
+.prow .btn { min-height: 44px; font-size: 18px; padding: 0 14px; }
+.prow .btn.sure { background: var(--bad-solid); color: var(--on-bad, #fff); border-color: var(--bad-solid); }
+.who { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.1; }
+.act { display: grid; grid-template-columns: 76px 1fr; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+.act time { color: var(--ink-2); font-size: 14px; padding-top: 2px; }
+.dayh { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; margin-top: 8px; }
+.sub { font-size: 14px; color: var(--ink-2); }
+label.lbl, .lbl { display: block; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 4px; }
+input[type="text"], input[type="password"], input[type="date"], textarea {
+  width: 100%; min-height: 48px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 16px;
+}
+textarea { min-height: 84px; resize: vertical; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.fields > div { min-width: 0; }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.seg button { min-height: 48px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface-2); font-weight: 600; font-size: 16px; padding: 0 8px; }
+.seg button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg button.on.t-ok { background: var(--ok-solid); color: var(--on-ok); border-color: var(--ok-solid); }
+.seg button.on.t-bad { background: var(--bad-solid); color: var(--on-bad); border-color: var(--bad-solid); }
+
+.cols { display: grid; gap: 16px; align-items: start; }
+.cols > div { display: grid; gap: 16px; min-width: 0; }
+@media (min-width: 760px) { .cols { grid-template-columns: 1fr 1fr; } }
+
+/* checklist */
+.item { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.sec-head + .item { border-top: 0; }
+.item-l { font-weight: 600; font-size: 17px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.item-h { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; background: var(--warn-bg); color: var(--warn); border-radius: 5px; padding: 2px 6px; }
+.item.is-bad { background: var(--bad-bg); margin-inline: -14px; padding-inline: 14px; }
+.item.missing { box-shadow: inset 4px 0 0 var(--bad-solid); padding-left: 10px; }
+
+/* tires */
+.trow { display: grid; grid-template-columns: minmax(0, 1fr) 66px 66px 76px; gap: 6px; align-items: center; padding: 6px 0; }
+.thead { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); padding-block: 0; }
+.tlabel { font-weight: 600; }
+.trow .tin { text-align: center; padding-inline: 4px; font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 600; }
+.tin.flag-warn { border-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+.tin.flag-bad { border-color: var(--bad-solid); background: var(--bad-bg); color: var(--bad); }
+.dmg { min-height: 48px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface-2); font-size: 13px; font-weight: 600; }
+.dmg.on { background: var(--bad-solid); color: var(--on-bad); border-color: var(--bad-solid); }
+.tmsg { grid-column: 1 / -1; font-size: 14px; font-weight: 500; padding: 6px 10px; border-radius: 8px; }
+.tmsg.warn { background: var(--warn-bg); color: var(--warn); }
+.tmsg.bad { background: var(--bad-bg); color: var(--bad); }
+details.rules { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
+details.rules summary { min-height: 52px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+details.rules ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
+
+.cert { display: flex; gap: 12px; align-items: flex-start; font-weight: 500; }
+.cert input { width: 28px; height: 28px; flex: none; margin: 0; accent-color: var(--accent); }
+.errbox { background: var(--bad-bg); color: var(--bad); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; font-weight: 500; }
+.errbox ul { margin: 0; padding-left: 20px; }
+
+/* status */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.chip.ready { background: var(--ok-bg); color: var(--ok); }
+.chip.minor { background: var(--warn-bg); color: var(--warn); }
+.chip.hold { background: var(--bad-solid); color: var(--on-bad); }
+.chip.none { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.result { border-radius: 14px; padding: 22px 16px; display: grid; gap: 8px; text-align: left; }
+.result.ready { background: var(--ok-bg); color: var(--ok); }
+.result.minor { background: var(--warn-bg); color: var(--warn); }
+.result.hold { background: var(--bad-bg); color: var(--bad); }
+.result h2 { font-size: 34px; }
+.result p { font-size: 17px; font-weight: 500; }
+
+/* lists */
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; align-items: baseline; gap: 8px; }
+.stat b { font-family: var(--font-display); font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 14px; color: var(--ink-2); }
+.list { display: grid; gap: 10px; }
+.list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); align-items: start; }
+details.inv { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+details.inv.hold { border-color: var(--bad-solid); box-shadow: inset 5px 0 0 var(--bad-solid); }
+details.inv.minor { box-shadow: inset 5px 0 0 var(--warn); }
+details.inv > summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; min-height: 64px; cursor: pointer; }
+details.inv > summary::-webkit-details-marker { display: none; }
+.truck-no { font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 1; min-width: 56px; }
+.inv-sub { font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.inv-body { border-top: 1px solid var(--line); padding: 12px 14px 14px; display: grid; gap: 12px; }
+.def { display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
+.def.crit { background: var(--bad-bg); color: var(--bad); }
+.def b { font-weight: 600; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+td.bad { color: var(--bad); font-weight: 600; }
+td.warn { color: var(--warn); font-weight: 600; }
+.repair { display: grid; gap: 8px; padding: 10px; border: 1px dashed var(--line); border-radius: 10px; }
+.repaired { background: var(--ok-bg); color: var(--ok); padding: 8px 10px; border-radius: 8px; font-weight: 500; }
+.empty { padding: 28px 16px; text-align: center; color: var(--ink-2); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; }
+.setup textarea { min-height: 120px; }
+.setup-in { padding-bottom: 14px; }
+.targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div><div class="brand-name">Bashka Express</div><h1>Return inspection</h1></div>
+    <div class="today"><span id="todayLabel"></span><span id="roleLabel"></span><button type="button" class="linkbtn" id="signOut" hidden>Sign out</button></div>
+  </div>
+  <div id="progWrap"><div class="wrap prog-in"><div class="bar"><i id="barFill"></i></div><span id="progText"></span></div></div>
+</header>
+
+<main class="wrap">
+  <div id="banner" hidden></div>
+  <section id="view-inspect" aria-label="Inspect a truck"></section>
+  <section id="view-today" aria-label="Today's trucks" hidden></section>
+  <section id="view-log" aria-label="Inspection log" hidden></section>
+  <section id="view-people" aria-label="People and activity" hidden></section>
+</main>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap nav-in">
+    <button type="button" data-view="inspect" aria-current="page">Inspect</button>
+    <button type="button" data-view="today">Today <span class="badge" id="badgeToday" hidden></span></button>
+    <button type="button" data-view="log">Log <span class="badge" id="badgeLog" hidden></span></button>
+    <button type="button" data-view="people" id="navPeople" hidden>People</button>
+  </div>
+</nav>
+
+<div class="login" id="login" hidden>
+  <form class="card login-card" id="loginForm">
+    <div class="brand-name">Bashka Express</div>
+    <h1>Return inspection</h1>
+    <p class="sub">Enter your PIN to start.</p>
+    <div>
+      <label class="lbl" for="pin">PIN</label>
+      <input id="pin" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off">
+    </div>
+    <div id="loginErr" class="tmsg bad" hidden></div>
+    <button class="btn" type="submit" id="loginBtn">Sign in</button>
+  </form>
+</div>
+
+<datalist id="trucklist"></datalist>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- helpers ---------- */
+  function $(s, el) { return (el || document).querySelector(s); }
+  function add(el, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { add(el, x); }); return; }
+    el.appendChild(typeof c === 'object' ? c : document.createTextNode(String(c)));
+  }
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (k === 'hidden') { el.hidden = !!v; return; }
+        if (v == null || v === false) return;
+        if (k === 'class') el.className = v;
+        else if (k === 'text') el.textContent = v;
+        else if (k === 'value') el.value = v;
+        else if (k === 'checked') el.checked = !!v;
+        else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) add(el, arguments[i]);
+    return el;
+  }
+  function store(k, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(k);
+      if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    } catch (e) { return null; }
+    return null;
+  }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function fromKey(k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function fmtDate(k) { return fromKey(k).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }); }
+  function fmtTime(ts) { return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function uuid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) { /* fall through */ }
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  }
+
+  /* ---------- data ---------- */
+  var SECTIONS = [
+    { id: 'out', title: 'Walk-around', sub: 'Walk the whole truck, front to back. Look for new damage from the trip.', items: [
+      { id: 'brakes', label: 'Service brakes', crit: true, hint: 'Pedal feels firm and does not sink. Air brakes: no hissing, gauge holds pressure.' },
+      { id: 'parking', label: 'Parking brake', crit: true, hint: 'Sets and releases. Truck holds in place.' },
+      { id: 'steer', label: 'Steering', crit: true, hint: 'No loose play, no pulling to one side, no grinding.' },
+      { id: 'lights', label: 'Headlights, brake, tail and turn lights', crit: true, hint: 'Turn on the lights and 4-ways. Step on the brake and check the back.' },
+      { id: 'marker', label: 'Marker lights and reflectors', hint: 'All there, all lit, none cracked.' },
+      { id: 'wheels', label: 'Wheels, rims and lug nuts', crit: true, hint: 'No missing or loose lug nuts, no rust streaks, cracks or bent rims.' },
+      { id: 'susp', label: 'Springs, air bags and suspension', crit: true, hint: 'Nothing broken, sagging, leaning or leaking.' },
+      { id: 'fuel', label: 'Fuel tank and cap', crit: true, hint: 'Cap on tight, no fuel smell or drips, tank strapped tight.' },
+      { id: 'leaks', label: 'Leaks under the truck', hint: 'Oil, coolant, DEF or fuel on the ground or on the frame.' },
+      { id: 'exhaust', label: 'Exhaust', hint: 'No loose pipes, leaks or fresh soot marks.' },
+      { id: 'body', label: 'Body, doors and bumpers', hint: 'No new damage, nothing hanging, doors latch.' },
+      { id: 'glass', label: 'Windshield and windows', hint: 'No cracks in the driver view, no large chips.' }
+    ] },
+    { id: 'hood', title: 'Under the hood', sub: 'Engine off.', items: [
+      { id: 'oil', label: 'Engine oil level', hint: 'Dipstick between the marks.' },
+      { id: 'coolant', label: 'Coolant level', hint: 'Between min and max. Never open a hot radiator cap.' },
+      { id: 'belts', label: 'Belts and hoses', hint: 'No cracks, fraying or leaks.' },
+      { id: 'battery', label: 'Battery and cables', hint: 'Tight, clean, no corrosion.' },
+      { id: 'fluids', label: 'Washer fluid and DEF', hint: 'Topped up.' }
+    ] },
+    { id: 'cab', title: 'Cab', sub: 'Key on, engine running.', items: [
+      { id: 'belt', label: 'Seat belt', crit: true, hint: 'Latches and retracts. No fraying.' },
+      { id: 'mirrors', label: 'Mirrors and camera', hint: 'Not cracked, tight, adjustable.' },
+      { id: 'horn', label: 'Horn', hint: 'Works.' },
+      { id: 'wipers', label: 'Wipers and washers', hint: 'Blades not torn, washers spray.' },
+      { id: 'gauges', label: 'Gauges and warning lights', hint: 'No warning lights after start. Air pressure builds and holds.' },
+      { id: 'eld', label: 'ELD / Motive device', hint: 'Powered on, no fault light.' },
+      { id: 'hvac', label: 'Heater and defroster', hint: 'Both work.' }
+    ] },
+    { id: 'gear', title: 'Safety gear and papers', sub: 'Must stay in the truck.', items: [
+      { id: 'ext', label: 'Fire extinguisher', hint: 'Gauge in the green, mounted, rated 5 B:C or higher.' },
+      { id: 'tri', label: 'Warning triangles (3)', hint: 'All three there, not cracked.' },
+      { id: 'docs', label: 'Papers in the truck', hint: 'Registration, insurance card and permits are current.' }
+    ] },
+    { id: 'trailer', title: 'Trailer', sub: 'Only shown when the truck came back with a trailer.', trailerOnly: true, items: [
+      { id: 'kingpin', label: 'Fifth wheel and coupling', crit: true, hint: 'Locked, no gap, safety latch on, landing gear up.' },
+      { id: 'airlines', label: 'Air lines and electrical cord', crit: true, hint: 'No cuts or leaks, gladhands sealed.' },
+      { id: 'tlights', label: 'Trailer lights and reflectors', crit: true, hint: 'All lit and not cracked.' },
+      { id: 'tbrakes', label: 'Trailer brakes', crit: true, hint: 'Brake parts not worn, no air leaks, tug test holds.' },
+      { id: 'landing', label: 'Landing gear', hint: 'Cranks smoothly, no damage.' },
+      { id: 'tdoors', label: 'Doors, latches and seals', hint: 'Close and lock, seals not torn.' },
+      { id: 'tbody', label: 'Floor, roof and walls', hint: 'No holes, soft spots or light coming through.' }
+    ] }
+  ];
+
+  function defaultTargets() {
+    return {
+      tractor: { steer: 110, drive: 100, trailer: 100 },
+      straight: { steer: 100, drive: 100, trailer: 100 }
+    };
+  }
+
+  function layout(type, trailer) {
+    function duals(p) {
+      return [
+        { id: p + '-LO', label: 'Left outer' }, { id: p + '-LI', label: 'Left inner' },
+        { id: p + '-RI', label: 'Right inner' }, { id: p + '-RO', label: 'Right outer' }
+      ];
+    }
+    var ax = [{ id: 'S', label: 'Steer axle (front)', kind: 'steer', tires: [{ id: 'S-L', label: 'Left front' }, { id: 'S-R', label: 'Right front' }] }];
+    if (type === 'tractor') {
+      ax.push({ id: 'D1', label: 'Drive axle 1', kind: 'drive', tires: duals('D1') });
+      ax.push({ id: 'D2', label: 'Drive axle 2', kind: 'drive', tires: duals('D2') });
+    } else {
+      ax.push({ id: 'D1', label: 'Rear axle', kind: 'drive', tires: duals('D1') });
+    }
+    if (trailer) {
+      ax.push({ id: 'T1', label: 'Trailer axle 1', kind: 'trailer', tires: duals('T1') });
+      ax.push({ id: 'T2', label: 'Trailer axle 2', kind: 'trailer', tires: duals('T2') });
+    }
+    return ax;
+  }
+
+  function evalTire(kind, t, target) {
+    var r = { psi: 'none', tread: 'none', dmg: 'none', worst: 'none', msgs: [] };
+    var rank = { none: 0, ok: 1, warn: 2, bad: 3 };
+    function bump(f) { if (rank[f] > rank[r.worst]) r.worst = f; }
+    if (t && t.psi !== '' && t.psi != null && !isNaN(+t.psi)) {
+      var p = +t.psi, d = (p - target) / target;
+      if (d <= -0.2) { r.psi = 'bad'; r.msgs.push('PSI very low (' + p + ' vs ' + target + '). Inflate and check for a leak before it runs.'); }
+      else if (d <= -0.1) { r.psi = 'warn'; r.msgs.push('PSI low. Inflate to ' + target + '.'); }
+      else if (d >= 0.1) { r.psi = 'warn'; r.msgs.push('PSI high. Let air out to ' + target + '.'); }
+      else r.psi = 'ok';
+      bump(r.psi);
+    }
+    if (t && t.tread !== '' && t.tread != null && !isNaN(+t.tread)) {
+      var n = +t.tread, min = kind === 'steer' ? 4 : 2;
+      if (n < min) { r.tread = 'bad'; r.msgs.push('Tread ' + n + '/32 is under the legal minimum (' + min + '/32). Replace the tire.'); }
+      else if (n <= min + 1) { r.tread = 'warn'; r.msgs.push('Tread getting low (' + n + '/32). Schedule a replacement.'); }
+      else r.tread = 'ok';
+      bump(r.tread);
+    }
+    if (t && t.dmg) { r.dmg = 'bad'; r.msgs.push('Damaged tire (cord showing, bulge, cut, separation or leak).'); bump('bad'); }
+    return r;
+  }
+
+  /* ---------- state ---------- */
+  var PIN = store('bx_pin') || '';
+  var role = null, isAdmin = false, isOwner = false, me = null;
+  var settings = { trucks: [], targets: defaultTargets() };
+  var todayKey = dateKey(new Date());
+  var todayDocs = [], openDocs = [], logDocs = [];
+  var rev = 0, revDate = '';
+  var view = 'inspect', logMode = 'open', logDate = todayKey;
+  var openKeys = {};
+  var itemEls = {}, tireEls = {};
+  var F = freshForm();
+  var submitting = false;
+  var netMsg = '', serverMsg = '';
+
+  function freshForm() {
+    return {
+      truck: '', inspector: (me && me.named) ? me.name : (store('bx_inspector') || ''), odo: '', truckType: 'tractor',
+      trailerOn: false, trailer: '', items: {}, itemNotes: {}, tires: {}, notes: '', cert: false
+    };
+  }
+
+  /* ---------- server calls ---------- */
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = { 'x-pin': PIN };
+    if (opts.body !== undefined) headers['content-type'] = 'application/json';
+    return fetch(path, {
+      method: opts.method || 'GET', headers: headers, cache: 'no-store',
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw { code: j.error || ('http_' + r.status), status: r.status, message: j.message };
+        return j;
+      });
+    }, function () { throw { code: 'network' }; });
+  }
+
+  function updateBanner() {
+    var parts = [];
+    if (serverMsg) parts.push(serverMsg);
+    if (netMsg) parts.push(netMsg);
+    var n = outboxGet().length;
+    if (n) parts.push(n + ' inspection' + (n > 1 ? 's' : '') + ' saved on this device, waiting to send.');
+    var b = $('#banner');
+    b.hidden = !parts.length; b.className = 'banner warn'; b.textContent = parts.join(' ');
+  }
+
+  /* offline outbox: inspections saved on the device when there is no signal */
+  function outboxGet() { try { return JSON.parse(store('bx_outbox') || '[]'); } catch (e) { return []; } }
+  function outboxSet(a) { store('bx_outbox', a.length ? JSON.stringify(a) : null); updateBanner(); }
+  var flushing = false;
+  function flushOutbox() {
+    if (flushing || !PIN || !outboxGet().length) return;
+    flushing = true;
+    (function next() {
+      var q = outboxGet();
+      if (!q.length) { flushing = false; loadState(true); return; }
+      api('/api/inspections', { method: 'POST', body: q[0] }).then(function () {
+        outboxSet(q.slice(1)); next();
+      }, function (e) {
+        if (e.status === 400) { outboxSet(q.slice(1)); next(); return; }
+        flushing = false;
+        if (e.status === 401) signOut();
+      });
+    })();
+  }
+
+  function mergeSettings(d) {
+    var next = { trucks: Array.isArray(d.trucks) ? d.trucks.map(String) : [], targets: defaultTargets() };
+    ['tractor', 'straight'].forEach(function (g) {
+      ['steer', 'drive', 'trailer'].forEach(function (k) {
+        var v = d.targets && d.targets[g] && +d.targets[g][k];
+        if (v >= 30 && v <= 150) next.targets[g][k] = v;
+      });
+    });
+    return next;
+  }
+
+  // Shows who is signed in. People with their own PIN have their name filled in and locked on the inspection form.
+  function applyIdentity() {
+    var rl = role === 'owner' ? 'Owner' : role === 'admin' ? 'Manager' : 'Inspector';
+    $('#roleLabel').textContent = me && me.named && role !== 'owner' ? me.name + ' · ' + rl : rl;
+    $('#navPeople').hidden = !isOwner;
+    $('.nav-in').classList.toggle('four', isOwner);
+    if (!isOwner && view === 'people') setView('inspect');
+    var el = $('#f-inspector');
+    if (me && me.named) { F.inspector = me.name; if (el) { el.value = me.name; el.readOnly = true; } }
+    else if (el) el.readOnly = false;
+  }
+
+  function loadState(force) {
+    if (!PIN) return Promise.resolve();
+    var q = '/api/state?date=' + todayKey + (!force && rev && revDate === todayKey ? '&rev=' + rev : '');
+    return api(q).then(function (s) {
+      netMsg = ''; serverMsg = '';
+      role = s.role; isAdmin = role === 'admin' || role === 'owner'; isOwner = role === 'owner'; me = s.me || null;
+      applyIdentity();
+      $('#signOut').hidden = false;
+      $('#login').hidden = true;
+      if (!s.unchanged) {
+        rev = s.rev; revDate = todayKey;
+        var next = mergeSettings(s.settings || {});
+        var tChanged = JSON.stringify(next.targets) !== JSON.stringify(settings.targets);
+        settings = next;
+        todayDocs = s.today || []; openDocs = s.open || [];
+        if (tChanged) renderTires();
+        fillTrucklist(); refreshLists(); fillSetup();
+      } else if (view === 'today') { renderToday(); }
+      updateBanner();
+    }).catch(function (e) {
+      if (e.status === 401) { signOut(); return; }
+      if (e.code === 'network') netMsg = 'No signal. Showing the last data loaded.';
+      else serverMsg = e.message || 'Could not load data.';
+      updateBanner();
+    });
+  }
+
+  function loadLog(d) {
+    if (d === todayKey) { renderLog(); return; }
+    logDocs = [];
+    api('/api/inspections?date=' + d).then(function (j) {
+      logDocs = j.docs || []; if (view === 'log' && logMode === 'date' && logDate === d) renderLog();
+    }).catch(function (e) { if (e.status === 401) signOut(); });
+    renderLog();
+  }
+
+  /* ---------- sign in / out ---------- */
+  function showLogin(msg) {
+    $('#login').hidden = false;
+    var err = $('#loginErr'); err.hidden = !msg; err.textContent = msg || '';
+    $('#signOut').hidden = true; $('#roleLabel').textContent = '';
+    setTimeout(function () { $('#pin').focus(); }, 50);
+  }
+  function signOut() {
+    PIN = ''; role = null; isAdmin = false; isOwner = false; me = null; rev = 0; revDate = '';
+    F.inspector = store('bx_inspector') || '';
+    var fi = $('#f-inspector'); if (fi) { fi.readOnly = false; fi.value = F.inspector; }
+    $('#navPeople').hidden = true; $('.nav-in').classList.remove('four'); newPin = null;
+    todayDocs = []; openDocs = []; logDocs = [];
+    store('bx_pin', null);
+    var fs = $('#fleetSetup'); if (fs) fs.remove();
+    showLogin('');
+  }
+  $('#signOut').addEventListener('click', signOut);
+  $('#loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pin = $('#pin').value.trim();
+    if (!pin) return;
+    var btn = $('#loginBtn'); btn.disabled = true;
+    PIN = pin;
+    api('/api/auth', { method: 'POST', body: {} }).then(function () {
+      store('bx_pin', pin); $('#pin').value = '';
+      btn.disabled = false;
+      return loadState(true).then(flushOutbox);
+    }).catch(function (err) {
+      btn.disabled = false; PIN = '';
+      showLogin(err.code === 'network' ? 'No signal. Try again.' : err.status === 429 ? err.message : err.status === 401 ? 'Wrong PIN.' : (err.message || 'Could not sign in.'));
+    });
+  });
+
+  /* ---------- segmented control ---------- */
+  function seg(opts, cur, onPick) {
+    var el = h('div', { class: 'seg', role: 'group' });
+    var btns = {};
+    opts.forEach(function (o) {
+      var b = h('button', { type: 'button', text: o.label, class: o.tone ? 't-' + o.tone : '', onclick: function () { onPick(o.v); } });
+      btns[o.v] = b; el.appendChild(b);
+    });
+    function set(v) {
+      Object.keys(btns).forEach(function (k) {
+        btns[k].classList.toggle('on', k === v);
+        btns[k].setAttribute('aria-pressed', k === v ? 'true' : 'false');
+      });
+    }
+    set(cur);
+    return { el: el, set: set };
+  }
+
+  /* ---------- inspect form ---------- */
+  var typeSeg, trailerSeg;
+
+  function buildInspect() {
+    var root = $('#view-inspect');
+    root.textContent = '';
+    var form = h('div', { id: 'formWrap', class: 'list' });
+
+    var truckIn = h('input', { type: 'text', id: 'f-truck', placeholder: 'Truck number', autocomplete: 'off', list: 'trucklist', value: F.truck,
+      oninput: function (e) { F.truck = e.target.value.trim(); } });
+    var inspIn = h('input', { type: 'text', id: 'f-inspector', placeholder: 'Your name', autocomplete: 'name', value: F.inspector,
+      oninput: function (e) { F.inspector = e.target.value; store('bx_inspector', F.inspector.trim()); } });
+    if (me && me.named) { inspIn.readOnly = true; inspIn.value = me.name; }
+    var odoIn = h('input', { type: 'text', id: 'f-odo', placeholder: 'Miles', inputmode: 'numeric', value: F.odo,
+      oninput: function (e) { var v = e.target.value.replace(/[^0-9]/g, ''); e.target.value = v; F.odo = v; } });
+    typeSeg = seg([{ v: 'tractor', label: 'Semi tractor' }, { v: 'straight', label: 'Box / straight truck' }], F.truckType, function (v) {
+      F.truckType = v; typeSeg.set(v); renderTires(); updateProgress();
+    });
+    trailerSeg = seg([{ v: 'no', label: 'No trailer' }, { v: 'yes', label: 'With trailer' }], F.trailerOn ? 'yes' : 'no', function (v) {
+      F.trailerOn = v === 'yes'; trailerSeg.set(v); trailerWrap.hidden = !F.trailerOn; renderChecklist(); renderTires(); updateProgress();
+    });
+    var trailerIn = h('input', { type: 'text', id: 'f-trailer', placeholder: 'Trailer number', autocomplete: 'off', value: F.trailer,
+      oninput: function (e) { F.trailer = e.target.value.trim(); } });
+    var trailerWrap = h('div', { hidden: !F.trailerOn }, h('label', { class: 'lbl', for: 'f-trailer', text: 'Trailer #' }), trailerIn);
+
+    form.appendChild(h('div', { class: 'card' },
+      h('div', { class: 'fields' },
+        h('div', null, h('label', { class: 'lbl', for: 'f-truck', text: 'Truck #' }), truckIn),
+        h('div', null, h('label', { class: 'lbl', for: 'f-inspector', text: 'Inspected by' }), inspIn),
+        h('div', null, h('label', { class: 'lbl', for: 'f-odo', text: 'Odometer (optional)' }), odoIn)
+      ),
+      h('div', { class: 'fields' },
+        h('div', null, h('div', { class: 'lbl', text: 'Truck type' }), typeSeg.el),
+        h('div', null, h('div', { class: 'lbl', text: 'Trailer' }), trailerSeg.el),
+        trailerWrap
+      )
+    ));
+
+    form.appendChild(h('div', { class: 'cols' }, h('div', { id: 'checklist' }), h('div', { id: 'tires' })));
+
+    var notes = h('textarea', { id: 'f-notes', placeholder: 'Anything else the next person should know', value: F.notes, oninput: function (e) { F.notes = e.target.value; } });
+    var cert = h('input', { type: 'checkbox', id: 'f-cert', checked: F.cert, onchange: function (e) { F.cert = e.target.checked; } });
+    var err = h('div', { id: 'errbox', class: 'errbox', hidden: true, role: 'alert' });
+    var submit = h('button', { type: 'button', id: 'submitBtn', class: 'btn', text: 'Submit inspection', onclick: onSubmit });
+    form.appendChild(h('div', { class: 'card' },
+      h('label', { class: 'lbl', for: 'f-notes', text: 'Notes (optional)' }), notes,
+      h('label', { class: 'cert', for: 'f-cert' }, cert, h('span', { text: 'I walked this truck and checked every item above. My answers are true.' })),
+      err, submit
+    ));
+    root.appendChild(form);
+    root.appendChild(h('div', { id: 'result', hidden: true }));
+    renderChecklist();
+    renderTires();
+    updateProgress();
+  }
+
+  function setItem(id, v, focusNote) {
+    F.items[id] = v;
+    var e = itemEls[id]; if (!e) return;
+    e.seg.set(v);
+    e.noteWrap.hidden = v !== 'defect';
+    e.row.className = 'item' + (v === 'defect' ? ' is-bad' : '');
+    if (v === 'defect' && focusNote) e.note.focus();
+  }
+
+  function itemRow(it) {
+    var row = h('div', { class: 'item' });
+    var s = seg([{ v: 'ok', label: 'OK', tone: 'ok' }, { v: 'defect', label: 'Defect', tone: 'bad' }], F.items[it.id], function (v) {
+      setItem(it.id, v, true); updateProgress();
+    });
+    var note = h('input', { type: 'text', id: 'note-' + it.id, placeholder: 'What is wrong? (required)', value: F.itemNotes[it.id] || '',
+      oninput: function (e) { F.itemNotes[it.id] = e.target.value; row.classList.remove('missing'); } });
+    var noteWrap = h('div', { hidden: F.items[it.id] !== 'defect' }, note);
+    row.appendChild(h('div', null,
+      h('div', { class: 'item-l' }, it.label, it.crit ? h('span', { class: 'tag', text: 'Safety-critical' }) : null),
+      h('div', { class: 'item-h', text: it.hint })
+    ));
+    row.appendChild(s.el);
+    row.appendChild(noteWrap);
+    if (F.items[it.id] === 'defect') row.className = 'item is-bad';
+    itemEls[it.id] = { row: row, seg: s, noteWrap: noteWrap, note: note };
+    return row;
+  }
+
+  function renderChecklist() {
+    var box = $('#checklist'); if (!box) return;
+    box.textContent = ''; itemEls = {};
+    SECTIONS.forEach(function (sec) {
+      if (sec.trailerOnly && !F.trailerOn) return;
+      var card = h('div', { class: 'card' },
+        h('div', { class: 'sec-head' },
+          h('div', null, h('h2', { text: sec.title }), h('p', { class: 'sub', text: sec.sub })),
+          h('button', { type: 'button', class: 'ghost', text: 'Mark rest OK', onclick: function () {
+            sec.items.forEach(function (it) { if (!F.items[it.id]) setItem(it.id, 'ok', false); });
+            updateProgress();
+          } })
+        )
+      );
+      sec.items.forEach(function (it) { card.appendChild(itemRow(it)); });
+      box.appendChild(card);
+    });
+  }
+
+  function targetFor(kind) {
+    var t = settings.targets[F.truckType] || defaultTargets()[F.truckType];
+    return t[kind];
+  }
+
+  function rulesPanel() {
+    return h('details', { class: 'rules' },
+      h('summary', { text: 'Tire rules: PSI and tread' }),
+      h('ul', null,
+        h('li', { text: 'Tread: steer (front) tires must have at least 4/32". Every other tire at least 2/32". Measure in the main groove.' }),
+        h('li', { text: 'PSI: there is no single legal number. Use the number on the tire sidewall or from your tire dealer. Most truck tires run about 100 to 120 PSI cold. The target for each axle is shown on its card.' }),
+        h('li', { text: 'Check cold: truck parked 3 hours or more. Use a gauge, do not thump. Dual tires should be within 5 PSI of each other.' }),
+        h('li', { text: 'Do not run a tire with cord or steel showing, a bulge or bubble, a cut into the cord, separated tread or sidewall, a flat, or an air leak. Tap Damage on that tire.' }),
+        h('li', { text: 'Colors: yellow means 10% off target or tread getting low. Red means 20% or more under target, tread under the legal minimum, or damage. Red puts the truck on HOLD.' })
+      )
+    );
+  }
+
+  function renderTires() {
+    var box = $('#tires'); if (!box) return;
+    box.textContent = ''; tireEls = {};
+    box.appendChild(rulesPanel());
+    layout(F.truckType, F.trailerOn).forEach(function (ax) {
+      var target = targetFor(ax.kind), minT = ax.kind === 'steer' ? 4 : 2;
+      var card = h('div', { class: 'card' },
+        h('div', null, h('h2', { text: ax.label }), h('p', { class: 'sub', text: 'Target ' + target + ' PSI cold. Legal tread minimum ' + minT + '/32"' })),
+        h('div', { class: 'trow thead' }, h('span', { text: 'Tire' }), h('span', { text: 'PSI' }), h('span', { text: 'Tread /32' }), h('span', { text: 'Damage' }))
+      );
+      ax.tires.forEach(function (t) { card.appendChild(tireRow(ax, t, target)); });
+      box.appendChild(card);
+    });
+  }
+
+  function tireRow(ax, t, target) {
+    var st = F.tires[t.id] || (F.tires[t.id] = { psi: '', tread: '', dmg: false });
+    var psi = h('input', { type: 'text', class: 'tin', id: 'psi-' + t.id, inputmode: 'numeric', placeholder: 'PSI', 'aria-label': t.label + ' PSI', value: st.psi,
+      oninput: function (e) { var v = e.target.value.replace(/[^0-9]/g, ''); if (v !== e.target.value) e.target.value = v; st.psi = v; paint(); updateProgress(); } });
+    var tread = h('input', { type: 'text', class: 'tin', id: 'tread-' + t.id, inputmode: 'numeric', placeholder: '/32', 'aria-label': t.label + ' tread in 32nds', value: st.tread,
+      oninput: function (e) { var v = e.target.value.replace(/[^0-9]/g, ''); if (v !== e.target.value) e.target.value = v; st.tread = v; paint(); updateProgress(); } });
+    var dmg = h('button', { type: 'button', class: 'dmg', 'aria-label': t.label + ' damage', onclick: function () { st.dmg = !st.dmg; paint(); } });
+    var msg = h('div', { class: 'tmsg', hidden: true });
+    var row = h('div', { class: 'trow' }, h('div', { class: 'tlabel', text: t.label }), psi, tread, dmg, msg);
+    function paint() {
+      var r = evalTire(ax.kind, st, target);
+      psi.className = 'tin' + (r.psi === 'bad' ? ' flag-bad' : r.psi === 'warn' ? ' flag-warn' : '');
+      tread.className = 'tin' + (r.tread === 'bad' ? ' flag-bad' : r.tread === 'warn' ? ' flag-warn' : '');
+      dmg.className = 'dmg' + (st.dmg ? ' on' : '');
+      dmg.textContent = st.dmg ? 'Damaged' : 'Damage?';
+      dmg.setAttribute('aria-pressed', st.dmg ? 'true' : 'false');
+      if (r.msgs.length) { msg.hidden = false; msg.className = 'tmsg ' + (r.worst === 'bad' ? 'bad' : 'warn'); msg.textContent = r.msgs.join(' '); }
+      else { msg.hidden = true; msg.textContent = ''; }
+      row.classList.remove('missing');
+    }
+    paint();
+    tireEls[t.id] = { row: row, psi: psi, tread: tread };
+    return row;
+  }
+
+  function currentCounts() {
+    var total = 0, done = 0;
+    SECTIONS.forEach(function (sec) {
+      if (sec.trailerOnly && !F.trailerOn) return;
+      sec.items.forEach(function (it) { total++; if (F.items[it.id]) done++; });
+    });
+    layout(F.truckType, F.trailerOn).forEach(function (ax) {
+      ax.tires.forEach(function (t) {
+        total++; var s = F.tires[t.id];
+        if (s && s.psi !== '' && s.tread !== '') done++;
+      });
+    });
+    return { total: total, done: done };
+  }
+
+  function updateProgress() {
+    var c = currentCounts();
+    $('#barFill').style.width = (c.total ? Math.round(c.done / c.total * 100) : 0) + '%';
+    $('#progText').textContent = c.done + ' of ' + c.total + ' checked';
+  }
+
+  /* ---------- submit ---------- */
+  function validate() {
+    var problems = [], first = null;
+    function note(msg, el) { problems.push(msg); if (!first && el) first = el; }
+    if (!F.truck) note('Enter the truck number.', $('#f-truck'));
+    if (!F.inspector.trim()) note('Enter your name.', $('#f-inspector'));
+    var unanswered = 0, noNote = 0;
+    SECTIONS.forEach(function (sec) {
+      if (sec.trailerOnly && !F.trailerOn) return;
+      sec.items.forEach(function (it) {
+        var e = itemEls[it.id], v = F.items[it.id];
+        if (!v) { unanswered++; e.row.classList.add('missing'); if (!first) first = e.row; }
+        else if (v === 'defect' && !(F.itemNotes[it.id] || '').trim()) { noNote++; e.row.classList.add('missing'); if (!first) first = e.note; }
+      });
+    });
+    if (unanswered) problems.push(unanswered + ' checklist item' + (unanswered > 1 ? 's' : '') + ' still need OK or Defect.');
+    if (noNote) problems.push('Describe what is wrong on ' + noNote + ' defect' + (noNote > 1 ? 's' : '') + '.');
+    var missingTires = 0;
+    layout(F.truckType, F.trailerOn).forEach(function (ax) {
+      ax.tires.forEach(function (t) {
+        var s = F.tires[t.id];
+        if (!s || s.psi === '' || s.tread === '') { missingTires++; tireEls[t.id].row.classList.add('missing'); if (!first) first = tireEls[t.id].row; }
+      });
+    });
+    if (missingTires) problems.push(missingTires + ' tire' + (missingTires > 1 ? 's' : '') + ' need PSI and tread.');
+    if (F.trailerOn && !F.trailer) note('Enter the trailer number.', $('#f-trailer'));
+    if (!F.cert) note('Tick the box to confirm your inspection.', $('#f-cert'));
+    return { problems: problems, first: first };
+  }
+
+  function buildDoc() {
+    var defects = [], crit = false;
+    SECTIONS.forEach(function (sec) {
+      if (sec.trailerOnly && !F.trailerOn) return;
+      sec.items.forEach(function (it) {
+        if (F.items[it.id] === 'defect') {
+          defects.push({ k: 'item', label: it.label, note: (F.itemNotes[it.id] || '').trim(), crit: !!it.crit });
+          if (it.crit) crit = true;
+        }
+      });
+    });
+    var tires = {}, targets = clone(settings.targets[F.truckType] || defaultTargets()[F.truckType]);
+    layout(F.truckType, F.trailerOn).forEach(function (ax) {
+      ax.tires.forEach(function (t) {
+        var s = F.tires[t.id];
+        tires[t.id] = { psi: s.psi === '' ? null : +s.psi, tread: s.tread === '' ? null : +s.tread, dmg: !!s.dmg };
+        var r = evalTire(ax.kind, s, targets[ax.kind]);
+        if (r.worst === 'bad' || r.worst === 'warn') {
+          defects.push({ k: 'tire', label: ax.label + ', ' + t.label, note: r.msgs.join(' '), crit: r.worst === 'bad' });
+          if (r.worst === 'bad') crit = true;
+        }
+      });
+    });
+    var status = crit ? 'hold' : defects.length ? 'minor' : 'ready';
+    var items = {};
+    SECTIONS.forEach(function (sec) {
+      if (sec.trailerOnly && !F.trailerOn) return;
+      sec.items.forEach(function (it) { items[it.id] = F.items[it.id]; });
+    });
+    var now = Date.now();
+    return {
+      id: uuid(), date: dateKey(new Date(now)), ts: now, truck: F.truck, truckType: F.truckType,
+      trailer: F.trailerOn ? F.trailer : '', inspector: F.inspector.trim(),
+      odo: F.odo ? +F.odo : null, items: items, tires: tires, targets: targets,
+      notes: F.notes.trim(), defects: defects, status: status, open: status !== 'ready', repaired: null
+    };
+  }
+
+  function showErr(lines) {
+    var box = $('#errbox'); box.hidden = false; box.textContent = '';
+    box.appendChild(h('b', { text: lines[0] }));
+    if (lines.length > 1) { var ul = h('ul'); lines.slice(1).forEach(function (p) { ul.appendChild(h('li', { text: p })); }); box.appendChild(ul); }
+  }
+
+  function onSubmit() {
+    if (submitting) return;
+    var v = validate();
+    if (v.problems.length) {
+      showErr(['Not finished yet'].concat(v.problems));
+      if (v.first && v.first.scrollIntoView) v.first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    $('#errbox').hidden = true;
+    var doc = buildDoc();
+    var btn = $('#submitBtn'); submitting = true; btn.disabled = true; btn.textContent = 'Saving...';
+    function end() { submitting = false; btn.disabled = false; btn.textContent = 'Submit inspection'; }
+    api('/api/inspections', { method: 'POST', body: doc }).then(function () {
+      end(); showResult(doc, false); loadState(true);
+    }).catch(function (e) {
+      end();
+      if (e.code === 'network') {
+        var q = outboxGet(); q.push(doc); outboxSet(q);
+        showResult(doc, true);
+      } else if (e.status === 401) {
+        signOut();
+      } else {
+        showErr(['Not saved.', e.message || 'Try again.']);
+      }
+    });
+  }
+
+  function showResult(doc, queued) {
+    $('#formWrap').hidden = true;
+    $('#progWrap').hidden = true;
+    var r = $('#result'); r.hidden = false; r.textContent = '';
+    var title = doc.status === 'hold' ? 'Hold. Needs repair.' : doc.status === 'minor' ? 'Ready, with minor defects' : 'Ready for next run';
+    var line = doc.status === 'hold' ? 'Truck ' + doc.truck + ' must not go out until the red items are fixed.' :
+      doc.status === 'minor' ? 'Truck ' + doc.truck + ' can run. Get the items below fixed soon.' : 'Truck ' + doc.truck + ' passed. Nothing to fix.';
+    var box = h('div', { class: 'list' },
+      h('div', { class: 'result ' + doc.status }, h('h2', { text: title }), h('p', { text: line })));
+    if (queued) box.appendChild(h('div', { class: 'banner warn', text: 'No signal. This inspection is saved on this device and will send by itself when you are back online.' }));
+    if (doc.defects.length) {
+      var cd = h('div', { class: 'card' }, h('h2', { text: 'To fix' }));
+      doc.defects.forEach(function (d) { cd.appendChild(defRow(d)); });
+      box.appendChild(cd);
+    }
+    box.appendChild(h('button', { type: 'button', class: 'btn', text: 'Inspect another truck', onclick: resetForm }));
+    r.appendChild(box);
+    window.scrollTo(0, 0);
+  }
+
+  function resetForm() {
+    F = freshForm();
+    buildInspect();
+    $('#progWrap').hidden = view !== 'inspect';
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- shared renderers ---------- */
+  var STATUS_LABEL = { ready: 'Ready for next run', minor: 'Minor defects', hold: 'HOLD, needs repair', none: 'Not inspected yet' };
+  var STATUS_MARK = { ready: '✓', minor: '!', hold: '✕', none: '–' };
+  function chip(status, text) {
+    return h('span', { class: 'chip ' + status, text: STATUS_MARK[status] + ' ' + (text || STATUS_LABEL[status]) });
+  }
+  function defRow(d) {
+    return h('div', { class: 'def' + (d.crit ? ' crit' : '') },
+      h('b', { text: (d.crit ? 'Safety-critical: ' : '') + d.label }),
+      d.note ? h('span', { text: d.note }) : null);
+  }
+
+  function tireLabels(doc) {
+    var map = {};
+    layout(doc.truckType || 'tractor', !!doc.trailer).forEach(function (ax) {
+      ax.tires.forEach(function (t) { map[t.id] = { text: ax.label + ', ' + t.label, kind: ax.kind }; });
+    });
+    return map;
+  }
+
+  function docBody(doc) {
+    var body = h('div', { class: 'inv-body' });
+    var meta = 'Inspected by ' + doc.inspector + ' on ' + fmtDate(doc.date) + ' at ' + fmtTime(doc.ts) +
+      (doc.odo ? '. Odometer ' + doc.odo.toLocaleString() : '') + (doc.trailer ? '. Trailer ' + doc.trailer : '') +
+      '. ' + (doc.truckType === 'straight' ? 'Box / straight truck' : 'Semi tractor') + '.';
+    body.appendChild(h('p', { class: 'inv-sub', text: meta }));
+    if (doc.repaired) {
+      body.appendChild(h('div', { class: 'repaired', text: 'Repaired by ' + doc.repaired.by + ' on ' + fmtDate(doc.repaired.date) + (doc.repaired.note ? '. ' + doc.repaired.note : '') }));
+    }
+    if (doc.defects && doc.defects.length) doc.defects.forEach(function (d) { body.appendChild(defRow(d)); });
+    else body.appendChild(h('p', { class: 'inv-sub', text: 'No defects found.' }));
+    if (doc.notes) body.appendChild(h('p', { text: 'Notes: ' + doc.notes }));
+    var labels = tireLabels(doc), ids = Object.keys(doc.tires || {});
+    if (ids.length) {
+      var tbody = h('tbody');
+      ids.forEach(function (id) {
+        var t = doc.tires[id], info = labels[id] || { text: id, kind: 'drive' };
+        var tg = (doc.targets && doc.targets[info.kind]) || 100;
+        var r = evalTire(info.kind, { psi: t.psi == null ? '' : t.psi, tread: t.tread == null ? '' : t.tread, dmg: t.dmg }, tg);
+        tbody.appendChild(h('tr', null,
+          h('td', { text: info.text }),
+          h('td', { class: r.psi === 'bad' ? 'bad' : r.psi === 'warn' ? 'warn' : '', text: t.psi == null ? '' : String(t.psi) }),
+          h('td', { class: r.tread === 'bad' ? 'bad' : r.tread === 'warn' ? 'warn' : '', text: t.tread == null ? '' : t.tread + '/32' }),
+          h('td', { class: t.dmg ? 'bad' : '', text: t.dmg ? 'Damaged' : '' })
+        ));
+      });
+      body.appendChild(h('div', { class: 'tbl' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', { text: 'Tire' }), h('th', { text: 'PSI' }), h('th', { text: 'Tread' }), h('th', { text: '' }))), tbody)));
+    }
+    if (isAdmin && doc.open) body.appendChild(repairForm(doc));
+    if (isAdmin) body.appendChild(deleteBox(doc));
+    return body;
+  }
+
+  // Managers only. Two taps so a record is never removed by accident.
+  function deleteBox(doc) {
+    var err = h('div', { class: 'tmsg bad', hidden: true });
+    var armed = false, timer = null;
+    var btn = h('button', { type: 'button', class: 'btn danger', text: 'Delete this record', onclick: function () {
+      if (!armed) {
+        armed = true; btn.className = 'btn danger sure'; btn.textContent = 'Tap again to delete for good';
+        timer = setTimeout(function () { armed = false; btn.className = 'btn danger'; btn.textContent = 'Delete this record'; }, 5000);
+        return;
+      }
+      clearTimeout(timer); btn.disabled = true; err.hidden = true;
+      api('/api/delete', { method: 'POST', body: { id: doc.id } })
+        .then(function () {
+          logDocs = logDocs.filter(function (d) { return d.id !== doc.id; });
+          return loadState(true);
+        })
+        .then(function () { if (view === 'log') renderLog(); })
+        .catch(function (e) {
+          btn.disabled = false; armed = false; btn.className = 'btn danger'; btn.textContent = 'Delete this record';
+          err.hidden = false;
+          err.textContent = e.code === 'network' ? 'No signal. Try again.' : (e.message || 'Not deleted. Try again.');
+        });
+    } });
+    return h('div', { class: 'delbox' }, btn, err);
+  }
+
+  function repairForm(doc) {
+    var named = !!(me && me.named);
+    var by = named ? null : h('input', { type: 'text', placeholder: 'Repaired by (name)', 'aria-label': 'Repaired by' });
+    var what = h('input', { type: 'text', placeholder: 'What was fixed', 'aria-label': 'What was fixed' });
+    var err = h('div', { class: 'tmsg bad', hidden: true });
+    var btn = h('button', { type: 'button', class: 'btn alt', text: 'Mark repaired', onclick: function () {
+      if ((!named && !by.value.trim()) || !what.value.trim()) { err.hidden = false; err.textContent = named ? 'Enter what was fixed.' : 'Enter who fixed it and what was fixed.'; return; }
+      err.hidden = true; btn.disabled = true;
+      api('/api/repair', { method: 'POST', body: { id: doc.id, by: named ? undefined : by.value.trim(), note: what.value.trim(), date: dateKey(new Date()) } })
+        .then(function () { return loadState(true); })
+        .catch(function (e) {
+          btn.disabled = false; err.hidden = false;
+          err.textContent = e.code === 'network' ? 'No signal. Try again.' : (e.message || 'Not saved. Try again.');
+        });
+    } });
+    return h('div', { class: 'repair' }, h('b', { text: named ? 'Fixed? Clear this record as ' + me.name : 'Fixed? Clear this record' }), by, what, err, btn);
+  }
+
+  function invCard(doc, key) {
+    var d = h('details', { class: 'inv ' + doc.status });
+    if (openKeys[key]) d.open = true;
+    d.addEventListener('toggle', function () { openKeys[key] = d.open; });
+    var when = (doc.date === todayKey ? 'Today ' : fmtDate(doc.date) + ' ') + fmtTime(doc.ts);
+    var n = (doc.defects || []).length;
+    d.appendChild(h('summary', null,
+      h('div', { class: 'truck-no', text: doc.truck }),
+      h('div', null, h('div', { text: doc.inspector }), h('div', { class: 'inv-sub', text: when + (n ? ' · ' + n + ' defect' + (n > 1 ? 's' : '') : '') })),
+      doc.repaired ? chip('ready', 'Repaired') : chip(doc.status)
+    ));
+    d.appendChild(docBody(doc));
+    return d;
+  }
+
+  /* ---------- today board ---------- */
+  function byTsDesc(a, b) { return b.ts - a.ts; }
+
+  function truckStates() {
+    var set = {}, order = [];
+    function see(t) { if (t && !set[t]) { set[t] = true; order.push(t); } }
+    settings.trucks.forEach(see);
+    todayDocs.forEach(function (d) { see(d.truck); });
+    openDocs.forEach(function (d) { see(d.truck); });
+    var rank = { hold: 0, minor: 1, none: 2, ready: 3 };
+    var rows = order.map(function (t) {
+      var opens = openDocs.filter(function (d) { return d.truck === t; }).sort(byTsDesc);
+      var tod = todayDocs.filter(function (d) { return d.truck === t; }).sort(byTsDesc);
+      var latest = tod[0];
+      var status, sub, docs;
+      if (opens.some(function (d) { return d.status === 'hold'; })) {
+        status = 'hold'; docs = opens;
+        var o = opens[0];
+        sub = (o.date === todayKey ? 'Found today' : 'Open since ' + fmtDate(o.date)) + ' · ' + o.inspector;
+      } else if (opens.length) {
+        status = 'minor'; docs = opens;
+        sub = opens.length + ' open record' + (opens.length > 1 ? 's' : '') + ' · ' + opens[0].inspector;
+      } else if (latest) {
+        status = 'ready'; docs = [latest];
+        sub = (latest.repaired ? 'Repaired and cleared' : 'Cleared') + ' at ' + fmtTime(latest.ts) + ' · ' + latest.inspector;
+      } else { status = 'none'; docs = []; sub = 'Waiting for return inspection'; }
+      return { truck: t, status: status, sub: sub, docs: docs };
+    });
+    rows.sort(function (a, b) { return rank[a.status] - rank[b.status] || a.truck.localeCompare(b.truck, undefined, { numeric: true }); });
+    return rows;
+  }
+
+  function renderToday() {
+    var root = $('#view-today');
+    var keep = isAdmin ? $('#fleetSetup') : null;
+    if (keep) root.removeChild(keep);
+    root.textContent = '';
+    var rows = truckStates();
+    var c = { ready: 0, minor: 0, hold: 0, none: 0 };
+    rows.forEach(function (r) { c[r.status]++; });
+    $('#badgeToday').hidden = !c.hold; $('#badgeToday').textContent = c.hold;
+    var wrap = h('div', { class: 'list' });
+    wrap.appendChild(h('div', { class: 'stats' },
+      stat(c.ready, 'ready'), stat(c.hold, 'on hold'), stat(c.minor, 'minor defects'), stat(c.none, 'not inspected')));
+    if (!rows.length) {
+      wrap.appendChild(h('div', { class: 'empty', text: isAdmin ? 'No trucks yet. Add your truck numbers under Fleet setup below, or submit the first inspection.' : 'No trucks yet. Ask a manager to add the truck numbers, or submit the first inspection.' }));
+    } else {
+      var grid = h('div', { class: 'list two' });
+      rows.forEach(function (r) {
+        var key = 'b-' + r.truck;
+        var d = h('details', { class: 'inv ' + r.status });
+        if (openKeys[key]) d.open = true;
+        d.addEventListener('toggle', function () { openKeys[key] = d.open; });
+        d.appendChild(h('summary', null,
+          h('div', { class: 'truck-no', text: r.truck }),
+          h('div', { class: 'inv-sub', text: r.sub }),
+          chip(r.status)));
+        if (r.docs.length) { r.docs.forEach(function (doc) { d.appendChild(docBody(doc)); }); }
+        else d.appendChild(h('div', { class: 'inv-body' }, h('p', { class: 'inv-sub', text: 'This truck has not been inspected today.' })));
+        grid.appendChild(d);
+      });
+      wrap.appendChild(grid);
+    }
+    root.appendChild(wrap);
+    if (keep) root.appendChild(keep);
+    else if (isAdmin) buildSetup();
+  }
+  function stat(n, label) { return h('div', { class: 'stat' }, h('b', { text: String(n) }), h('span', { text: label })); }
+
+  function buildSetup() {
+    var root = $('#view-today');
+    var ta = h('textarea', { id: 'setup-trucks', placeholder: 'One truck number per line, or separated by commas' });
+    var inputs = {};
+    var grid = h('div', { class: 'targets' });
+    [['tractor', 'Semi tractor'], ['straight', 'Box / straight']].forEach(function (g) {
+      ['steer', 'drive', 'trailer'].forEach(function (k) {
+        var id = 'tg-' + g[0] + '-' + k;
+        var inp = h('input', { type: 'text', id: id, inputmode: 'numeric' });
+        inputs[g[0] + '.' + k] = inp;
+        grid.appendChild(h('div', null, h('label', { class: 'lbl', for: id, text: g[1] + ' ' + (k === 'drive' && g[0] === 'straight' ? 'rear' : k) }), inp));
+      });
+    });
+    var msg = h('div', { class: 'tmsg', hidden: true });
+    var save = h('button', { type: 'button', class: 'btn alt', text: 'Save fleet setup', onclick: function () {
+      var trucks = ta.value.split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var uniq = []; trucks.forEach(function (t) { if (uniq.indexOf(t) < 0) uniq.push(t); });
+      var tg = defaultTargets(), ok = true;
+      Object.keys(inputs).forEach(function (k) {
+        var p = k.split('.'), v = +inputs[k].value;
+        if (!v || v < 30 || v > 150) ok = false; else tg[p[0]][p[1]] = v;
+      });
+      if (!ok) { msg.hidden = false; msg.className = 'tmsg bad'; msg.textContent = 'Each target PSI must be a number between 30 and 150.'; return; }
+      save.disabled = true;
+      api('/api/settings', { method: 'PUT', body: { trucks: uniq, targets: tg } }).then(function () {
+        save.disabled = false; msg.hidden = false; msg.className = 'tmsg warn'; msg.textContent = 'Saved.';
+        return loadState(true);
+      }).catch(function (e) {
+        save.disabled = false; msg.hidden = false; msg.className = 'tmsg bad';
+        msg.textContent = e.code === 'network' ? 'No signal. Try again.' : (e.message || 'Not saved.');
+      });
+    } });
+    var card = h('details', { class: 'rules setup', id: 'fleetSetup' },
+      h('summary', { text: 'Fleet setup (managers only)' }),
+      h('div', { class: 'list setup-in' },
+        h('div', null, h('label', { class: 'lbl', for: 'setup-trucks', text: 'Truck numbers' }), ta),
+        h('div', null, h('div', { class: 'lbl', text: 'Target cold PSI by axle' }), h('p', { class: 'sub', text: 'Use what your tire dealer or the sidewall says for your tires and loads.' }), grid),
+        msg, save));
+    card._ta = ta; card._inputs = inputs;
+    root.appendChild(card);
+    fillSetup(true);
+  }
+
+  function fillSetup(force) {
+    var card = $('#fleetSetup'); if (!card || !card._ta) return;
+    if (!force && card.contains(document.activeElement)) return;
+    card._ta.value = settings.trucks.join('\n');
+    Object.keys(card._inputs).forEach(function (k) {
+      var p = k.split('.'); card._inputs[k].value = settings.targets[p[0]][p[1]];
+    });
+  }
+
+  /* ---------- log ---------- */
+  function renderLog() {
+    var root = $('#view-log');
+    var keepFocus = document.activeElement && document.activeElement.id === 'logDate';
+    if (keepFocus) return;
+    root.textContent = '';
+    $('#badgeLog').hidden = !openDocs.length; $('#badgeLog').textContent = openDocs.length;
+    var modeSeg = seg([{ v: 'open', label: 'Open defects' }, { v: 'date', label: 'By date' }], logMode, function (v) {
+      logMode = v; if (v === 'date') loadLog(logDate); else renderLog();
+    });
+    var wrap = h('div', { class: 'list' }, modeSeg.el);
+    var docs;
+    if (logMode === 'open') {
+      docs = openDocs.slice().sort(byTsDesc);
+      if (!docs.length) wrap.appendChild(h('div', { class: 'empty', text: 'No open defects. Every inspected truck is clear.' }));
+    } else {
+      var dIn = h('input', { type: 'date', id: 'logDate', value: logDate, max: todayKey, 'aria-label': 'Inspection date',
+        onchange: function (e) { if (e.target.value) { logDate = e.target.value; e.target.blur(); loadLog(logDate); } } });
+      wrap.appendChild(h('div', { class: 'fields' }, h('div', null, h('label', { class: 'lbl', for: 'logDate', text: 'Date' }), dIn)));
+      docs = (logDate === todayKey ? todayDocs : logDocs).slice().sort(byTsDesc);
+      if (!docs.length) wrap.appendChild(h('div', { class: 'empty', text: 'No inspections on ' + fmtDate(logDate) + '.' }));
+    }
+    if (docs.length) {
+      var list = h('div', { class: 'list two' });
+      docs.forEach(function (d) { list.appendChild(invCard(d, 'l-' + d.id)); });
+      wrap.appendChild(list);
+    }
+    root.appendChild(wrap);
+  }
+
+  function refreshLists() {
+    renderToday();
+    if (view === 'log') renderLog();
+    else { $('#badgeLog').hidden = !openDocs.length; $('#badgeLog').textContent = openDocs.length; }
+  }
+
+  /* ---------- people and activity (owner only) ---------- */
+  var peopleMode = 'people', people = [], activity = [], newPin = null, peopleMsg = '', newRole = 'team';
+
+  function loadPeople() {
+    if (!isOwner) return;
+    Promise.all([api('/api/people'), api('/api/activity?days=7')]).then(function (r) {
+      people = r[0].people || []; activity = r[1].entries || []; peopleMsg = '';
+      if (view === 'people') renderPeople();
+    }).catch(function (e) {
+      if (e.status === 401) { signOut(); return; }
+      peopleMsg = e.code === 'network' ? 'No signal. Try again.' : (e.message || 'Could not load.');
+      if (view === 'people') renderPeople();
+    });
+  }
+
+  function fmtSeen(ts) {
+    if (!ts) return 'Has not signed in yet';
+    var k = dateKey(new Date(ts));
+    return 'Last on ' + (k === todayKey ? 'today ' : fmtDate(k) + ' ') + fmtTime(ts);
+  }
+
+  // A button that needs a second tap, so a PIN reset or a lock-out never happens by accident.
+  function twoTap(label, onGo) {
+    var armed = false, timer = null;
+    var b = h('button', { type: 'button', class: 'btn alt', text: label, onclick: function () {
+      if (!armed) {
+        armed = true; b.classList.add('sure'); b.textContent = 'Tap again to confirm';
+        timer = setTimeout(function () { armed = false; b.classList.remove('sure'); b.textContent = label; }, 5000);
+        return;
+      }
+      clearTimeout(timer); b.disabled = true; onGo(b);
+    } });
+    return b;
+  }
+
+  function roleName(r) { return r === 'admin' ? 'Manager' : 'Team member'; }
+
+  function personAction(body, who, b) {
+    return api('/api/people', { method: 'POST', body: body }).then(function (j) {
+      if (j.pin) newPin = { name: who, pin: j.pin };
+      peopleMsg = ''; loadPeople();
+    }).catch(function (e) {
+      if (b) b.disabled = false;
+      peopleMsg = e.code === 'network' ? 'No signal. Try again.' : (e.message || 'Not saved. Try again.');
+      renderPeople();
+    });
+  }
+
+  function personCard(p) {
+    var other = p.role === 'admin' ? 'team' : 'admin';
+    return h('div', { class: 'card' },
+      h('div', { style: 'display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap' },
+        h('div', { class: 'who', text: p.name }),
+        h('span', { class: 'chip ' + (p.role === 'admin' ? 'minor' : 'none'), text: roleName(p.role) })),
+      h('div', { class: 'sub', text: p.active ? fmtSeen(p.lastSeen) : 'Turned off. Their PIN does not work.' }),
+      h('div', { class: 'prow' },
+        twoTap('Reset PIN', function (b) { personAction({ action: 'reset', id: p.id }, p.name, b); }),
+        h('button', { type: 'button', class: 'btn alt', text: 'Make ' + roleName(other).toLowerCase(), onclick: function (e) {
+          e.target.disabled = true; personAction({ action: 'role', id: p.id, role: other }, p.name, e.target); } }),
+        p.active
+          ? twoTap('Turn off', function (b) { personAction({ action: 'active', id: p.id, active: false }, p.name, b); })
+          : h('button', { type: 'button', class: 'btn alt', text: 'Turn on', onclick: function (e) {
+              e.target.disabled = true; personAction({ action: 'active', id: p.id, active: true }, p.name, e.target); } })));
+  }
+
+  function actText(e) {
+    var d = e.detail || {};
+    switch (e.action) {
+      case 'inspected':
+        return 'inspected truck ' + d.truck + ': ' + (d.status === 'hold' ? 'HOLD' : d.status === 'minor' ? 'minor defects' : 'ready') +
+          (d.defects ? ' (' + d.defects + ' defect' + (d.defects > 1 ? 's' : '') + ')' : '');
+      case 'marked repaired': return 'marked truck ' + d.truck + ' repaired. ' + (d.note || '');
+      case 'deleted a record': return 'deleted the record for truck ' + d.truck + ' (' + (d.date ? fmtDate(d.date) : '') + ', inspected by ' + d.inspector + ')';
+      case 'updated fleet setup': return 'updated Fleet setup (' + d.trucks + ' trucks)';
+      case 'added a person': return 'added ' + d.person + ' as ' + roleName(d.role).toLowerCase();
+      case 'reset a PIN': return 'reset the PIN for ' + d.person;
+      case 'turned a person off': return 'turned off ' + d.person;
+      case 'turned a person on': return 'turned on ' + d.person;
+      case 'changed a role': return 'made ' + d.person + ' a ' + roleName(d.role).toLowerCase();
+      default: return e.action;
+    }
+  }
+
+  function renderPeople() {
+    var root = $('#view-people');
+    if (!root) return;
+    var typing = document.activeElement && document.activeElement.id === 'newName';
+    if (typing) return;
+    root.textContent = '';
+    var modeSeg = seg([{ v: 'people', label: 'People' }, { v: 'activity', label: 'Activity' }], peopleMode, function (v) { peopleMode = v; renderPeople(); });
+    var wrap = h('div', { class: 'list' }, modeSeg.el);
+    if (peopleMsg) wrap.appendChild(h('div', { class: 'banner bad', text: peopleMsg }));
+
+    if (newPin) {
+      wrap.appendChild(h('div', { class: 'card pinbox' },
+        h('div', { class: 'lbl', text: 'PIN for ' + newPin.name }),
+        h('div', { class: 'pin', text: newPin.pin }),
+        h('div', { class: 'sub', text: 'Write this down and give it to ' + newPin.name + ' now. It is shown only this once. If it gets lost, reset it.' }),
+        h('button', { type: 'button', class: 'btn', text: 'Done', onclick: function () { newPin = null; renderPeople(); } })));
+    }
+
+    if (peopleMode === 'people') {
+      var nameIn = h('input', { type: 'text', id: 'newName', placeholder: 'Full name', autocomplete: 'off' });
+      var roleSeg = seg([{ v: 'team', label: 'Team member' }, { v: 'admin', label: 'Manager' }], newRole, function (v) { newRole = v; roleSeg.set(v); });
+      var addErr = h('div', { class: 'tmsg bad', hidden: true });
+      var addBtn = h('button', { type: 'button', class: 'btn', text: 'Add person', onclick: function () {
+        var n = nameIn.value.trim();
+        if (!n) { addErr.hidden = false; addErr.textContent = 'Enter a name.'; return; }
+        addErr.hidden = true; addBtn.disabled = true;
+        personAction({ action: 'add', name: n, role: newRole }, n, addBtn);
+      } });
+      wrap.appendChild(h('div', { class: 'card' },
+        h('b', { text: 'Add a person' }),
+        h('div', null, h('label', { class: 'lbl', for: 'newName', text: 'Name' }), nameIn),
+        h('div', null, h('div', { class: 'lbl', text: 'Role' }), roleSeg.el),
+        h('div', { class: 'sub', text: 'Team members can inspect trucks. Managers can also mark repairs, delete records and edit Fleet setup.' }),
+        addErr, addBtn));
+      var on = people.filter(function (p) { return p.active; }), off = people.filter(function (p) { return !p.active; });
+      if (!people.length) wrap.appendChild(h('div', { class: 'empty', text: 'No one added yet. Add your team above. Each person gets their own PIN.' }));
+      if (on.length) { var l1 = h('div', { class: 'list two' }); on.forEach(function (p) { l1.appendChild(personCard(p)); }); wrap.appendChild(l1); }
+      if (off.length) {
+        wrap.appendChild(h('div', { class: 'dayh', text: 'Turned off' }));
+        var l2 = h('div', { class: 'list two' }); off.forEach(function (p) { l2.appendChild(personCard(p)); }); wrap.appendChild(l2);
+      }
+      wrap.appendChild(h('div', { class: 'sub', text: 'Your own Owner PIN is set in Vercel (OWNER_PIN). Shared team and manager PINs still work until you remove them there.' }));
+    } else {
+      if (!activity.length) wrap.appendChild(h('div', { class: 'empty', text: 'Nothing yet in the last 7 days.' }));
+      var lastDay = '';
+      activity.forEach(function (e) {
+        var k = dateKey(new Date(e.ts));
+        if (k !== lastDay) { lastDay = k; wrap.appendChild(h('div', { class: 'dayh', text: k === todayKey ? 'Today' : fmtDate(k) })); }
+        wrap.appendChild(h('div', { class: 'act' }, h('time', { text: fmtTime(e.ts) }),
+          h('div', null, h('b', { text: e.who }), ' ' + actText(e))));
+      });
+    }
+    root.appendChild(wrap);
+  }
+
+  /* ---------- chrome ---------- */
+  function setView(v) {
+    view = v;
+    ['inspect', 'today', 'log', 'people'].forEach(function (k) { $('#view-' + k).hidden = k !== v; });
+    document.querySelectorAll('.nav button').forEach(function (b) {
+      if (b.getAttribute('data-view') === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    var resultShown = $('#result') && !$('#result').hidden;
+    $('#progWrap').hidden = v !== 'inspect' || resultShown;
+    if (v === 'today') { renderToday(); loadState(false); }
+    if (v === 'log') { if (logMode === 'date') loadLog(logDate); else renderLog(); loadState(false); }
+    if (v === 'people') { renderPeople(); loadPeople(); }
+    window.scrollTo(0, 0);
+  }
+
+  function fillTrucklist() {
+    var dl = $('#trucklist'); dl.textContent = '';
+    var seen = {};
+    settings.trucks.concat(todayDocs.map(function (d) { return d.truck; })).forEach(function (t) {
+      if (t && !seen[t]) { seen[t] = 1; dl.appendChild(h('option', { value: t })); }
+    });
+  }
+
+  /* ---------- start ---------- */
+  document.querySelectorAll('.nav button').forEach(function (b) {
+    b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
+  });
+  $('#todayLabel').textContent = fmtDate(todayKey);
+  buildInspect();
+  updateBanner();
+
+  function checkDay() {
+    var k = dateKey(new Date());
+    if (k !== todayKey) { todayKey = k; $('#todayLabel').textContent = fmtDate(todayKey); rev = 0; return true; }
+    return false;
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible' || !PIN) return;
+    loadState(checkDay()).then(flushOutbox);
+  });
+  window.addEventListener('online', function () { netMsg = ''; updateBanner(); flushOutbox(); loadState(false); });
+  setInterval(function () {
+    if (!PIN || document.visibilityState !== 'visible') return;
+    flushOutbox();
+    if (view !== 'inspect') loadState(checkDay());
+  }, 60000);
+
+  if (PIN) { loadState(true).then(flushOutbox); } else { showLogin(''); }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () { /* app still works without it */ }); });
+  }
+})();
+</script>
+</body>
+</html>
