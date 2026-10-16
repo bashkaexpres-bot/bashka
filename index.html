@@ -235,6 +235,7 @@ select.form-input{appearance:none}
 .insp-banner span{flex:1;min-width:140px}
 .insp-banner u{font-size:12px;opacity:.9}
 .insp-banner.hold{background:#8f1d1d;color:#fff;border-color:#c53030;animation:inspPulse 2.2s ease-in-out infinite}
+.insp-banner u.x{cursor:pointer;padding:2px 8px;border-radius:6px;border:1px solid currentColor;text-decoration:none}
 .insp-banner.stale{background:rgba(232,160,32,.14);color:var(--gold);border-color:rgba(232,160,32,.35)}
 @keyframes inspPulse{0%,100%{background:#8f1d1d}50%{background:#b02323}}
 @media (max-width:760px){.insp-banner{padding:10px 14px}.kpi-row{grid-template-columns:1fr 1fr}}
@@ -648,6 +649,7 @@ select.form-input{appearance:none}
     <div class="dash-main">
       <div class="dash-sticky">
       <div id="insp-banner" class="insp-banner" style="display:none"></div>
+      <div id="insp-late" class="insp-banner stale" style="display:none"></div>
       <div class="dash-topbar">
         <div style="display:flex;align-items:center;gap:12px">
           <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
@@ -1357,6 +1359,27 @@ async function inspFetch(force){
   inspAfter();
 }
 function inspBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();[0,0.28].forEach(d=>{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=880;g.gain.value=0.08;o.connect(g);g.connect(c.destination);o.start(c.currentTime+d);o.stop(c.currentTime+d+0.2);});setTimeout(()=>c.close&&c.close(),900);}catch(e){}}
+/* Evening reminder: after 6 PM Central, list active trucks that have no inspection recorded today */
+function inspLateCheck(){
+  const b=document.getElementById('insp-late');if(!b)return;
+  const hide=()=>{b.style.display='none';b.onclick=null;};
+  try{
+    const hr=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',hour:'numeric',hour12:false}).format(new Date()))%24;
+    if(hr<18||!inspData||!inspVeh.length||(inspError&&Date.now()-inspLastOk>120000))return hide();
+    const today=inspToday();
+    const dayOf=ts=>ts?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago'}).format(new Date(ts)):'';
+    const missing=inspVeh.filter(v=>v.status!=='out_of_service').filter(v=>{const t=inspTruck(v);return !(t&&dayOf(t.lastTs)===today);});
+    let dis='';try{dis=localStorage.getItem('inspLateDismissed')||'';}catch(e){}
+    if(!missing.length||dis===today)return hide();
+    const names=missing.map(v=>v.unit_number||v.vehicle_code);
+    const shown=names.slice(0,10).map(escHtml).join(' · ')+(names.length>10?' · +'+(names.length-10)+' more':'');
+    b.style.display='flex';
+    b.innerHTML=`<b>🕕 ${missing.length} truck${missing.length>1?'s':''} not inspected today</b><span>${shown}</span><u>Open Truck Status</u><u class="x" id="insp-late-x">Dismiss for today</u>`;
+    b.onclick=()=>{showDash('inspect',document.getElementById('nav-inspect'));};
+    const x=document.getElementById('insp-late-x');
+    if(x)x.onclick=ev=>{ev.stopPropagation();try{localStorage.setItem('inspLateDismissed',today);}catch(e){}hide();};
+  }catch(e){hide();}
+}
 function inspAfter(){
   const holds=inspData?inspData.trucks.filter(t=>t.status==='hold'):[];
   const minors=inspData?inspData.trucks.filter(t=>t.status==='minor'):[];
@@ -1378,6 +1401,7 @@ function inspAfter(){
   }
   const bd=document.getElementById('insp-badge');
   if(bd){const n=holds.length||minors.length;if(n){bd.textContent=n;bd.style.display='inline-block';bd.style.background=holds.length?'var(--red)':'var(--orange)';}else bd.style.display='none';}
+  inspLateCheck();
   ['s-vehicle','as-vehicle','ew-vehicle'].forEach(id=>inspDecorate(document.getElementById(id)));
   if(document.getElementById('dash-inspect')?.classList.contains('active')){inspRender();if(inspRev!==ilogRev&&!ilogBusy)inspLogLoad();}
 }
