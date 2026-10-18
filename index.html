@@ -1832,13 +1832,15 @@ const $=id=>document.getElementById(id);
 const COLORS={new:'#e53e3e',reviewing:'#d69e2e',interview:'#3182ce',hired:'#38a169',rejected:'#718096'};
 const fmtD=d=>d?new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
 const fmtDay=d=>d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
+const LNAME={en:'English',so:'Soomaali',es:'Español'};
+const lchip=l=>l&&l!=='en'?'<span style="background:#2b6cb0;color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700">'+e(LNAME[l]||l)+'</span>':'';
 const chip=s=>'<span style="background:'+(COLORS[s]||'#718096')+';color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700;text-transform:uppercase">'+e(s)+'</span>';
 
 window.copyApplyLink=async function(){try{await navigator.clipboard.writeText(APPLY_URL);toast('Link copied — send it to applicants ✓')}catch(x){prompt('Copy this link:',APPLY_URL)}};
 
 window.loadApplications=async function(){
   const box=$('apps-list');
-  const {data,error}=await sb.from('driver_applications').select('id,created_at,status,full_name,phone,email,license_number,license_state,cdl_class,position_applied').order('created_at',{ascending:false}).limit(500);
+  const {data,error}=await sb.from('driver_applications').select('id,created_at,status,full_name,phone,email,license_number,license_state,cdl_class,position_applied,language').order('created_at',{ascending:false}).limit(500);
   if(error){box.innerHTML='<div class="loading">Could not load applications ('+e(error.message)+')</div>';return}
   rows=data||[];appsRender();setBadge(rows.filter(r=>r.status==='new').length);
 };
@@ -1846,7 +1848,7 @@ window.appsRender=function(){
   const q=($('apps-search').value||'').toLowerCase().trim(),st=$('apps-status').value;
   const f=rows.filter(r=>(!st||r.status===st)&&(!q||[r.full_name,r.phone,r.email,r.license_number].join(' ').toLowerCase().includes(q)));
   $('apps-summary').textContent=f.length+' application'+(f.length===1?'':'s')+(st||q?' (filtered)':'');
-  $('apps-list').innerHTML=f.length?f.map(r=>'<div class="app-row" data-id="'+e(r.id)+'" style="padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>'+e(r.full_name)+'</strong>'+chip(r.status)+'<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3)">'+fmtD(r.created_at)+'</span></div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+e(r.phone)+' · '+e(r.email)+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">'+e([r.cdl_class,r.license_state&&('License '+r.license_state),r.position_applied].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="loading">No applications'+(st||q?' match your filters':' yet — share the application link')+'</div>';
+  $('apps-list').innerHTML=f.length?f.map(r=>'<div class="app-row" data-id="'+e(r.id)+'" style="padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>'+e(r.full_name)+'</strong>'+chip(r.status)+lchip(r.language)+'<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3)">'+fmtD(r.created_at)+'</span></div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+e(r.phone)+' · '+e(r.email)+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">'+e([r.cdl_class,r.license_state&&('License '+r.license_state),r.position_applied].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="loading">No applications'+(st||q?' match your filters':' yet — share the application link')+'</div>';
   $('apps-list').querySelectorAll('.app-row').forEach(el=>el.onclick=()=>openApplication(el.dataset.id));
 };
 function setBadge(n){const b=$('apps-badge');if(!b)return;b.textContent=n;b.style.display=n>0?'':'none'}
@@ -1871,7 +1873,7 @@ window.openApplication=async function(id){
   if(paths.length){try{const r=await sb.storage.from('applications').createSignedUrls(paths,600);(r.data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}catch(x){}}
   const img=(p,l)=>p&&urls[p]?'<div style="margin:6px 12px 6px 0;display:inline-block;vertical-align:top"><div style="font-size:12px;color:#718096;margin-bottom:4px">'+l+'</div><a href="'+e(urls[p])+'" target="_blank" rel="noopener"><img src="'+e(urls[p])+'" style="max-width:240px;max-height:170px;border-radius:8px;border:1px solid #e2e8f0"></a></div>':'';
   const sig=a.signature_data&&/^data:image\/png;base64,/.test(a.signature_data)?'<div style="margin-top:8px"><div style="font-size:12px;color:#718096;margin-bottom:4px">Signature</div><img src="'+e(a.signature_data)+'" style="max-height:90px;background:#fff;border:1px solid #e2e8f0;border-radius:8px"></div>':'';
-  $('app-body').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+chip(a.status)+'<span style="color:#718096;font-size:12px">Received '+fmtD(a.created_at)+'</span></div>'+
+  $('app-body').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+chip(a.status)+lchip(a.language)+'<span style="color:#718096;font-size:12px">Received '+fmtD(a.created_at)+'</span></div>'+
    '<div style="background:#f7fafc;border-radius:10px;padding:12px;margin-bottom:14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><div style="font-size:12px;color:#718096;margin-bottom:4px">STATUS</div><select id="app-status" style="padding:9px;border:1px solid #cbd5e0;border-radius:8px;font-size:14px">'+['new','reviewing','interview','hired','rejected'].map(s=>'<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+s[0].toUpperCase()+s.slice(1)+'</option>').join('')+'</select></div><button class="action-btn action-btn-sm" onclick="saveApplication()">Save</button><button class="action-btn action-btn-sm" onclick="printApplication()">🖨 Print / PDF</button>'+(a.hired_driver_id?'<span style="color:#38a169;font-weight:600">✓ Added to Drivers</span>':'<button class="action-btn action-btn-sm" style="background:#38a169;color:#fff" id="app-hire" onclick="hireApplication()">✓ Hire — add as driver</button>')+'</div>'+
    '<div style="font-size:12px;color:#718096;margin:10px 0 4px">NOTES (only you can see)</div><textarea id="app-notes" rows="3" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e0;border-radius:8px;padding:8px;font-family:inherit;font-size:14px">'+e(a.notes||'')+'</textarea></div>'+
    details(a)+'<div style="margin-top:12px">'+img(a.dl_photo_path,'License photo')+img(a.medical_card_photo_path,'Medical card')+'</div>'+sig;
