@@ -362,7 +362,17 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
 
   <script>
   // ── Messaging ──────────────────────────────────────────────
+  // Size the Messages tab to the space between the top bar and the bottom nav so the type box is visible
+  function fitMessagesTab(){
+    var t=document.getElementById('tab-messages'),n=document.querySelector('.bottom-nav');
+    if(!t||!n||t.style.display==='none')return;
+    var h=(window.visualViewport?window.visualViewport.height:window.innerHeight)-t.getBoundingClientRect().top-n.offsetHeight;
+    if(h>150)t.style.height=h+'px';
+  }
+  window.addEventListener('resize',fitMessagesTab);
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',fitMessagesTab);
   async function loadDriverMessages() {
+    fitMessagesTab();
     if (!driverRecord?.id) return;
     const resp = await fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages?driver_id=eq.${driverRecord.id}&order=created_at.asc`, {
       headers: { apikey: 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES', Authorization: bxBearer() }
@@ -451,7 +461,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   const _origST = window.switchTab;
   window.switchTab = function(tab) {
     _origST(tab);
-    if (tab==='messages') { loadDriverMessages(); document.getElementById('tab-messages').style.display='flex'; }
+    if (tab==='messages') { document.getElementById('tab-messages').style.display='flex'; fitMessagesTab(); loadDriverMessages(); }
     if (tab==='extrawork') { loadEWHistory(); document.getElementById('tab-extrawork').style.display='block'; }
     document.getElementById('nav-messages')?.classList.toggle('active', tab==='messages');
     document.getElementById('nav-extrawork')?.classList.toggle('active', tab==='extrawork');
