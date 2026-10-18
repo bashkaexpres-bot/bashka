@@ -1857,13 +1857,20 @@ setInterval(refreshBadge,60000);setTimeout(refreshBadge,5000);
 
 const row=(k,v)=>'<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid #edf2f7"><div style="width:180px;flex-shrink:0;color:#718096;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding-top:2px">'+e(k)+'</div><div style="flex:1;word-break:break-word">'+(v===null||v===undefined||v===''?'<span style="color:#a0aec0">—</span>':e(v))+'</div></div>';
 const yes=v=>v===true?'Yes':v===false?'No':null;
+function bgConsent(a){
+  const c=a.background_consent;
+  const head='<div style="font-weight:700;margin:14px 0 6px">Background check consent</div>';
+  if(!c||typeof c!=='object')return head+row('Consent','Not on file (application sent before this step existed)');
+  const sig=c.signature_data&&/^data:image\/png;base64,/.test(c.signature_data)?'<div style="margin-top:6px"><img src="'+e(c.signature_data)+'" style="max-height:70px;background:#fff;border:1px solid #e2e8f0;border-radius:8px"></div>':'';
+  return head+row('MVR + criminal + employment checks',c.authorized?'✓ Authorized':'No')+row('PSP report',c.psp?'✓ Authorized':'Not authorized')+row('Drug & Alcohol Clearinghouse',c.clearinghouse?'✓ Applicant will consent in Clearinghouse':'Not acknowledged')+row('Typed name',c.signed_name)+row('Signed at',c.signed_at&&fmtD(c.signed_at))+row('Form version / language',[c.version,c.language&&LNAME[c.language]].filter(Boolean).join(' · '))+sig;
+}
 function details(a){
   const hist=Array.isArray(a.employment_history)?a.employment_history:[];
   return '<div style="font-weight:700;margin:6px 0">Contact</div>'+row('Phone',a.phone)+row('Email',a.email)+row('Address',a.address)+row('Years at address',a.years_at_address)+row('Date of birth',fmtDay(a.date_of_birth)==='—'?null:fmtDay(a.date_of_birth))+row('Authorized to work in US',yes(a.work_eligible))+
   '<div style="font-weight:700;margin:14px 0 6px">License</div>'+row('License #',a.license_number)+row('State',a.license_state)+row('Class',a.cdl_class)+row('Endorsements',a.endorsements)+row('License expires',a.license_expiration&&fmtDay(a.license_expiration))+row('Medical card expires',a.medical_card_expiration&&fmtDay(a.medical_card_expiration))+row('Years driving trucks',a.cdl_experience_years)+
   '<div style="font-weight:700;margin:14px 0 6px">Work history</div>'+(hist.length?hist.map((h,i)=>'<div style="padding:8px 10px;margin-bottom:6px;background:#f7fafc;border-radius:8px"><b>'+e(h.employer)+'</b> — '+e(h.position||'')+'<div style="font-size:12px;color:#718096">'+e([h.start_date&&('From '+h.start_date),h.end_date&&('to '+h.end_date),h.phone,h.reason&&('Left: '+h.reason)].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div style="color:#a0aec0">None listed</div>')+row('Position wanted',a.position_applied)+row('Can start',a.available_start&&fmtDay(a.available_start))+
   '<div style="font-weight:700;margin:14px 0 6px">Driving record</div>'+row('Accidents (3 yrs)',a.accident_history||'None')+row('Violations (3 yrs)',a.violation_history||'None')+row('License suspended/denied/revoked',a.license_action?('Yes — '+(a.license_action_detail||'no details')):'No')+row('Can pass DOT physical & drug test',yes(a.can_pass_dot))+
-  '<div style="font-weight:700;margin:14px 0 6px">Signed</div>'+row('Typed name',a.signed_name)+row('Signed at',a.signed_at&&fmtD(a.signed_at));
+  '<div style="font-weight:700;margin:14px 0 6px">Signed</div>'+row('Typed name',a.signed_name)+row('Signed at',a.signed_at&&fmtD(a.signed_at))+bgConsent(a);
 }
 window.openApplication=async function(id){
   const {data:a,error}=await sb.from('driver_applications').select('*').eq('id',id).single();
