@@ -239,6 +239,21 @@ select.form-input{appearance:none}
 .insp-banner.stale{background:rgba(232,160,32,.14);color:var(--gold);border-color:rgba(232,160,32,.35)}
 @keyframes inspPulse{0%,100%{background:#8f1d1d}50%{background:#b02323}}
 @media (max-width:760px){.insp-banner{padding:10px 14px}.kpi-row{grid-template-columns:1fr 1fr}}
+.pod-filters{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);align-items:center}
+.pod-in{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:var(--body);font-size:13px;outline:none;min-width:0}
+.pod-in:focus{border-color:var(--gold)}
+.pod-in-wide{flex:1 1 260px}
+.pod-summary{padding:10px 18px;font-family:var(--mono);font-size:11px;color:var(--text3)}
+.pod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:6px 18px 18px}
+.pod-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pod-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pod-job{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.pod-when{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3)}
+.pod-meta{font-size:13px;color:var(--text2)}
+.pod-addr{font-size:12px;color:var(--text3)}
+.pod-imgs{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.pod-sig{height:90px;max-width:200px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid var(--border);display:block}
+@media(max-width:600px){.pod-grid{grid-template-columns:1fr;padding:6px 12px 14px}.pod-filters{padding:10px 12px}}
 </style>
 </head>
 <body>
@@ -639,6 +654,7 @@ select.form-input{appearance:none}
       <button class="sidebar-item active" onclick="showDash(&#39;overview&#39;,this)">📊 Overview</button>
       <button class="sidebar-item" id="nav-compliance" onclick="showDash(&#39;compliance&#39;,this)">⚠️ Compliance<span id="compliance-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
       <button class="sidebar-item" onclick="showDash(&#39;shipments&#39;,this)">📦 Shipments</button>
+      <button class="sidebar-item" id="nav-pod" onclick="showDash(&#39;pod&#39;,this)">🧾 Delivery Proof</button>
       <button class="sidebar-item" onclick="showDash(&#39;drivers&#39;,this)">👤 Drivers</button>
       <button class="sidebar-item" onclick="showDash(&#39;customers&#39;,this)">🏢 Customers</button>
       <button class="sidebar-item" onclick="showDash(&#39;map&#39;,this)">🗺️ Live Map</button>
@@ -699,6 +715,39 @@ select.form-input{appearance:none}
               <thead><tr><th>Tracking #</th><th>Customer</th><th>Driver</th><th>Origin → Dest</th><th>Priority</th><th>Status</th><th></th></tr></thead>
               <tbody id="shipments-table"><tr><td colspan="7"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
+          </div>
+        </div>
+        <div id="dash-pod" class="dash-section">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Proof of Delivery Archive</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="action-btn action-btn-sm" onclick="podExportCsv()">⬇ Spreadsheet (CSV)</button>
+                <button class="action-btn action-btn-sm" id="pod-zip-btn" onclick="podExportZip()">⬇ Photos (ZIP)</button>
+              </div>
+            </div>
+            <div class="pod-filters">
+              <input type="search" id="pod-search" class="pod-in pod-in-wide" placeholder="Search route, job #, customer, driver, signed by, address" oninput="podSearchSoon()">
+              <select id="pod-route" class="pod-in" onchange="podApply()"><option value="">All routes</option></select>
+              <select id="pod-range" class="pod-in" onchange="podRangeChanged()">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="thismonth">This month</option>
+                <option value="month">Pick a month…</option>
+                <option value="custom">Custom dates…</option>
+                <option value="all">All time</option>
+              </select>
+              <input type="month" id="pod-month" class="pod-in" style="display:none" onchange="loadPod()">
+              <span id="pod-custom" style="display:none;gap:6px;align-items:center">
+                <input type="date" id="pod-from" class="pod-in" onchange="loadPod()">
+                <span style="color:var(--text3);font-size:12px">to</span>
+                <input type="date" id="pod-to" class="pod-in" onchange="loadPod()">
+              </span>
+            </div>
+            <div id="pod-summary" class="pod-summary"></div>
+            <div id="pod-list"><div class="loading">Open this tab to load deliveries</div></div>
+            <div id="pod-more" style="display:none;text-align:center;padding:4px 0 18px"><button class="action-btn action-btn-sm" onclick="podShowMore()">Show more</button></div>
           </div>
         </div>
         <div id="dash-drivers" class="dash-section">
@@ -957,10 +1006,10 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-trailer'){document.getElementById('modal-trailer-title').textContent='Add Trailer';document.getElementById('t-id').value='';['t-unit','t-type','t-reg'].forEach(f=>document.getElementById(f).value='');document.getElementById('t-status').value='active';}if(id==='modal-policy'){document.getElementById('modal-policy-title').textContent='Add Policy';document.getElementById('cp-id').value='';['cp-name','cp-number','cp-expires','cp-notes'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-driver'&&mode==='new'){const w=document.getElementById('d-exp-wrap');if(w)w.style.display='none';}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1713,5 +1762,216 @@ function injectMessageButtons() {
 
 window.openCommsModal = openCommsModal;
 window.injectMessageButtons = injectMessageButtons;
+</script>
+<script>
+(function(){
+const POD_PAGE=24;
+const SIG_RE=/\/signature_[^\/]*$/;
+let podRows=[],podFiltered=[],podShown=POD_PAGE,podRoutes={},podReq=0,podRenderTok=0,podTimer=null;
+const podUrls={};
+const $=id=>document.getElementById(id);
+
+function pad(n){return String(n).padStart(2,'0');}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function safeName(s,fallback){const v=String(s==null?'':s).replace(/[\\\/:*?"<>|\r\n]+/g,'-').replace(/\s+/g,' ').trim().slice(0,60);return v||fallback||'x';}
+function csvCell(v){v=v==null?'':String(v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+
+function podRange(){
+  const mode=$('pod-range').value,now=new Date();let from=null,to=null;
+  if(mode==='7'||mode==='30'||mode==='90'){from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-(Number(mode)-1));}
+  else if(mode==='thismonth'){from=new Date(now.getFullYear(),now.getMonth(),1);}
+  else if(mode==='month'){const v=$('pod-month').value;if(v){const p=v.split('-').map(Number);from=new Date(p[0],p[1]-1,1);to=new Date(p[0],p[1],1);}}
+  else if(mode==='custom'){
+    const f=$('pod-from').value,t=$('pod-to').value;
+    if(f){const p=f.split('-').map(Number);from=new Date(p[0],p[1]-1,p[2]);}
+    if(t){const p=t.split('-').map(Number);to=new Date(p[0],p[1]-1,p[2]+1);}
+  }
+  return {from,to};
+}
+function podTag(){
+  const r=podRange();
+  const a=r.from?ymd(r.from):'start';
+  const b=r.to?ymd(new Date(r.to.getTime()-86400000)):ymd(new Date());
+  return a+'_to_'+b;
+}
+function podRangeLabel(){
+  const r=podRange();
+  if(!r.from&&!r.to)return 'all time';
+  const a=r.from?r.from.toLocaleDateString():'the beginning';
+  const b=r.to?new Date(r.to.getTime()-86400000).toLocaleDateString():'today';
+  return a+' – '+b;
+}
+
+window.podRangeChanged=function(){
+  const mode=$('pod-range').value;
+  $('pod-month').style.display=mode==='month'?'':'none';
+  $('pod-custom').style.display=mode==='custom'?'flex':'none';
+  if(mode==='month'&&!$('pod-month').value){const n=new Date();$('pod-month').value=n.getFullYear()+'-'+pad(n.getMonth()+1);}
+  loadPod();
+};
+window.podSearchSoon=function(){clearTimeout(podTimer);podTimer=setTimeout(podApply,200);};
+
+window.loadPod=async function(){
+  const req=++podReq,list=$('pod-list');
+  list.innerHTML='<div class="loading">Loading...</div>';
+  $('pod-more').style.display='none';
+  const r=podRange();
+  let q=sb.from('trip_inspections')
+    .select('id,job_id,driver_id,photos,notes,created_at,drivers(full_name)')
+    .eq('type','proof_of_delivery')
+    .order('created_at',{ascending:false})
+    .limit(2000);
+  if(r.from)q=q.gte('created_at',r.from.toISOString());
+  if(r.to)q=q.lt('created_at',r.to.toISOString());
+  const res=await q;
+  if(req!==podReq)return;
+  if(res.error){list.innerHTML='<div class="empty">Could not load deliveries: '+escHtml(res.error.message)+'</div>';return;}
+  const rows=res.data||[];
+  const ids=[...new Set(rows.map(x=>x.job_id).filter(Boolean))];
+  const jobs={};
+  for(let i=0;i<ids.length;i+=80){
+    const jr=await sb.from('jobs').select('id,job_number,customer_name,pickup_address,drop_address,route_id').in('id',ids.slice(i,i+80));
+    (jr.data||[]).forEach(j=>{jobs[j.id]=j;});
+  }
+  if(req!==podReq)return;
+  if(!Object.keys(podRoutes).length){
+    try{const rr=await sb.rpc('admin_list_payroll_routes');(rr.data||[]).forEach(x=>{podRoutes[x.id]=x.name;});}catch(e){}
+  }
+  podRows=rows.map(x=>{
+    const j=jobs[x.job_id]||{},notes=x.notes||'',m=notes.match(/Received by:\s*(.+)/i),all=x.photos||[];
+    return {
+      id:x.id,job:j.job_number||'',customer:j.customer_name||'',pickup:j.pickup_address||'',drop:j.drop_address||'',
+      route:(j.route_id&&podRoutes[j.route_id])||'No route',
+      driver:(x.drivers&&x.drivers.full_name)||'',
+      at:new Date(x.created_at),
+      recipient:m?m[1].trim():'',
+      notes:notes.replace(/^Received by:.*\n?/im,'').trim(),
+      photos:all.filter(p=>!SIG_RE.test(p)),
+      sigs:all.filter(p=>SIG_RE.test(p))
+    };
+  });
+  const sel=$('pod-route'),keep=sel.value;
+  const names=[...new Set(podRows.map(x=>x.route))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="">All routes</option>'+names.map(n=>'<option value="'+escHtml(n)+'">'+escHtml(n)+'</option>').join('');
+  if(names.includes(keep))sel.value=keep;
+  podApply();
+};
+
+window.podApply=function(){
+  const term=$('pod-search').value.trim().toLowerCase(),route=$('pod-route').value;
+  podFiltered=podRows.filter(x=>{
+    if(route&&x.route!==route)return false;
+    if(!term)return true;
+    return [x.route,x.job,x.customer,x.driver,x.recipient,x.pickup,x.drop,x.notes].join(' ').toLowerCase().includes(term);
+  });
+  podShown=POD_PAGE;
+  podRender();
+};
+window.podShowMore=function(){podShown+=POD_PAGE;podRender();};
+
+async function podSign(paths){
+  const need=[...new Set(paths)].filter(p=>!podUrls[p]);
+  for(let i=0;i<need.length;i+=100){
+    const chunk=need.slice(i,i+100);
+    const r=await sb.storage.from('inspection-photos').createSignedUrls(chunk,3600);
+    (r.data||[]).forEach(x=>{if(x.signedUrl)podUrls[x.path]=x.signedUrl;});
+  }
+  return podUrls;
+}
+
+async function podRender(){
+  const list=$('pod-list'),total=podFiltered.length;
+  const photoCount=podFiltered.reduce((n,x)=>n+x.photos.length,0);
+  $('pod-summary').textContent=total+' deliver'+(total===1?'y':'ies')+' · '+photoCount+' photo'+(photoCount===1?'':'s')+' · '+podRangeLabel();
+  if(!total){
+    list.innerHTML='<div class="empty"><div style="font-size:28px">🧾</div><div>No deliveries match these filters</div></div>';
+    $('pod-more').style.display='none';return;
+  }
+  const slice=podFiltered.slice(0,podShown);
+  const token=++podRenderTok;
+  await podSign(slice.flatMap(x=>x.photos.concat(x.sigs)));
+  if(token!==podRenderTok)return;
+  list.innerHTML='<div class="pod-grid">'+slice.map(x=>{
+    const img=p=>podUrls[p]?'<a href="'+escHtml(podUrls[p])+'" target="_blank" rel="noopener"><img class="insp-photo" loading="lazy" src="'+escHtml(podUrls[p])+'" alt="Delivery photo"></a>':'<span style="font-size:11px;color:var(--red)">Photo unavailable</span>';
+    const sig=p=>podUrls[p]?'<a href="'+escHtml(podUrls[p])+'" target="_blank" rel="noopener"><img class="pod-sig" loading="lazy" src="'+escHtml(podUrls[p])+'" alt="Signature"></a>':'<span style="font-size:11px;color:var(--red)">Signature unavailable</span>';
+    const who=[x.customer,x.driver?'Driver: '+x.driver:'',x.recipient?'Signed by: '+x.recipient:''].filter(Boolean).map(escHtml).join(' · ');
+    return '<div class="pod-card">'
+      +'<div class="pod-head"><span class="pod-job">'+escHtml(x.job||'—')+'</span><span class="tag tag-blue">'+escHtml(x.route)+'</span><span class="pod-when">'+escHtml(x.at.toLocaleString([], {dateStyle:'medium',timeStyle:'short'}))+'</span></div>'
+      +(who?'<div class="pod-meta">'+who+'</div>':'')
+      +((x.pickup||x.drop)?'<div class="pod-addr">'+escHtml(x.pickup||'—')+' → '+escHtml(x.drop||'—')+'</div>':'')
+      +(x.notes?'<div class="pod-meta" style="white-space:pre-line">'+escHtml(x.notes)+'</div>':'')
+      +((x.photos.length||x.sigs.length)?'<div class="pod-imgs">'+x.photos.map(img).join('')+x.sigs.map(sig).join('')+'</div>':'<div class="pod-addr">No photos attached</div>')
+      +'</div>';
+  }).join('')+'</div>';
+  $('pod-more').style.display=total>podShown?'block':'none';
+}
+
+function podCsv(){
+  const head=['Job #','Route','Customer','Driver','Pickup','Dropoff','Delivered','Signed by','Notes','Photos','Signature'];
+  const lines=[head.join(',')];
+  podFiltered.forEach(x=>lines.push([x.job,x.route,x.customer,x.driver,x.pickup,x.drop,x.at.toLocaleString(),x.recipient,x.notes,x.photos.length,x.sigs.length?'Yes':'No'].map(csvCell).join(',')));
+  return '﻿'+lines.join('\r\n');
+}
+function podDownload(blob,name){
+  const a=document.createElement('a'),u=URL.createObjectURL(blob);
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),30000);
+}
+window.podExportCsv=function(){
+  if(!podFiltered.length){toast('Nothing to export','error');return;}
+  podDownload(new Blob([podCsv()],{type:'text/csv;charset=utf-8'}),'proof-of-delivery_'+podTag()+'.csv');
+  toast('Spreadsheet downloaded');
+};
+
+function podLoadJsZip(){
+  return new Promise((resolve,reject)=>{
+    if(window.JSZip)return resolve();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>resolve();s.onerror=()=>reject(new Error('Could not load the ZIP tool. Check your connection.'));
+    document.head.appendChild(s);
+  });
+}
+window.podExportZip=async function(){
+  if(!podFiltered.length){toast('Nothing to export','error');return;}
+  const total=podFiltered.reduce((n,x)=>n+x.photos.length+x.sigs.length,0);
+  if(!total){toast('No photos in this list','error');return;}
+  if(!confirm('Download '+total+' files from '+podFiltered.length+' deliveries as one ZIP? Large lists can take a few minutes. Keep this page open.'))return;
+  const btn=$('pod-zip-btn');btn.disabled=true;
+  try{
+    btn.textContent='Preparing...';
+    await podLoadJsZip();
+    const zip=new JSZip(),tasks=[],used=new Set();
+    podFiltered.forEach(x=>{
+      let folder=safeName(x.route,'No route')+'/'+ymd(x.at)+'_'+safeName(x.job,x.id.slice(0,8));
+      if(used.has(folder))folder+='_'+x.id.slice(0,6);
+      used.add(folder);
+      x.photos.forEach((p,i)=>tasks.push({path:p,name:folder+'/photo_'+(i+1)+'.jpg'}));
+      x.sigs.forEach((p,i)=>tasks.push({path:p,name:folder+'/signature'+(x.sigs.length>1?'_'+(i+1):'')+'.png'}));
+    });
+    await podSign(tasks.map(t=>t.path));
+    let idx=0,done=0;const failed=[];
+    async function worker(){
+      while(idx<tasks.length){
+        const t=tasks[idx++];
+        try{
+          const res=await fetch(podUrls[t.path]);
+          if(!res.ok)throw new Error('HTTP '+res.status);
+          zip.file(t.name,await res.blob());
+        }catch(e){failed.push(t.name);}
+        done++;btn.textContent='⬇ '+done+' / '+tasks.length;
+      }
+    }
+    await Promise.all([worker(),worker(),worker(),worker()]);
+    zip.file('deliveries.csv',podCsv());
+    if(failed.length)zip.file('FAILED_FILES.txt',failed.join('\n'));
+    btn.textContent='Zipping...';
+    const blob=await zip.generateAsync({type:'blob'});
+    podDownload(blob,'proof-of-delivery_'+podTag()+'.zip');
+    toast(failed.length?('ZIP ready — '+failed.length+' file(s) failed, see FAILED_FILES.txt'):'ZIP downloaded',failed.length?'error':'success');
+  }catch(e){toast('Export failed: '+(e.message||e),'error');}
+  btn.disabled=false;btn.textContent='⬇ Photos (ZIP)';
+};
+})();
 </script>
 </body></html>
