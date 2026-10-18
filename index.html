@@ -990,6 +990,9 @@ select.form-input{appearance:none}
 const SUPABASE_URL='https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SUPABASE_KEY='sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let _bxTok=null;try{sb.auth.getSession().then(function(r){_bxTok=r&&r.data&&r.data.session?r.data.session.access_token:null});sb.auth.onAuthStateChange(function(_e,s){_bxTok=s?s.access_token:null})}catch(e){}
+function bxBearer(){return 'Bearer '+(_bxTok||SUPABASE_KEY)}
+
 const CREATE_DRIVER_FN=SUPABASE_URL+'/functions/v1/create-driver';
 const INVITE_TEAMMATE_FN=SUPABASE_URL+'/functions/v1/invite-teammate';
 const INVITE_DRIVER_FN=SUPABASE_URL+'/functions/v1/invite-driver';
@@ -1658,7 +1661,7 @@ function openCommsModal(driverId, driverName) {
 async function adminLoadMessages() {
   if (!_commsDriverId) return;
   const resp = await fetch(SB_ADMIN+'/rest/v1/messages?driver_id=eq.'+_commsDriverId+'&order=created_at.asc', {
-    headers: { apikey: SB_ADMIN_KEY, Authorization: 'Bearer '+SB_ADMIN_KEY }
+    headers: { apikey: SB_ADMIN_KEY, Authorization: bxBearer() }
   });
   const msgs = await resp.json();
   const thread = document.getElementById('admin-msg-thread');
@@ -1672,7 +1675,7 @@ async function adminLoadMessages() {
     thread.appendChild(div);
     if (isDriver && !m.read_at) {
       fetch(SB_ADMIN+'/rest/v1/messages?id=eq.'+m.id, {
-        method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+        method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
         body: JSON.stringify({read_at:new Date().toISOString()})
       });
     }
@@ -1686,7 +1689,7 @@ async function adminSendMessage() {
   if (!_commsDriverId || !body) return;
   input.value = '';
   await fetch(SB_ADMIN+'/rest/v1/messages', {
-    method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+    method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
     body: JSON.stringify({driver_id:_commsDriverId, sender:'admin', body})
   });
   adminLoadMessages();
@@ -1695,7 +1698,7 @@ async function adminSendMessage() {
 async function adminLoadExtraWork() {
   if (!_commsDriverId) return;
   const resp = await fetch(SB_ADMIN+'/rest/v1/extra_work_requests?driver_id=eq.'+_commsDriverId+'&order=created_at.desc', {
-    headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY}
+    headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer()}
   });
   const items = await resp.json();
   const el = document.getElementById('ew-admin-list');
@@ -1722,22 +1725,22 @@ async function reviewExtraWork(requestId, decision, driverId, amount) {
   if (!isSuperAdmin()) return;
   const now = new Date().toISOString();
   await fetch(SB_ADMIN+'/rest/v1/extra_work_requests?id=eq.'+requestId, {
-    method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+    method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
     body: JSON.stringify({status:decision, reviewed_at:now, reviewed_by:SUPER_ADMIN_EMAIL})
   });
   if (decision==='approved') {
     const week = new Date().toISOString().slice(0,10);
     fetch(SB_ADMIN+'/rest/v1/payroll_entries', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverId, week_start:week, type:'extra_work', amount:amount, notes:'Extra work approved by admin', extra_work_request_id:requestId})
     }).catch(function(){});
     await fetch(SB_ADMIN+'/rest/v1/messages', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverId, sender:'admin', body:'✅ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been APPROVED and added to your payroll.'})
     });
   } else {
     await fetch(SB_ADMIN+'/rest/v1/messages', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:'Bearer '+SB_ADMIN_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverId, sender:'admin', body:'❌ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been denied.'})
     });
   }

@@ -251,6 +251,9 @@ body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:1
 const SUPABASE_URL='https://ghrbrwusfyjprxhivxfo.supabase.co';
 const SUPABASE_KEY='sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let _bxTok=null;try{sb.auth.getSession().then(function(r){_bxTok=r&&r.data&&r.data.session?r.data.session.access_token:null});sb.auth.onAuthStateChange(function(_e,s){_bxTok=s?s.access_token:null})}catch(e){}
+function bxBearer(){return 'Bearer '+(_bxTok||SUPABASE_KEY)}
+
 const GEOFENCE_RADIUS=300;
 const WAREHOUSE_LAT=44.998623,WAREHOUSE_LNG=-93.2363025,WAREHOUSE_GEOFENCE_M=152,WAREHOUSE_EXIT_BUFFER_M=100;
 let currentUser=null,driverRecord=null,myJobs=[],watchId=null,myLat=null,myLng=null,geofenceTriggered={},currentShiftId=null,inRecovery=false,resetEmail='';
@@ -362,7 +365,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   async function loadDriverMessages() {
     if (!driverRecord?.id) return;
     const resp = await fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages?driver_id=eq.${driverRecord.id}&order=created_at.asc`, {
-      headers: { apikey: 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES', Authorization: 'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES' }
+      headers: { apikey: 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES', Authorization: bxBearer() }
     });
     const msgs = await resp.json();
     const thread = document.getElementById('msg-thread');
@@ -378,7 +381,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
       thread.appendChild(div);
       if (isAdmin && !m.read_at) {
         fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages?id=eq.${m.id}`, {
-          method:'PATCH', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES','Content-Type':'application/json',Prefer:'return=minimal'},
+          method:'PATCH', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
           body: JSON.stringify({read_at: new Date().toISOString()})
         });
       }
@@ -394,7 +397,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     if (!driverRecord?.id || !body) return;
     input.value = '';
     await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages', {
-      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES','Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id: driverRecord.id, sender:'driver', body})
     });
     loadDriverMessages();
@@ -404,7 +407,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   async function loadEWHistory() {
     if (!driverRecord?.id) return;
     const resp = await fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/extra_work_requests?driver_id=eq.${driverRecord.id}&order=created_at.desc`, {
-      headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES'}
+      headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer()}
     });
     const items = await resp.json();
     const el = document.getElementById('ew-history');
@@ -429,11 +432,11 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     const btn = document.querySelector('button[onclick="submitExtraWork()"]');
     if (btn) { btn.textContent='Submitting...'; btn.disabled=true; }
     await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/extra_work_requests', {
-      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES','Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverRecord.id, route:route||null, description:desc, amount, payroll_week:new Date().toISOString().slice(0,10)})
     });
     await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages', {
-      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:'Bearer sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES','Content-Type':'application/json',Prefer:'return=minimal'},
+      method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverRecord.id, sender:'driver', body:`📋 Extra work request: ${route?route+' — ':''}${desc} (${amount.toFixed(2)})`})
     });
     document.getElementById('ew-route').value='';
