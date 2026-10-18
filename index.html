@@ -655,6 +655,7 @@ select.form-input{appearance:none}
       <button class="sidebar-item" id="nav-compliance" onclick="showDash(&#39;compliance&#39;,this)">⚠️ Compliance<span id="compliance-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
       <button class="sidebar-item" onclick="showDash(&#39;shipments&#39;,this)">📦 Shipments</button>
       <button class="sidebar-item" id="nav-dmsg" onclick="showDash(&#39;dmsg&#39;,this)">💬 Driver Messages<span id="dmsg-badge" style="display:none;margin-left:8px;background:#e53e3e;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700"></span></button>
+      <button class="sidebar-item" id="nav-apps" onclick="showDash(&#39;apps&#39;,this)">📝 Applications<span id="apps-badge" style="display:none;margin-left:8px;background:#e53e3e;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700"></span></button>
       <button class="sidebar-item" id="nav-pod" onclick="showDash(&#39;pod&#39;,this)">🧾 Delivery Proof</button>
       <button class="sidebar-item" onclick="showDash(&#39;drivers&#39;,this)">👤 Drivers</button>
       <button class="sidebar-item" onclick="showDash(&#39;customers&#39;,this)">🏢 Customers</button>
@@ -722,6 +723,17 @@ select.form-input{appearance:none}
           <div class="panel">
             <div class="panel-header"><div class="panel-title">Driver Messages &amp; Extra Work</div><button class="action-btn action-btn-sm" onclick="loadDriverInbox()">↻ Refresh</button></div>
             <div id="dmsg-list"><div class="loading">Open this tab to load messages</div></div>
+          </div>
+        </div>
+        <div id="dash-apps" class="dash-section">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Driver Applications</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="copyApplyLink()">🔗 Copy application link</button><button class="action-btn action-btn-sm" onclick="loadApplications()">↻ Refresh</button></div></div>
+            <div class="pod-filters">
+              <input type="search" id="apps-search" class="pod-in pod-in-wide" placeholder="Search name, phone, email, license" oninput="appsRender()">
+              <select id="apps-status" class="pod-in" onchange="appsRender()"><option value="">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="interview">Interview</option><option value="hired">Hired</option><option value="rejected">Rejected</option></select>
+            </div>
+            <div id="apps-summary" class="pod-summary"></div>
+            <div id="apps-list"><div class="loading">Open this tab to load applications</div></div>
           </div>
         </div>
         <div id="dash-pod" class="dash-section">
@@ -1016,10 +1028,10 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',dmsg:'Driver Messages',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',dmsg:'Driver Messages',apps:'Driver Applications',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='dmsg'&&window.loadDriverInbox)loadDriverInbox();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='dmsg'&&window.loadDriverInbox)loadDriverInbox();if(n==='apps'&&window.loadApplications)loadApplications();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-trailer'){document.getElementById('modal-trailer-title').textContent='Add Trailer';document.getElementById('t-id').value='';['t-unit','t-type','t-reg'].forEach(f=>document.getElementById(f).value='');document.getElementById('t-status').value='active';}if(id==='modal-policy'){document.getElementById('modal-policy-title').textContent='Add Policy';document.getElementById('cp-id').value='';['cp-name','cp-number','cp-expires','cp-notes'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-driver'&&mode==='new'){const w=document.getElementById('d-exp-wrap');if(w)w.style.display='none';}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1606,6 +1618,13 @@ window.inspLogLoad=inspLogLoad;window.inspLogRender=inspLogRender;window.inspLog
 
 
 
+
+<div id="modal-app" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
+  <div style="background:#fff;color:#1a202c;max-width:720px;width:100%;border-radius:12px;overflow:hidden">
+    <div style="background:#1a202c;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:16px" id="app-title">Application</div><button onclick="closeApplication()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button></div>
+    <div id="app-body" style="padding:18px 20px;font-size:14px"></div>
+  </div>
+</div>
 <!-- MESSAGING + EXTRA WORK PANEL -->
 <div id="modal-comms" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
   <div class="modal" style="max-width:560px;width:95%;max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:12px;">
@@ -1803,6 +1822,95 @@ async function refreshDmBadge(){try{if(typeof currentUser==='undefined'||!curren
 setInterval(refreshDmBadge,30000);setTimeout(refreshDmBadge,4000);
 
 window.injectMessageButtons = injectMessageButtons;
+</script>
+<script>
+(function(){
+const APPLY_URL='https://bashkaexpress.com/apply.html';
+let rows=[],curApp=null;
+const e=escHtml;
+const $=id=>document.getElementById(id);
+const COLORS={new:'#e53e3e',reviewing:'#d69e2e',interview:'#3182ce',hired:'#38a169',rejected:'#718096'};
+const fmtD=d=>d?new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
+const fmtDay=d=>d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
+const chip=s=>'<span style="background:'+(COLORS[s]||'#718096')+';color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700;text-transform:uppercase">'+e(s)+'</span>';
+
+window.copyApplyLink=async function(){try{await navigator.clipboard.writeText(APPLY_URL);toast('Link copied — send it to applicants ✓')}catch(x){prompt('Copy this link:',APPLY_URL)}};
+
+window.loadApplications=async function(){
+  const box=$('apps-list');
+  const {data,error}=await sb.from('driver_applications').select('id,created_at,status,full_name,phone,email,license_number,license_state,cdl_class,position_applied').order('created_at',{ascending:false}).limit(500);
+  if(error){box.innerHTML='<div class="loading">Could not load applications ('+e(error.message)+')</div>';return}
+  rows=data||[];appsRender();setBadge(rows.filter(r=>r.status==='new').length);
+};
+window.appsRender=function(){
+  const q=($('apps-search').value||'').toLowerCase().trim(),st=$('apps-status').value;
+  const f=rows.filter(r=>(!st||r.status===st)&&(!q||[r.full_name,r.phone,r.email,r.license_number].join(' ').toLowerCase().includes(q)));
+  $('apps-summary').textContent=f.length+' application'+(f.length===1?'':'s')+(st||q?' (filtered)':'');
+  $('apps-list').innerHTML=f.length?f.map(r=>'<div class="app-row" data-id="'+e(r.id)+'" style="padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong>'+e(r.full_name)+'</strong>'+chip(r.status)+'<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3)">'+fmtD(r.created_at)+'</span></div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+e(r.phone)+' · '+e(r.email)+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">'+e([r.cdl_class,r.license_state&&('License '+r.license_state),r.position_applied].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="loading">No applications'+(st||q?' match your filters':' yet — share the application link')+'</div>';
+  $('apps-list').querySelectorAll('.app-row').forEach(el=>el.onclick=()=>openApplication(el.dataset.id));
+};
+function setBadge(n){const b=$('apps-badge');if(!b)return;b.textContent=n;b.style.display=n>0?'':'none'}
+async function refreshBadge(){try{if(typeof currentUser==='undefined'||!currentUser)return;const {count}=await sb.from('driver_applications').select('id',{count:'exact',head:true}).eq('status','new');if(count!=null)setBadge(count)}catch(x){}}
+setInterval(refreshBadge,60000);setTimeout(refreshBadge,5000);
+
+const row=(k,v)=>'<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid #edf2f7"><div style="width:180px;flex-shrink:0;color:#718096;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding-top:2px">'+e(k)+'</div><div style="flex:1;word-break:break-word">'+(v===null||v===undefined||v===''?'<span style="color:#a0aec0">—</span>':e(v))+'</div></div>';
+const yes=v=>v===true?'Yes':v===false?'No':null;
+function details(a){
+  const hist=Array.isArray(a.employment_history)?a.employment_history:[];
+  return '<div style="font-weight:700;margin:6px 0">Contact</div>'+row('Phone',a.phone)+row('Email',a.email)+row('Address',a.address)+row('Years at address',a.years_at_address)+row('Date of birth',fmtDay(a.date_of_birth)==='—'?null:fmtDay(a.date_of_birth))+row('Authorized to work in US',yes(a.work_eligible))+
+  '<div style="font-weight:700;margin:14px 0 6px">License</div>'+row('License #',a.license_number)+row('State',a.license_state)+row('Class',a.cdl_class)+row('Endorsements',a.endorsements)+row('License expires',a.license_expiration&&fmtDay(a.license_expiration))+row('Medical card expires',a.medical_card_expiration&&fmtDay(a.medical_card_expiration))+row('Years driving trucks',a.cdl_experience_years)+
+  '<div style="font-weight:700;margin:14px 0 6px">Work history</div>'+(hist.length?hist.map((h,i)=>'<div style="padding:8px 10px;margin-bottom:6px;background:#f7fafc;border-radius:8px"><b>'+e(h.employer)+'</b> — '+e(h.position||'')+'<div style="font-size:12px;color:#718096">'+e([h.start_date&&('From '+h.start_date),h.end_date&&('to '+h.end_date),h.phone,h.reason&&('Left: '+h.reason)].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div style="color:#a0aec0">None listed</div>')+row('Position wanted',a.position_applied)+row('Can start',a.available_start&&fmtDay(a.available_start))+
+  '<div style="font-weight:700;margin:14px 0 6px">Driving record</div>'+row('Accidents (3 yrs)',a.accident_history||'None')+row('Violations (3 yrs)',a.violation_history||'None')+row('License suspended/denied/revoked',a.license_action?('Yes — '+(a.license_action_detail||'no details')):'No')+row('Can pass DOT physical & drug test',yes(a.can_pass_dot))+
+  '<div style="font-weight:700;margin:14px 0 6px">Signed</div>'+row('Typed name',a.signed_name)+row('Signed at',a.signed_at&&fmtD(a.signed_at));
+}
+window.openApplication=async function(id){
+  const {data:a,error}=await sb.from('driver_applications').select('*').eq('id',id).single();
+  if(error||!a){toast('Could not open application','error');return}
+  curApp=a;$('app-title').textContent=a.full_name;
+  const paths=[a.dl_photo_path,a.medical_card_photo_path].filter(Boolean);let urls={};
+  if(paths.length){try{const r=await sb.storage.from('applications').createSignedUrls(paths,600);(r.data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}catch(x){}}
+  const img=(p,l)=>p&&urls[p]?'<div style="margin:6px 12px 6px 0;display:inline-block;vertical-align:top"><div style="font-size:12px;color:#718096;margin-bottom:4px">'+l+'</div><a href="'+e(urls[p])+'" target="_blank" rel="noopener"><img src="'+e(urls[p])+'" style="max-width:240px;max-height:170px;border-radius:8px;border:1px solid #e2e8f0"></a></div>':'';
+  const sig=a.signature_data&&/^data:image\/png;base64,/.test(a.signature_data)?'<div style="margin-top:8px"><div style="font-size:12px;color:#718096;margin-bottom:4px">Signature</div><img src="'+e(a.signature_data)+'" style="max-height:90px;background:#fff;border:1px solid #e2e8f0;border-radius:8px"></div>':'';
+  $('app-body').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+chip(a.status)+'<span style="color:#718096;font-size:12px">Received '+fmtD(a.created_at)+'</span></div>'+
+   '<div style="background:#f7fafc;border-radius:10px;padding:12px;margin-bottom:14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><div style="font-size:12px;color:#718096;margin-bottom:4px">STATUS</div><select id="app-status" style="padding:9px;border:1px solid #cbd5e0;border-radius:8px;font-size:14px">'+['new','reviewing','interview','hired','rejected'].map(s=>'<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+s[0].toUpperCase()+s.slice(1)+'</option>').join('')+'</select></div><button class="action-btn action-btn-sm" onclick="saveApplication()">Save</button><button class="action-btn action-btn-sm" onclick="printApplication()">🖨 Print / PDF</button>'+(a.hired_driver_id?'<span style="color:#38a169;font-weight:600">✓ Added to Drivers</span>':'<button class="action-btn action-btn-sm" style="background:#38a169;color:#fff" id="app-hire" onclick="hireApplication()">✓ Hire — add as driver</button>')+'</div>'+
+   '<div style="font-size:12px;color:#718096;margin:10px 0 4px">NOTES (only you can see)</div><textarea id="app-notes" rows="3" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e0;border-radius:8px;padding:8px;font-family:inherit;font-size:14px">'+e(a.notes||'')+'</textarea></div>'+
+   details(a)+'<div style="margin-top:12px">'+img(a.dl_photo_path,'License photo')+img(a.medical_card_photo_path,'Medical card')+'</div>'+sig;
+  $('modal-app').style.display='flex';
+};
+window.closeApplication=function(){$('modal-app').style.display='none';curApp=null};
+window.saveApplication=async function(){
+  if(!curApp)return;const status=$('app-status').value,notes=$('app-notes').value.trim()||null;
+  const {error}=await sb.from('driver_applications').update({status,notes,updated_at:new Date().toISOString()}).eq('id',curApp.id);
+  if(error){toast('Error: '+error.message,'error');return}
+  toast('Saved ✓');if(typeof logActivity==='function')logActivity('Updated application','application',curApp.id,{status});closeApplication();loadApplications();
+};
+window.hireApplication=async function(){
+  const a=curApp;if(!a)return;
+  if(!a.email){toast('This application has no email','error');return}
+  if(!confirm('Hire '+a.full_name+'?\n\nThis adds them to your Drivers list and emails them an invite to set up their driver app login.'))return;
+  const btn=$('app-hire');if(btn){btn.disabled=true;btn.textContent='Adding…'}
+  try{
+    const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error('Session expired, please sign in again');
+    const res=await fetch(CREATE_DRIVER_FN,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SUPABASE_KEY},body:JSON.stringify({full_name:a.full_name,phone:a.phone,license_number:a.license_number||'',status:'active',email:a.email})});
+    const out=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(out.error||'Could not create driver');
+    const {data:d}=await sb.from('drivers').select('id').eq('email',a.email).order('created_at',{ascending:false}).limit(1);
+    const did=d&&d[0]?d[0].id:null;
+    if(did){await sb.from('drivers').update({date_of_birth:a.date_of_birth,license_state:a.license_state,cdl_class:a.cdl_class,license_expiration:a.license_expiration,medical_card_expiration:a.medical_card_expiration}).eq('id',did)}
+    await sb.from('driver_applications').update({status:'hired',hired_driver_id:did,notes:$('app-notes')?($('app-notes').value.trim()||null):a.notes,updated_at:new Date().toISOString()}).eq('id',a.id);
+    sb.auth.resetPasswordForEmail(a.email,{redirectTo:DRIVER_APP_URL}).catch(()=>{});
+    toast('Driver added — invite sent to '+a.email+' ✓');if(typeof logActivity==='function')logActivity('Hired from application','driver',did,{full_name:a.full_name});
+    closeApplication();loadApplications();if(typeof loadDrivers==='function')loadDrivers();
+  }catch(x){toast('Error: '+x.message,'error');if(btn){btn.disabled=false;btn.textContent='✓ Hire — add as driver'}}
+};
+window.printApplication=function(){
+  const a=curApp;if(!a)return;
+  const w=window.open('','_blank');if(!w){toast('Allow pop-ups to print','error');return}
+  const sig=a.signature_data&&/^data:image\/png;base64,/.test(a.signature_data)?'<img src="'+e(a.signature_data)+'" style="height:70px">':'';
+  w.document.write('<!doctype html><title>Application — '+e(a.full_name)+'</title><body style="font-family:Arial,sans-serif;max-width:760px;margin:20px auto;color:#111;font-size:13px"><h2 style="margin-bottom:2px">Bashka Express LLC — Driver Application</h2><div style="color:#555;margin-bottom:14px">'+e(a.full_name)+' · received '+fmtD(a.created_at)+' · status: '+e(a.status)+'</div>'+details(a)+'<div style="margin-top:14px">'+sig+'</div></body>');
+  w.document.close();w.focus();setTimeout(()=>w.print(),400);
+};
+})();
 </script>
 <script>
 (function(){

@@ -198,7 +198,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-100);c
         <span class="user-role" id="role-display">—</span>
       </div>
       <button class="logout-btn" id="loc-toggle-btn" onclick="toggleMyLocationSharing()">📍 Share my location: off</button>
-      <button class="logout-btn" id="quick-link-btn" style="display:none" onclick="generateApplicationLink()">🔗 New driver link</button>
       <button class="logout-btn" onclick="openChangePassword()">🔑 Change password</button>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
@@ -631,9 +630,6 @@ function showApp(){
     document.getElementById('nav-driverfiles').classList.remove('hidden');
   }
   currentUser.can_generate_link = currentUser.role==='admin' || currentUser.role==='manager';
-  if(currentUser.can_generate_link){
-    document.getElementById('quick-link-btn').style.display='inline-block';
-  }
   updateLocationToggleUI();
   if(currentUser.location_sharing_enabled) startLocationTracking();
   loadAll();
@@ -1119,16 +1115,6 @@ async function handleComplianceUpload(event){
     showToast('Error importing spreadsheet');
     console.error(e);
   }
-}
-
-async function generateApplicationLink(){
-  try{
-    const token = await rpc('dqf_create_application_link',{p_user_id:currentUser.id});
-    const link = `${window.location.origin}/job-application.html?token=${token}`;
-    await navigator.clipboard.writeText(link);
-    showToast('Link copied — paste it to send to the applicant');
-    if(currentUser.dqf_access_ok) await loadDriverFiles();
-  }catch(e){showToast('Error generating link');console.error(e);}
 }
 
 async function saveGrandfather(){
