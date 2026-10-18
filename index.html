@@ -1806,7 +1806,7 @@ window.openApplication=async function(id){
   const img=(p,l)=>p&&urls[p]?'<div style="margin:6px 12px 6px 0;display:inline-block;vertical-align:top"><div style="font-size:12px;color:#718096;margin-bottom:4px">'+l+'</div><a href="'+e(urls[p])+'" target="_blank" rel="noopener"><img src="'+e(urls[p])+'" style="max-width:240px;max-height:170px;border-radius:8px;border:1px solid #e2e8f0"></a></div>':'';
   const sig=a.signature_data&&/^data:image\/png;base64,/.test(a.signature_data)?'<div style="margin-top:8px"><div style="font-size:12px;color:#718096;margin-bottom:4px">Signature</div><img src="'+e(a.signature_data)+'" style="max-height:90px;background:#fff;border:1px solid #e2e8f0;border-radius:8px"></div>':'';
   $('app-body').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+chip(a.status)+lchip(a.language)+'<span style="color:#718096;font-size:12px">Received '+fmtD(a.created_at)+'</span></div>'+
-   '<div style="background:#f7fafc;border-radius:10px;padding:12px;margin-bottom:14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><div style="font-size:12px;color:#718096;margin-bottom:4px">STATUS</div><select id="app-status" style="padding:9px;border:1px solid #cbd5e0;border-radius:8px;font-size:14px">'+['new','reviewing','interview','hired','rejected'].map(s=>'<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+s[0].toUpperCase()+s.slice(1)+'</option>').join('')+'</select></div><button class="action-btn action-btn-sm" onclick="saveApplication()">Save</button><button class="action-btn action-btn-sm" onclick="printApplication()">🖨 Print / PDF</button>'+(a.hired_driver_id?'<span style="color:#38a169;font-weight:600">✓ Added to Drivers</span>':'<button class="action-btn action-btn-sm" style="background:#38a169;color:#fff" id="app-hire" onclick="hireApplication()">✓ Hire — add as driver</button>')+'</div>'+
+   '<div style="background:#f7fafc;border-radius:10px;padding:12px;margin-bottom:14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><div style="font-size:12px;color:#718096;margin-bottom:4px">STATUS</div><select id="app-status" style="padding:9px;border:1px solid #cbd5e0;border-radius:8px;font-size:14px">'+['new','reviewing','interview','hired','rejected'].map(s=>'<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+s[0].toUpperCase()+s.slice(1)+'</option>').join('')+'</select></div><button class="action-btn action-btn-sm" onclick="saveApplication()">Save</button><button class="action-btn action-btn-sm" onclick="printApplication()">🖨 Print / PDF</button>'+(a.hired_driver_id?'<span style="color:#38a169;font-weight:600">✓ Added to Drivers</span>':'<button class="action-btn action-btn-sm" style="background:#38a169;color:#fff" id="app-hire" onclick="hireApplication()">✓ Hire — add as driver</button>')+(myRole==='admin'&&!a.hired_driver_id?'<button class="action-btn action-btn-sm" style="background:#e53e3e;color:#fff;margin-left:auto" onclick="deleteApplication()">🗑 Delete</button>':'')+'</div>'+
    '<div style="font-size:12px;color:#718096;margin:10px 0 4px">NOTES (only you can see)</div><textarea id="app-notes" rows="3" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e0;border-radius:8px;padding:8px;font-family:inherit;font-size:14px">'+e(a.notes||'')+'</textarea></div>'+
    details(a)+'<div style="margin-top:12px">'+img(a.dl_photo_path,'License photo')+img(a.medical_card_photo_path,'Medical card')+'</div>'+sig;
   $('modal-app').style.display='flex';
@@ -1817,6 +1817,18 @@ window.saveApplication=async function(){
   const {error}=await sb.from('driver_applications').update({status,notes,updated_at:new Date().toISOString()}).eq('id',curApp.id);
   if(error){toast('Error: '+error.message,'error');return}
   toast('Saved ✓');if(typeof logActivity==='function')logActivity('Updated application','application',curApp.id,{status});closeApplication();loadApplications();
+};
+window.deleteApplication=async function(){
+  const a=curApp;if(!a||myRole!=='admin')return;
+  if(a.hired_driver_id){toast('Hired applicants are kept as the driver record','error');return}
+  if(!confirm('Permanently delete the application from '+a.full_name+'?\n\nThis removes their answers, signatures and photos. It cannot be undone.'))return;
+  const paths=[a.dl_photo_path,a.medical_card_photo_path].filter(Boolean);
+  const {data,error}=await sb.from('driver_applications').delete().eq('id',a.id).select('id');
+  if(error){toast('Error: '+error.message,'error');return}
+  if(!data||!data.length){toast('Could not delete (no permission?)','error');return}
+  if(paths.length){try{await sb.storage.from('applications').remove(paths)}catch(x){}}
+  if(typeof logActivity==='function')logActivity('Deleted application','application',a.id,{name:a.full_name});
+  toast('Application deleted');closeApplication();loadApplications();
 };
 window.hireApplication=async function(){
   const a=curApp;if(!a)return;
