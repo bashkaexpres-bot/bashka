@@ -654,6 +654,7 @@ select.form-input{appearance:none}
       <button class="sidebar-item active" onclick="showDash(&#39;overview&#39;,this)">📊 Overview</button>
       <button class="sidebar-item" id="nav-compliance" onclick="showDash(&#39;compliance&#39;,this)">⚠️ Compliance<span id="compliance-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
       <button class="sidebar-item" onclick="showDash(&#39;shipments&#39;,this)">📦 Shipments</button>
+      <button class="sidebar-item" id="nav-dmsg" onclick="showDash(&#39;dmsg&#39;,this)">💬 Driver Messages<span id="dmsg-badge" style="display:none;margin-left:8px;background:#e53e3e;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700"></span></button>
       <button class="sidebar-item" id="nav-pod" onclick="showDash(&#39;pod&#39;,this)">🧾 Delivery Proof</button>
       <button class="sidebar-item" onclick="showDash(&#39;drivers&#39;,this)">👤 Drivers</button>
       <button class="sidebar-item" onclick="showDash(&#39;customers&#39;,this)">🏢 Customers</button>
@@ -715,6 +716,12 @@ select.form-input{appearance:none}
               <thead><tr><th>Tracking #</th><th>Customer</th><th>Driver</th><th>Origin → Dest</th><th>Priority</th><th>Status</th><th></th></tr></thead>
               <tbody id="shipments-table"><tr><td colspan="7"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
+          </div>
+        </div>
+        <div id="dash-dmsg" class="dash-section">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Driver Messages &amp; Extra Work</div><button class="action-btn action-btn-sm" onclick="loadDriverInbox()">↻ Refresh</button></div>
+            <div id="dmsg-list"><div class="loading">Open this tab to load messages</div></div>
           </div>
         </div>
         <div id="dash-pod" class="dash-section">
@@ -1009,10 +1016,10 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',dmsg:'Driver Messages',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+function showDash(n,b){document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='dmsg'&&window.loadDriverInbox)loadDriverInbox();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-trailer'){document.getElementById('modal-trailer-title').textContent='Add Trailer';document.getElementById('t-id').value='';['t-unit','t-type','t-reg'].forEach(f=>document.getElementById(f).value='');document.getElementById('t-status').value='active';}if(id==='modal-policy'){document.getElementById('modal-policy-title').textContent='Add Policy';document.getElementById('cp-id').value='';['cp-name','cp-number','cp-expires','cp-notes'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-driver'&&mode==='new'){const w=document.getElementById('d-exp-wrap');if(w)w.style.display='none';}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1631,6 +1638,7 @@ let _commsDriverId = null;
 let _commsPollTimer = null;
 
 function isSuperAdmin() {
+  if (typeof myRole!=='undefined' && myRole==='admin') return true;
   try {
     const session = sb?.auth?.session?.() || null;
     const email = session?.user?.email || JSON.parse(localStorage.getItem('sb-user')||'{}')?.email || '';
@@ -1671,7 +1679,7 @@ async function adminLoadMessages() {
     const isDriver = m.sender==='driver';
     const div = document.createElement('div');
     div.style.cssText = 'max-width:80%;padding:10px 14px;border-radius:'+(isDriver?'4px 14px 14px 14px':'14px 14px 4px 14px')+';background:'+(isDriver?'#fff':'#2b6cb0')+';color:'+(isDriver?'#1a202c':'#fff')+';align-self:'+(isDriver?'flex-start':'flex-end')+';box-shadow:0 1px 3px rgba(0,0,0,.1);font-size:14px;line-height:1.4;';
-    div.innerHTML = '<div style="font-size:10px;font-weight:600;opacity:.7;margin-bottom:3px;">'+(isDriver?'Driver':'You')+'</div><div>'+m.body+'</div><div style="font-size:10px;opacity:.6;margin-top:4px;">'+new Date(m.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>';
+    div.innerHTML = '<div style="font-size:10px;font-weight:600;opacity:.7;margin-bottom:3px;">'+(isDriver?'Driver':'You')+'</div><div>'+escHtml(m.body)+'</div><div style="font-size:10px;opacity:.6;margin-top:4px;">'+new Date(m.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>';
     thread.appendChild(div);
     if (isDriver && !m.read_at) {
       fetch(SB_ADMIN+'/rest/v1/messages?id=eq.'+m.id, {
@@ -1708,15 +1716,15 @@ async function adminLoadExtraWork() {
   el.innerHTML = items.length ? items.map(function(r){
     return '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
-      '<div style="font-weight:700;font-size:14px;">'+(r.route||'No route')+'</div>'+
-      '<span style="background:'+(colors[r.status]||'#718096')+';color:#fff;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;">'+r.status.toUpperCase()+'</span></div>'+
-      '<div style="font-size:13px;color:#4a5568;margin-bottom:6px;">'+r.description+'</div>'+
+      '<div style="font-weight:700;font-size:14px;">'+escHtml(r.route||'No route')+'</div>'+
+      '<span style="background:'+(colors[r.status]||'#718096')+';color:#fff;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;">'+escHtml(String(r.status).toUpperCase())+'</span></div>'+
+      '<div style="font-size:13px;color:#4a5568;margin-bottom:6px;">'+escHtml(r.description)+'</div>'+
       '<div style="font-size:15px;font-weight:700;color:#2b6cb0;">$'+parseFloat(r.amount).toFixed(2)+'</div>'+
       '<div style="font-size:11px;color:#a0aec0;margin-top:4px;">'+new Date(r.created_at).toLocaleDateString()+'</div>'+
       (superAdmin && r.status==='pending' ?
         '<div style="display:flex;gap:8px;margin-top:10px;">'+
-        '<button onclick="reviewExtraWork(''+r.id+'','approved',''+_commsDriverId+'','+r.amount+')" style="flex:1;background:#38a169;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer;">✓ Approve</button>'+
-        '<button onclick="reviewExtraWork(''+r.id+'','denied',''+_commsDriverId+'','+r.amount+')" style="flex:1;background:#e53e3e;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer;">✗ Deny</button></div>' : '')+
+        '<button onclick="reviewExtraWork(\''+r.id+'\',\'approved\',\''+_commsDriverId+'\','+r.amount+')" style="flex:1;background:#38a169;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer;">✓ Approve</button>'+
+        '<button onclick="reviewExtraWork(\''+r.id+'\',\'denied\',\''+_commsDriverId+'\','+r.amount+')" style="flex:1;background:#e53e3e;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer;">✗ Deny</button></div>' : '')+
       '</div>';
   }).join('') : '<div style="color:#a0aec0;text-align:center;padding:20px;">No extra work requests</div>';
 }
@@ -1764,6 +1772,36 @@ function injectMessageButtons() {
 }
 
 window.openCommsModal = openCommsModal;
+window.loadDriverInbox = loadDriverInbox;
+// ── Driver inbox (sidebar tab) ──
+async function _dmGet(path){const r=await fetch(SB_ADMIN+'/rest/v1/'+path,{headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer()}});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+async function loadDriverInbox(){
+  const box=document.getElementById('dmsg-list');if(!box)return;
+  try{
+    const [msgs,ew,drv]=await Promise.all([
+      _dmGet('messages?select=id,driver_id,sender,body,created_at,read_at&order=created_at.desc&limit=1000'),
+      _dmGet('extra_work_requests?select=id,driver_id,status&status=eq.pending'),
+      _dmGet('drivers?select=id,full_name')]);
+    const names={};drv.forEach(function(d){names[d.id]=d.full_name});
+    const t={};
+    msgs.forEach(function(m){const x=t[m.driver_id]||(t[m.driver_id]={id:m.driver_id,last:m,unread:0,pending:0});if(m.sender==='driver'&&!m.read_at)x.unread++;});
+    ew.forEach(function(r){const x=t[r.driver_id]||(t[r.driver_id]={id:r.driver_id,last:null,unread:0,pending:0});x.pending++;});
+    const rows=Object.values(t).sort(function(a,b){return (b.unread+b.pending>0)-(a.unread+a.pending>0)||String((b.last&&b.last.created_at)||'').localeCompare(String((a.last&&a.last.created_at)||''))});
+    setDmBadge(rows.reduce(function(n,x){return n+x.unread+x.pending},0));
+    if(!rows.length){box.innerHTML='<div class="loading">No driver messages yet</div>';return;}
+    box.innerHTML=rows.map(function(x){
+      const nm=names[x.id]||'Driver';
+      const pv=x.last?(x.last.sender==='driver'?'':'You: ')+x.last.body:'';
+      const tag=(x.unread?'<span style="background:#e53e3e;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px">'+x.unread+' new</span>':'')+(x.pending?'<span style="background:#d69e2e;color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px">'+x.pending+' extra work pending</span>':'');
+      return '<div class="dmsg-row" data-id="'+escHtml(x.id)+'" data-name="'+escHtml(nm)+'" data-ew="'+(x.pending?1:0)+'" style="padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><strong>'+escHtml(nm)+'</strong>'+tag+'<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3)">'+(x.last?new Date(x.last.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</span></div><div style="font-size:13px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(pv)+'</div></div>';
+    }).join('');
+    box.querySelectorAll('.dmsg-row').forEach(function(el){el.onclick=function(){openCommsModal(el.dataset.id,el.dataset.name);if(el.dataset.ew==='1'&&(+el.querySelector('span[style*="d69e2e"]')?1:0))switchCommsTab('extrawork');};});
+  }catch(e){box.innerHTML='<div class="loading">Could not load messages ('+escHtml(e.message)+')</div>';}
+}
+function setDmBadge(n){const b=document.getElementById('dmsg-badge');if(!b)return;b.textContent=n;b.style.display=n>0?'':'none';}
+async function refreshDmBadge(){try{if(typeof currentUser==='undefined'||!currentUser)return;const [m,e]=await Promise.all([_dmGet('messages?select=id&sender=eq.driver&read_at=is.null&limit=200'),_dmGet('extra_work_requests?select=id&status=eq.pending&limit=200')]);setDmBadge(m.length+e.length);}catch(x){}}
+setInterval(refreshDmBadge,30000);setTimeout(refreshDmBadge,4000);
+
 window.injectMessageButtons = injectMessageButtons;
 </script>
 <script>
