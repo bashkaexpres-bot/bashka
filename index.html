@@ -1750,27 +1750,31 @@ async function adminLoadExtraWork() {
 
 async function reviewExtraWork(requestId, decision, driverId, amount) {
   if (!isSuperAdmin()) return;
+  const H={apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json'};
   const now = new Date().toISOString();
-  await fetch(SB_ADMIN+'/rest/v1/extra_work_requests?id=eq.'+requestId, {
-    method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
+  // claim the request (only if still pending) so it can never be approved twice
+  const r1 = await fetch(SB_ADMIN+'/rest/v1/extra_work_requests?id=eq.'+requestId+'&status=eq.pending', {
+    method:'PATCH', headers:Object.assign({Prefer:'return=representation'},H),
     body: JSON.stringify({status:decision, reviewed_at:now, reviewed_by:SUPER_ADMIN_EMAIL})
   });
+  const rows = r1.ok ? await r1.json().catch(function(){return [];}) : [];
+  if (!rows.length) { toast(r1.ok?'Already reviewed':'Could not save, try again','error'); adminLoadExtraWork(); return; }
+  let msg;
   if (decision==='approved') {
-    const week = new Date().toISOString().slice(0,10);
-    fetch(SB_ADMIN+'/rest/v1/payroll_entries', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
-      body: JSON.stringify({driver_id:driverId, week_start:week, type:'extra_work', amount:amount, notes:'Extra work approved by admin', extra_work_request_id:requestId})
-    }).catch(function(){});
-    await fetch(SB_ADMIN+'/rest/v1/driver_messages', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
-      body: JSON.stringify({driver_id:driverId, sender:'admin', body:'✅ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been APPROVED.'})
-    });
+    const d = new Date(); const today = new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    const note = 'Extra work approved'+(rows[0].description?': '+String(rows[0].description).slice(0,200):'');
+    const pay = await sb.rpc('admin_add_payroll_load',{p_driver_id:driverId,p_route_id:null,p_date:today,p_rate:Number(amount),p_deduction:0,p_load_ref:'Extra work',p_note:note});
+    if (pay.error) {
+      // undo the approval so nothing is lost
+      await fetch(SB_ADMIN+'/rest/v1/extra_work_requests?id=eq.'+requestId, {method:'PATCH', headers:Object.assign({Prefer:'return=minimal'},H), body: JSON.stringify({status:'pending', reviewed_at:null, reviewed_by:null})});
+      toast('Payroll failed: '+pay.error.message+'. Request left pending.','error'); adminLoadExtraWork(); return;
+    }
+    msg='✅ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been APPROVED and added to your pay.';
+    toast('Approved ✓ — added to payroll');
   } else {
-    await fetch(SB_ADMIN+'/rest/v1/driver_messages', {
-      method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
-      body: JSON.stringify({driver_id:driverId, sender:'admin', body:'❌ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been denied.'})
-    });
+    msg='❌ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been denied.';
   }
+  await fetch(SB_ADMIN+'/rest/v1/driver_messages', {method:'POST', headers:Object.assign({Prefer:'return=minimal'},H), body: JSON.stringify({driver_id:driverId, sender:'admin', body:msg})});
   adminLoadExtraWork();
 }
 
