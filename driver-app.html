@@ -374,7 +374,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   async function loadDriverMessages() {
     fitMessagesTab();
     if (!driverRecord?.id) return;
-    const resp = await fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages?driver_id=eq.${driverRecord.id}&order=created_at.asc`, {
+    const resp = await fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/driver_messages?driver_id=eq.${driverRecord.id}&order=created_at.asc`, {
       headers: { apikey: 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES', Authorization: bxBearer() }
     });
     const msgs = await resp.json();
@@ -390,7 +390,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
       div.innerHTML = `<div>${m.body}</div><div style="font-size:10px;opacity:.6;margin-top:4px;">${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`;
       thread.appendChild(div);
       if (isAdmin && !m.read_at) {
-        fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages?id=eq.${m.id}`, {
+        fetch(`https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/driver_messages?id=eq.${m.id}`, {
           method:'PATCH', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
           body: JSON.stringify({read_at: new Date().toISOString()})
         });
@@ -406,7 +406,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     const body = input?.value.trim();
     if (!driverRecord?.id || !body) return;
     input.value = '';
-    await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages', {
+    await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/driver_messages', {
       method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id: driverRecord.id, sender:'driver', body})
     });
@@ -445,7 +445,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
       method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverRecord.id, route:route||null, description:desc, amount, payroll_week:new Date().toISOString().slice(0,10)})
     });
-    await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/messages', {
+    await fetch('https://ghrbrwusfyjprxhivxfo.supabase.co/rest/v1/driver_messages', {
       method:'POST', headers:{apikey:'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES',Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverRecord.id, sender:'driver', body:`📋 Extra work request: ${route?route+' — ':''}${desc} (${amount.toFixed(2)})`})
     });

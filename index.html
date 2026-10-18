@@ -1668,7 +1668,7 @@ function openCommsModal(driverId, driverName) {
 
 async function adminLoadMessages() {
   if (!_commsDriverId) return;
-  const resp = await fetch(SB_ADMIN+'/rest/v1/messages?driver_id=eq.'+_commsDriverId+'&order=created_at.asc', {
+  const resp = await fetch(SB_ADMIN+'/rest/v1/driver_messages?driver_id=eq.'+_commsDriverId+'&order=created_at.asc', {
     headers: { apikey: SB_ADMIN_KEY, Authorization: bxBearer() }
   });
   const msgs = await resp.json();
@@ -1682,7 +1682,7 @@ async function adminLoadMessages() {
     div.innerHTML = '<div style="font-size:10px;font-weight:600;opacity:.7;margin-bottom:3px;">'+(isDriver?'Driver':'You')+'</div><div>'+escHtml(m.body)+'</div><div style="font-size:10px;opacity:.6;margin-top:4px;">'+new Date(m.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>';
     thread.appendChild(div);
     if (isDriver && !m.read_at) {
-      fetch(SB_ADMIN+'/rest/v1/messages?id=eq.'+m.id, {
+      fetch(SB_ADMIN+'/rest/v1/driver_messages?id=eq.'+m.id, {
         method:'PATCH', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
         body: JSON.stringify({read_at:new Date().toISOString()})
       });
@@ -1696,7 +1696,7 @@ async function adminSendMessage() {
   const body = input ? input.value.trim() : '';
   if (!_commsDriverId || !body) return;
   input.value = '';
-  await fetch(SB_ADMIN+'/rest/v1/messages', {
+  await fetch(SB_ADMIN+'/rest/v1/driver_messages', {
     method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
     body: JSON.stringify({driver_id:_commsDriverId, sender:'admin', body})
   });
@@ -1742,12 +1742,12 @@ async function reviewExtraWork(requestId, decision, driverId, amount) {
       method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverId, week_start:week, type:'extra_work', amount:amount, notes:'Extra work approved by admin', extra_work_request_id:requestId})
     }).catch(function(){});
-    await fetch(SB_ADMIN+'/rest/v1/messages', {
+    await fetch(SB_ADMIN+'/rest/v1/driver_messages', {
       method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
-      body: JSON.stringify({driver_id:driverId, sender:'admin', body:'✅ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been APPROVED and added to your payroll.'})
+      body: JSON.stringify({driver_id:driverId, sender:'admin', body:'✅ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been APPROVED.'})
     });
   } else {
-    await fetch(SB_ADMIN+'/rest/v1/messages', {
+    await fetch(SB_ADMIN+'/rest/v1/driver_messages', {
       method:'POST', headers:{apikey:SB_ADMIN_KEY,Authorization:bxBearer(),'Content-Type':'application/json',Prefer:'return=minimal'},
       body: JSON.stringify({driver_id:driverId, sender:'admin', body:'❌ Your extra work request for $'+parseFloat(amount).toFixed(2)+' has been denied.'})
     });
@@ -1779,7 +1779,7 @@ async function loadDriverInbox(){
   const box=document.getElementById('dmsg-list');if(!box)return;
   try{
     const [msgs,ew,drv]=await Promise.all([
-      _dmGet('messages?select=id,driver_id,sender,body,created_at,read_at&order=created_at.desc&limit=1000'),
+      _dmGet('driver_messages?select=id,driver_id,sender,body,created_at,read_at&order=created_at.desc&limit=1000'),
       _dmGet('extra_work_requests?select=id,driver_id,status&status=eq.pending'),
       _dmGet('drivers?select=id,full_name')]);
     const names={};drv.forEach(function(d){names[d.id]=d.full_name});
@@ -1799,7 +1799,7 @@ async function loadDriverInbox(){
   }catch(e){box.innerHTML='<div class="loading">Could not load messages ('+escHtml(e.message)+')</div>';}
 }
 function setDmBadge(n){const b=document.getElementById('dmsg-badge');if(!b)return;b.textContent=n;b.style.display=n>0?'':'none';}
-async function refreshDmBadge(){try{if(typeof currentUser==='undefined'||!currentUser)return;const [m,e]=await Promise.all([_dmGet('messages?select=id&sender=eq.driver&read_at=is.null&limit=200'),_dmGet('extra_work_requests?select=id&status=eq.pending&limit=200')]);setDmBadge(m.length+e.length);}catch(x){}}
+async function refreshDmBadge(){try{if(typeof currentUser==='undefined'||!currentUser)return;const [m,e]=await Promise.all([_dmGet('driver_messages?select=id&sender=eq.driver&read_at=is.null&limit=200'),_dmGet('extra_work_requests?select=id&status=eq.pending&limit=200')]);setDmBadge(m.length+e.length);}catch(x){}}
 setInterval(refreshDmBadge,30000);setTimeout(refreshDmBadge,4000);
 
 window.injectMessageButtons = injectMessageButtons;
