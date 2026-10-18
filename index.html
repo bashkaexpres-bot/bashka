@@ -648,7 +648,7 @@ select.form-input{appearance:none}
         </div>
         <div id="dash-apps" class="dash-section">
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Driver Applications</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="copyApplyLink()">🔗 Copy application link</button><button class="action-btn action-btn-sm" onclick="loadApplications()">↻ Refresh</button></div></div>
+            <div class="panel-header"><div class="panel-title">Driver Applications</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="copyApplyLink()">🔗 Copy application link</button><button class="action-btn action-btn-sm" onclick="copyDriverFormLink()">🔗 Copy driver form link</button><button class="action-btn action-btn-sm" onclick="loadApplications()">↻ Refresh</button></div></div>
             <div class="pod-filters">
               <input type="search" id="apps-search" class="pod-in pod-in-wide" placeholder="Search name, phone, email, license" oninput="appsRender()">
               <select id="apps-status" class="pod-in" onchange="appsRender()"><option value="">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="interview">Interview</option><option value="hired">Hired</option><option value="rejected">Rejected</option></select>
@@ -1749,6 +1749,7 @@ const LNAME={en:'English',so:'Soomaali',es:'Español'};
 const lchip=l=>l&&l!=='en'?'<span style="background:#2b6cb0;color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700">'+e(LNAME[l]||l)+'</span>':'';
 const chip=s=>'<span style="background:'+(COLORS[s]||'#718096')+';color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700;text-transform:uppercase">'+e(s)+'</span>';
 
+window.copyDriverFormLink=async function(){const u='https://bashkaexpress.com/driver-info.html';try{await navigator.clipboard.writeText(u);toast('Driver form link copied — send it to drivers ✓')}catch(x){prompt('Copy this link:',u)}};
 window.copyApplyLink=async function(){try{await navigator.clipboard.writeText(APPLY_URL);toast('Link copied — send it to applicants ✓')}catch(x){prompt('Copy this link:',APPLY_URL)}};
 
 window.loadApplications=async function(){
