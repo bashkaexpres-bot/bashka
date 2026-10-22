@@ -52,20 +52,29 @@ function norm(v) {
   return t;
 }
 
-/* Finds the truck in the fleet from whatever the invoice shows (unit number, VIN, or plate). */
-async function matchVehicle(unitText) {
+/* Finds the truck (or, failing that, the trailer) from whatever the invoice shows: unit number, VIN, or plate. */
+async function matchUnit(unitText) {
+  const none = { vehicle_id: null, trailer_id: null };
   const raw = String(unitText || '').trim();
-  if (!raw) return null;
-  const r = await sb('/rest/v1/vehicles?select=id,unit_number,vehicle_code,vin,plate');
-  if (!r.ok) return null;
-  const list = await r.json();
+  if (!raw) return none;
   const n = norm(raw);
-  if (!n) return null;
-  let hit = list.find((v) => norm(v.unit_number) === n || norm(v.vehicle_code) === n);
-  if (!hit && n.length >= 6) hit = list.find((v) => v.vin && (norm(v.vin) === n || (n.length >= 6 && norm(v.vin).endsWith(n))));
-  if (!hit && n.length >= 4) hit = list.find((v) => v.plate && norm(v.plate) === n);
-  return hit ? hit.id : null;
+  if (!n) return none;
+  const r = await sb('/rest/v1/vehicles?select=id,unit_number,vehicle_code,vin,plate');
+  if (r.ok) {
+    const list = await r.json();
+    let hit = list.find((v) => norm(v.unit_number) === n || norm(v.vehicle_code) === n);
+    if (!hit && n.length >= 6) hit = list.find((v) => v.vin && (norm(v.vin) === n || norm(v.vin).endsWith(n)));
+    if (!hit && n.length >= 4) hit = list.find((v) => v.plate && norm(v.plate) === n);
+    if (hit) return { vehicle_id: hit.id, trailer_id: null };
+  }
+  const tr = await sb('/rest/v1/trailers?select=id,unit_number');
+  if (tr.ok) {
+    const th = (await tr.json()).find((t) => norm(t.unit_number) === n);
+    if (th) return { vehicle_id: null, trailer_id: th.id };
+  }
+  return none;
 }
+async function matchVehicle(unitText) { return (await matchUnit(unitText)).vehicle_id; }
 
 const CATEGORIES = ['oil_change', 'brakes', 'tires', 'engine', 'transmission', 'electrical', 'suspension', 'cooling', 'exhaust', 'air_system', 'trailer', 'body', 'inspection', 'other'];
 
@@ -180,10 +189,10 @@ async function toRecords(ex) {
   const sum = (ls) => Math.round(ls.reduce((a, l) => a + (l.amount || 0), 0) * 100) / 100;
   const out = [];
   for (const t of ex.trucks) {
-    const vehicle_id = await matchVehicle(t.truck_unit);
+    const m = await matchUnit(t.truck_unit);
     const lineTotal = sum(t.lines);
     out.push({
-      vehicle_id, unit_text: t.truck_unit, odometer: t.odometer,
+      vehicle_id: m.vehicle_id, trailer_id: m.trailer_id, unit_text: t.truck_unit, odometer: t.odometer,
       invoice_number: multi && ex.invoice_number ? (ex.invoice_number + ' / ' + (t.truck_unit || '?')).slice(0, 80) : ex.invoice_number,
       subtotal: multi ? lineTotal : ex.subtotal, tax: multi ? null : ex.tax, total: multi ? lineTotal : ex.total,
       summary: (multi ? '[1 of ' + ex.trucks.length + ' units on one invoice' + (ex.total != null ? ', whole invoice $' + ex.total.toFixed(2) : '') + ']  ' : '') + (t.summary || ex.summary || ''),

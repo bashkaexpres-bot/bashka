@@ -2163,7 +2163,9 @@ const cl=c=>String(c||'other').replace(/_/g,' ');
 let invs=[],vehs=[],view='review',cur=null,curLines=[],removed=[],cmpN=3;
 window.maintCmp=function(n){cmpN=+n||3;maintRender()};
 const num=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(String(v).replace(/[$,\s]/g,''));return isFinite(n)?n:null};
-const vname=id=>{const v=vehs.find(x=>x.id===id);return v?(v.unit_number||v.vehicle_code):'—'};
+const vname=id=>{const v=vehs.find(x=>x.id===id);return v?(v.unit_number||v.vehicle_code)+(v.isTrailer?' (trailer)':''):'—'};
+/* a record belongs to a truck (vehicle_id) or a trailer (trailer_id); trailers use the key T:<id> in the pickers */
+const ukey=i=>i.vehicle_id||(i.trailer_id?'T:'+i.trailer_id:null);
 const lineAmt=l=>l.amount!=null?Number(l.amount):((l.quantity!=null&&l.unit_price!=null)?Number(l.quantity)*Number(l.unit_price):0);
 function totals(i){
   const t={parts:0,labor:0,other:0};
@@ -2185,8 +2187,9 @@ window.loadMaint=async function(){
   ]);
   if(b.error){$('maint-body').innerHTML='<div class="empty">Could not load: '+e(b.error.message)+'<br>If this is the first time, the maintenance database step has not been run yet.</div>';return}
   vehs=a.data||[];invs=b.data||[];
+  try{const tr=await sb.from('trailers').select('id,unit_number,trailer_type,status').order('unit_number');if(!tr.error&&tr.data)tr.data.forEach(t=>vehs.push({id:'T:'+t.id,unit_number:t.unit_number,make:t.trailer_type||'Trailer',status:t.status,isTrailer:true}))}catch(x){}
   const sel=$('maint-truck'),keep=sel.value;
-  sel.innerHTML='<option value="">All trucks</option>'+vehs.map(v=>'<option value="'+e(v.id)+'">'+e(v.unit_number||v.vehicle_code)+'</option>').join('');
+  sel.innerHTML='<option value="">All trucks and trailers</option>'+vehs.map(v=>'<option value="'+e(v.id)+'">'+e(v.unit_number||v.vehicle_code)+(v.isTrailer?' (trailer)':'')+'</option>').join('');
   sel.value=vehs.some(v=>v.id===keep)?keep:'';
   const n=invs.filter(i=>i.status==='review').length;
   const bd=$('maint-badge');if(bd){bd.textContent=n;bd.style.display=n?'inline-block':'none'}
@@ -2209,30 +2212,30 @@ window.maintRender=function(){
     '<div class="kpi-card orange"><div class="kpi-label">Waiting for review</div><div class="kpi-val">'+rv+'</div><div class="kpi-delta">not counted yet</div></div>';
   const box=$('maint-body');
   if(view==='review'){
-    const rows=invs.filter(i=>i.status==='review'&&(!truck||i.vehicle_id===truck));
+    const rows=invs.filter(i=>i.status==='review'&&(!truck||ukey(i)===truck));
     box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
-      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(i.vehicle_id?e(vname(i.vehicle_id)):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
+      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
       '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
   }else if(view==='history'){
-    const rows=appr.filter(i=>!truck||i.vehicle_id===truck);
+    const rows=appr.filter(i=>!truck||ukey(i)===truck);
     let P=0,L=0,O=0,T=0;
     box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Date</th><th>Truck</th><th>Vendor</th><th>What was done</th><th>Parts</th><th>Labor</th><th>Total</th><th></th></tr></thead><tbody>'+rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
-      return '<tr><td style="white-space:nowrap;font-size:12px">'+day(i.invoice_date)+(i.odometer?'<div style="font-size:11px;color:var(--text3)">'+Number(i.odometer).toLocaleString()+' mi</div>':'')+'</td><td><span style="font-family:var(--mono);color:var(--gold)">'+e(vname(i.vehicle_id))+'</span></td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td style="font-size:12px;color:var(--text2);max-width:340px">'+e(i.summary||(i.repair_lines||[]).map(l=>l.description).slice(0,3).join('; '))+'</td><td>'+money(t.parts)+'</td><td>'+money(t.labor)+'</td><td><b>'+money(t.total)+'</b></td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Open</button></td></tr>'}).join('')+
+      return '<tr><td style="white-space:nowrap;font-size:12px">'+day(i.invoice_date)+(i.odometer?'<div style="font-size:11px;color:var(--text3)">'+Number(i.odometer).toLocaleString()+' mi</div>':'')+'</td><td><span style="font-family:var(--mono);color:var(--gold)">'+e(vname(ukey(i)))+'</span></td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td style="font-size:12px;color:var(--text2);max-width:340px">'+e(i.summary||(i.repair_lines||[]).map(l=>l.description).slice(0,3).join('; '))+'</td><td>'+money(t.parts)+'</td><td>'+money(t.labor)+'</td><td><b>'+money(t.total)+'</b></td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Open</button></td></tr>'}).join('')+
       '<tr><td colspan="4" style="text-align:right;color:var(--text3)">Totals ('+rows.length+' invoices)</td><td><b>'+money(P)+'</b></td><td><b>'+money(L)+'</b></td><td><b>'+money(T)+'</b></td><td></td></tr></tbody></table>':
       '<div class="empty">No approved invoices'+(truck?' for this truck':'')+' yet.</div>';
   }else{
     const by={},ven={},mon={};
     appr.forEach(i=>{const t=totals(i);
-      const k=i.vehicle_id||'none';by[k]=by[k]||{n:0,p:0,l:0,o:0,t:0};by[k].n++;by[k].p+=t.parts;by[k].l+=t.labor;by[k].o+=t.other;by[k].t+=t.total;
+      const k=ukey(i)||'none';by[k]=by[k]||{n:0,p:0,l:0,o:0,t:0};by[k].n++;by[k].p+=t.parts;by[k].l+=t.labor;by[k].o+=t.other;by[k].t+=t.total;
       const vk=(i.vendor||'Unknown').trim();ven[vk]=ven[vk]||{n:0,t:0};ven[vk].n++;ven[vk].t+=t.total;
       const mk=(i.invoice_date||'').slice(0,7)||'—';mon[mk]=(mon[mk]||0)+t.total});
     const tr=Object.keys(by).sort((a,b)=>by[b].t-by[a].t);
     /* truck-by-truck comparison over the last N months */
     const months=[];for(let k=cmpN-1;k>=0;k--){const d=new Date(now.getFullYear(),now.getMonth()-k,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
     const mlab=m=>new Date(m+'-15T12:00:00').toLocaleDateString([],{month:'short',year:'2-digit'});
-    const act=vehs.filter(v=>v.status!=='out_of_service');
+    const act=vehs.filter(v=>v.status!=='out_of_service'&&!v.isTrailer);
     const grid={};act.forEach(v=>{grid[v.id]=months.map(()=>0)});
-    appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[i.vehicle_id])return;grid[i.vehicle_id][k]+=totals(i).total});
+    appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[ukey(i)])return;grid[ukey(i)][k]+=totals(i).total});
     const tot=id=>grid[id].reduce((a,b)=>a+b,0);
     const fleet=act.reduce((a,v)=>a+tot(v.id),0),avg=act.length?fleet/act.length:0;
     const list=act.map(v=>({v,t:tot(v.id),g:grid[v.id]})).sort((a,b)=>b.t-a.t);
@@ -2243,7 +2246,7 @@ window.maintRender=function(){
       '<select class="form-input" style="width:auto" onchange="maintCmp(this.value)">'+[3,6,12].map(n=>'<option value="'+n+'"'+(n===cmpN?' selected':'')+'>Last '+n+' months</option>').join('')+'</select></div></div>'+
       '<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Truck</th>'+(cmpN<=6?months.map(m=>'<th>'+mlab(m)+'</th>').join(''):'')+'<th>Total</th><th>vs average</th><th>Share</th><th></th></tr></thead><tbody>'+
       list.map(r=>'<tr><td><span style="font-family:var(--mono);color:var(--gold)">'+e(r.v.unit_number||r.v.vehicle_code)+'</span></td>'+(cmpN<=6?r.g.map(x=>'<td>'+(x?money(x):'<span style="color:var(--text3)">—</span>')+'</td>').join(''):'')+'<td><b>'+money(r.t)+'</b></td><td>'+(avg>0?(r.t/avg>=1?'+':'')+Math.round((r.t/avg-1)*100)+'%':'—')+'</td><td style="min-width:90px"><div style="background:var(--border);border-radius:4px;height:8px"><div style="background:'+(avg>0&&r.t/avg>=2?'#e53535':avg>0&&r.t/avg>=1.5?'var(--orange)':'var(--gold)')+';height:8px;border-radius:4px;width:'+(fleet>0?Math.max(2,Math.round(r.t/fleet*100*3)):0)+'%;max-width:100%"></div></div><div style="font-size:10px;color:var(--text3)">'+(fleet>0?Math.round(r.t/fleet*100):0)+'% of fleet</div></td><td>'+flag(r)+'</td></tr>').join('')+'</tbody></table></div>'+
-      '<div style="font-size:11px;color:var(--text3);padding:6px 16px 14px">Flags: ⚠ High = 1.5× the truck average or more · 🔴 Draining? = 2× or more · ↑ rising = this month is 30% above the earlier months. Counts approved invoices with an invoice date only. A flag is a reason to look closer, not proof.</div>';
+      '<div style="font-size:11px;color:var(--text3);padding:6px 16px 14px">Flags: ⚠ High = 1.5× the truck average or more · 🔴 Draining? = 2× or more · ↑ rising = this month is 30% above the earlier months. Counts approved truck invoices with an invoice date only (trailers are in the table below). A flag is a reason to look closer, not proof.</div>';
     box.innerHTML=appr.length?cmp+
       '<table class="data-table"><thead><tr><th>Truck</th><th>Invoices</th><th>Parts</th><th>Labor</th><th>Other</th><th>Total</th></tr></thead><tbody>'+tr.map(k=>'<tr><td><span style="font-family:var(--mono);color:var(--gold)">'+e(k==='none'?'No truck':vname(k))+'</span></td><td>'+by[k].n+'</td><td>'+money(by[k].p)+'</td><td>'+money(by[k].l)+'</td><td>'+money(by[k].o)+'</td><td><b>'+money(by[k].t)+'</b></td></tr>').join('')+'</tbody></table>'+
       '<div style="display:flex;gap:18px;flex-wrap:wrap;padding:16px"><div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">BY VENDOR</div>'+Object.keys(ven).sort((a,b)=>ven[b].t-ven[a].t).slice(0,12).map(k=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+e(k)+' <span style="color:var(--text3);font-size:11px">('+ven[k].n+')</span></span><b>'+money(ven[k].t)+'</b></div>').join('')+'</div>'+
@@ -2277,6 +2280,7 @@ async function handleFile(file){
     const row={source:'upload',status:'review',file_path:path,file_name:file.name.slice(0,200),vehicle_id:rc.vehicle_id||null,unit_text:rc.unit_text,
       vendor:ex&&ex.vendor,invoice_number:ex?rc.invoice_number:null,invoice_date:ex&&ex.invoice_date,odometer:rc.odometer,subtotal:rc.subtotal,tax:rc.tax,total:rc.total,
       summary:ex?rc.summary:(note?'Not read automatically: '+note:null),ai_confidence:ex?ex.confidence:null};
+    if(rc.trailer_id)row.trailer_id=rc.trailer_id;
     const ins=await sb.from('repair_invoices').insert(row).select('id').single();
     if(ins.error){toast('Could not save: '+ins.error.message,'error');return firstId}
     if(!firstId)firstId=ins.data.id;
@@ -2348,7 +2352,7 @@ window.maintOpen=async function(id){
   $('mi-body').innerHTML='<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1 1 380px;min-width:280px">'+pv+'</div><div style="flex:1 1 440px;min-width:300px">'+meta+
    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+f('Vendor','mi-vendor',cur.vendor)+f('Invoice #','mi-num',cur.invoice_number)+'</div>'+
    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">Invoice date</div><input id="mi-date" type="date" style="'+inp+'" value="'+e(cur.invoice_date||'')+'"></div>'+
-   '<div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">Truck'+(cur.unit_text&&!cur.vehicle_id?' <span style="color:#b7791f">(invoice says “'+e(cur.unit_text)+'”)</span>':'')+'</div><select id="mi-truck" style="'+inp+'"><option value="">— pick truck —</option>'+vehs.map(v=>'<option value="'+e(v.id)+'"'+(v.id===cur.vehicle_id?' selected':'')+'>'+e(v.unit_number||v.vehicle_code)+'</option>').join('')+'</select></div>'+
+   '<div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">Truck'+(cur.unit_text&&!ukey(cur)?' <span style="color:#b7791f">(invoice says “'+e(cur.unit_text)+'”)</span>':'')+'</div><select id="mi-truck" style="'+inp+'"><option value="">— pick truck or trailer —</option>'+vehs.map(v=>'<option value="'+e(v.id)+'"'+(v.id===ukey(cur)?' selected':'')+'>'+e(v.unit_number||v.vehicle_code)+(v.isTrailer?' (trailer)':'')+'</option>').join('')+'</select></div>'+
    f('Odometer','mi-odo',cur.odometer,'inputmode="numeric"')+'</div>'+
    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+f('Subtotal','mi-sub',cur.subtotal,'inputmode="decimal"')+f('Tax','mi-tax',cur.tax,'inputmode="decimal"')+f('Total','mi-total',cur.total,'inputmode="decimal"')+'</div>'+
    '<div style="font-size:12px;color:#718096;margin:6px 0 3px">WHAT WAS DONE'+conf+'</div><textarea id="mi-summary" rows="2" style="'+inp+'">'+e(cur.summary||'')+'</textarea>'+
@@ -2364,9 +2368,15 @@ window.maintOpen=async function(id){
   $('modal-maint').style.display='flex';
 };
 function collect(){
-  return{vendor:$('mi-vendor').value.trim()||null,invoice_number:$('mi-num').value.trim()||null,invoice_date:$('mi-date').value||null,vehicle_id:$('mi-truck').value||null,
+  return{vendor:$('mi-vendor').value.trim()||null,invoice_number:$('mi-num').value.trim()||null,invoice_date:$('mi-date').value||null,_unit:$('mi-truck').value||null,
     odometer:num($('mi-odo').value)!=null?Math.round(num($('mi-odo').value)):null,subtotal:num($('mi-sub').value),tax:num($('mi-tax').value),total:num($('mi-total').value),
     summary:$('mi-summary').value.trim()||null,notes:$('mi-notes').value.trim()||null};
+}
+function splitUnit(fl){
+  const u=fl._unit;delete fl._unit;
+  if(u&&u.indexOf('T:')===0){fl.vehicle_id=null;fl.trailer_id=u.slice(2)}
+  else{fl.vehicle_id=u||null;if(cur&&cur.trailer_id)fl.trailer_id=null}
+  return fl;
 }
 async function persist(fields){
   const ls=readLines().map((l,k)=>Object.assign({},l,{sort_order:k}));
@@ -2383,9 +2393,9 @@ async function persist(fields){
 }
 window.maintSave=async function(approve){
   if(!cur)return;
-  const fl=collect();
+  const fl=splitUnit(collect());
   if(approve){
-    if(!fl.vehicle_id){toast('Pick the truck first','error');return}
+    if(!fl.vehicle_id&&!fl.trailer_id){toast('Pick the truck or trailer first','error');return}
     if(!fl.invoice_date){toast('Enter the invoice date','error');return}
     const ls=readLines();if(!ls.length&&!(fl.total>0)){toast('Add the lines or the total first','error');return}
     if(fl.invoice_number&&fl.vendor){
@@ -2401,7 +2411,7 @@ window.maintSave=async function(approve){
   if(approve){
     try{
       const ls=readLines();
-      if(fl.odometer&&ls.some(l=>l.category==='oil_change')){
+      if(fl.vehicle_id&&fl.odometer&&ls.some(l=>l.category==='oil_change')){
         const ex=await sb.from('vehicle_service').select('last_oil_date').eq('vehicle_id',fl.vehicle_id).maybeSingle();
         if(!ex.data||!ex.data.last_oil_date||ex.data.last_oil_date<=fl.invoice_date){
           await sb.from('vehicle_service').upsert({vehicle_id:fl.vehicle_id,last_oil_miles:fl.odometer,last_oil_date:fl.invoice_date,updated_at:new Date().toISOString()});
@@ -2409,7 +2419,7 @@ window.maintSave=async function(approve){
         }
       }
     }catch(x){}
-    try{logActivity('Approved repair invoice','vehicle',fl.vehicle_id,{vendor:fl.vendor,total:fl.total})}catch(x){}
+    try{logActivity('Approved repair invoice',fl.trailer_id?'trailer':'vehicle',fl.vehicle_id||fl.trailer_id,{vendor:fl.vendor,total:fl.total})}catch(x){}
   }
   toast(approve?'Approved ✓ — saved to the truck record':'Saved ✓');
   maintClose();await loadMaint();
@@ -2446,7 +2456,7 @@ async function buildTruckBook(){
   const vid=$('maint-truck').value;if(!vid){toast('Pick a truck first','error');return null}
   const v=vehs.find(x=>x.id===vid);if(!v)return null;
   try{await loadXlsx()}catch(x){toast(x.message,'error');return null}
-  const rows=invs.filter(i=>i.status==='approved'&&i.vehicle_id===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
+  const rows=invs.filter(i=>i.status==='approved'&&ukey(i)===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
   if(!rows.length){toast('No approved records for this truck yet','error');return null}
   const unit=v.unit_number||v.vehicle_code||'truck';
   let P=0,L=0,O=0,T=0;
@@ -2520,11 +2530,11 @@ window.maintPrintDot=async function(){
   const vid=$('maint-truck').value;if(!vid){toast('Pick a truck first','error');return}
   const v=vehs.find(x=>x.id===vid);if(!v)return;
   const withImg=confirm('Include the receipt photos at the end of the printout?\n\nOK = yes (photos only; PDFs are listed)\nCancel = list only');
-  const rows=invs.filter(i=>i.status==='approved'&&i.vehicle_id===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
+  const rows=invs.filter(i=>i.status==='approved'&&ukey(i)===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
   let oil='';
-  try{const o=await sb.from('vehicle_service').select('*').eq('vehicle_id',vid).maybeSingle();
+  try{const o=v.isTrailer?{data:null}:await sb.from('vehicle_service').select('*').eq('vehicle_id',vid).maybeSingle();
     if(o.data&&o.data.last_oil_date){oil='Last oil change: '+day(o.data.last_oil_date)+(o.data.last_oil_miles!=null?' at '+Number(o.data.last_oil_miles).toLocaleString()+' mi':'');}
-    if(typeof oilStatus==='function'){const d=document.createElement('div');d.innerHTML=oilStatus(v).html;const t=(d.textContent||'').replace(/\s+/g,' ').trim();if(t&&!/Set up/.test(t))oil+=(oil?' · ':'')+'Status: '+t}
+    if(!v.isTrailer&&typeof oilStatus==='function'){const d=document.createElement('div');d.innerHTML=oilStatus(v).html;const t=(d.textContent||'').replace(/\s+/g,' ').trim();if(t&&!/Set up/.test(t))oil+=(oil?' · ':'')+'Status: '+t}
   }catch(x){}
   let P=0,L=0,O=0,T=0;
   const body=rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;

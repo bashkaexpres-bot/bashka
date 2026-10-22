@@ -41,6 +41,7 @@ module.exports = handler(async (req, res) => {
       file_path: path, file_name: toStr(b.filename, 200), email_from: toStr(b.from, 300), email_subject: toStr(b.subject, 300),
       ai_confidence: ex ? ex.confidence : null
     };
+    if (rec.trailer_id) row.trailer_id = rec.trailer_id;
     const ir = await sb('/rest/v1/repair_invoices', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
     if (!ir.ok) throw httpErr(502, 'save_failed', 'Could not save the invoice record.');
     const inv = (await ir.json())[0];
