@@ -75,37 +75,49 @@ const TOOL = {
       vendor: { type: ['string', 'null'], description: 'Shop or supplier name' },
       invoice_number: { type: ['string', 'null'] },
       invoice_date: { type: ['string', 'null'], description: 'YYYY-MM-DD' },
-      truck_unit: { type: ['string', 'null'], description: 'Truck / unit number as written on the invoice. If only a VIN or plate is shown, give that.' },
-      odometer: { type: ['integer', 'null'], description: 'Miles on the truck, if shown' },
       subtotal: { type: ['number', 'null'] },
       tax: { type: ['number', 'null'] },
       total: { type: ['number', 'null'] },
       summary: { type: ['string', 'null'], description: 'One or two plain sentences: what was fixed or serviced' },
       confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-      lines: {
+      trucks: {
         type: 'array',
+        description: 'One entry per truck, trailer or unit that was worked on. A single-truck invoice has exactly one entry. If one invoice lists work for several units, give each unit its own entry with only its own lines.',
         items: {
           type: 'object',
           properties: {
-            kind: { type: 'string', enum: ['part', 'labor', 'other'] },
-            category: { type: 'string', enum: CATEGORIES },
-            description: { type: 'string' },
-            part_number: { type: ['string', 'null'] },
-            quantity: { type: ['number', 'null'] },
-            unit_price: { type: ['number', 'null'] },
-            amount: { type: ['number', 'null'] }
+            truck_unit: { type: ['string', 'null'], description: 'Unit number exactly as printed for this group. If only a VIN, plate or make is shown, give that.' },
+            odometer: { type: ['integer', 'null'], description: 'Miles on this unit, if shown' },
+            summary: { type: ['string', 'null'], description: 'One or two plain sentences: what was fixed on this unit' },
+            subtotal: { type: ['number', 'null'], description: 'Printed subtotal for this unit, if shown' },
+            lines: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  kind: { type: 'string', enum: ['part', 'labor', 'other'] },
+                  category: { type: 'string', enum: CATEGORIES },
+                  description: { type: 'string' },
+                  part_number: { type: ['string', 'null'] },
+                  quantity: { type: ['number', 'null'] },
+                  unit_price: { type: ['number', 'null'] },
+                  amount: { type: ['number', 'null'] }
+                },
+                required: ['kind', 'description']
+              }
+            }
           },
-          required: ['kind', 'description']
+          required: ['lines']
         }
       }
     },
-    required: ['is_repair_invoice', 'confidence', 'lines']
+    required: ['is_repair_invoice', 'confidence', 'trucks']
   }
 };
 
 const PROMPT = 'You read truck repair and maintenance invoices for a trucking fleet. Copy only what is printed. Never guess or invent a value: use null when something is not shown. ' +
   'Dates must be YYYY-MM-DD. Amounts are plain numbers. Put each part as kind "part", each labor charge as kind "labor", and shop fees, supplies, disposal, towing or similar as kind "other". ' +
-  'Do not put tax in the lines; use the tax field. Pick the closest category for every line (oil_change for oil, filters and lube service). ' +
+  'Do not put tax in the lines; use the tax field. If the invoice covers several trucks or units, put each one in its own trucks entry with only its own lines, and do not make a line out of a unit subtotal. Copy each unit label exactly as printed. Pick the closest category for every line (oil_change for oil, filters and lube service). ' +
   'If the page is not a repair, parts or maintenance invoice, set is_repair_invoice to false. Call record_invoice once.';
 
 const MEDIA = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
@@ -120,8 +132,10 @@ function toNum(v) { if (v === null || v === undefined || v === '') return null; 
 function toDate(v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null; }
 function toStr(v, n) { v = v == null ? '' : String(v).trim(); return v ? v.slice(0, n) : null; }
 
-function clean(inp) {
-  const lines = (Array.isArray(inp.lines) ? inp.lines : []).slice(0, 80).map((l, i) => ({
+const ALIASES = { HINO: '46002' }; // labels the shop uses for a unit that is not its number
+
+function cleanLines(arr) {
+  return (Array.isArray(arr) ? arr : []).slice(0, 80).map((l, i) => ({
     sort_order: i,
     kind: ['part', 'labor', 'other'].indexOf(l.kind) !== -1 ? l.kind : 'other',
     category: CATEGORIES.indexOf(l.category) !== -1 ? l.category : 'other',
@@ -129,16 +143,50 @@ function clean(inp) {
     part_number: toStr(l.part_number, 80),
     quantity: toNum(l.quantity), unit_price: toNum(l.unit_price), amount: toNum(l.amount)
   }));
+}
+
+function clean(inp) {
+  let trucks = (Array.isArray(inp.trucks) ? inp.trucks : []).slice(0, 40).map((t) => {
+    const lines = cleanLines(t.lines);
+    let unit = toStr(t.truck_unit, 40);
+    if (unit && ALIASES[unit.toUpperCase().trim()]) unit = ALIASES[unit.toUpperCase().trim()];
+    return {
+      truck_unit: unit,
+      odometer: toNum(t.odometer) != null ? Math.max(0, Math.round(toNum(t.odometer))) : null,
+      summary: toStr(t.summary, 2000), subtotal: toNum(t.subtotal), lines
+    };
+  }).filter((t) => t.lines.length || t.truck_unit);
+  if (!trucks.length) trucks = [{ truck_unit: null, odometer: null, summary: null, subtotal: null, lines: [] }];
+  const first = trucks[0];
   return {
     is_repair_invoice: inp.is_repair_invoice !== false,
     vendor: toStr(inp.vendor, 200), invoice_number: toStr(inp.invoice_number, 80), invoice_date: toDate(inp.invoice_date),
-    truck_unit: toStr(inp.truck_unit, 40),
-    odometer: toNum(inp.odometer) != null ? Math.max(0, Math.round(toNum(inp.odometer))) : null,
     subtotal: toNum(inp.subtotal), tax: toNum(inp.tax), total: toNum(inp.total),
     summary: toStr(inp.summary, 2000),
     confidence: ['high', 'medium', 'low'].indexOf(inp.confidence) !== -1 ? inp.confidence : 'low',
-    lines
+    trucks,
+    // single-truck shortcuts (kept for older callers)
+    truck_unit: first.truck_unit, odometer: first.odometer, lines: first.lines
   };
+}
+
+/* Turns one reading into one record per truck. A single-truck invoice gives one record, same as before. */
+async function toRecords(ex) {
+  const multi = ex.trucks.length > 1;
+  const sum = (ls) => Math.round(ls.reduce((a, l) => a + (l.amount || 0), 0) * 100) / 100;
+  const out = [];
+  for (const t of ex.trucks) {
+    const vehicle_id = await matchVehicle(t.truck_unit);
+    const lineTotal = sum(t.lines);
+    out.push({
+      vehicle_id, unit_text: t.truck_unit, odometer: t.odometer,
+      invoice_number: multi && ex.invoice_number ? (ex.invoice_number + ' / ' + (t.truck_unit || '?')).slice(0, 80) : ex.invoice_number,
+      subtotal: multi ? lineTotal : ex.subtotal, tax: multi ? null : ex.tax, total: multi ? lineTotal : ex.total,
+      summary: (multi ? '[1 of ' + ex.trucks.length + ' units on one invoice' + (ex.total != null ? ', whole invoice $' + ex.total.toFixed(2) : '') + ']  ' : '') + (t.summary || ex.summary || ''),
+      lines: t.lines
+    });
+  }
+  return out;
 }
 
 /* Sends the file to Claude and returns the cleaned fields. Returns null when it cannot be read automatically. */
@@ -153,7 +201,7 @@ async function extract(buffer, mime) {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL, max_tokens: 4096,
+      model: MODEL, max_tokens: 16000,
       tools: [TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
       messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }]
     })
@@ -179,4 +227,4 @@ function handler(fn) {
   };
 }
 
-module.exports = { httpErr, sb, requireStaff, sameSecret, matchVehicle, extract, mediaFor, handler, toStr, SUPABASE_URL };
+module.exports = { httpErr, sb, requireStaff, sameSecret, matchVehicle, toRecords, extract, mediaFor, handler, toStr, SUPABASE_URL };

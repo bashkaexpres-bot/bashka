@@ -1,5 +1,9 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/bashka-payroll-v3_14.html" }
-  ]
+  ],
+  "functions": {
+    "api/invoice-extract.js": { "maxDuration": 60 },
+    "api/invoice-intake.js": { "maxDuration": 60 }
+  }
 }

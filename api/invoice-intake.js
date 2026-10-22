@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('crypto');
-const { httpErr, sb, sameSecret, matchVehicle, extract, mediaFor, handler, toStr } = require('./_invoice');
+const { httpErr, sb, sameSecret, toRecords, extract, mediaFor, handler, toStr } = require('./_invoice');
 
 // Called by the Google script on the repairs@ mailbox: one request per attachment.
 // The invoice is always saved for review. Nothing is ever approved automatically.
@@ -29,26 +29,26 @@ module.exports = handler(async (req, res) => {
 
   let ex = null, aiNote = null;
   try { ex = await extract(buf, mime); } catch (e) { aiNote = e.message; }
-  if (ex && ex.is_repair_invoice === false) {
-    // not an invoice (ad, signature image, etc.): keep the file but flag it clearly
-    ex.summary = 'Not recognised as a repair invoice. ' + (ex.summary || '');
+  const records = ex ? await toRecords(ex) : [{ vehicle_id: null, unit_text: null, odometer: null, invoice_number: null, subtotal: null, tax: null, total: null,
+    summary: aiNote ? 'Could not be read automatically. Fill in by hand.' : null, lines: [] }];
+  let firstId = null;
+  for (const rec of records) {
+    const row = {
+      source: 'email', status: 'review', vehicle_id: rec.vehicle_id, unit_text: rec.unit_text,
+      vendor: ex && ex.vendor, invoice_number: ex ? rec.invoice_number : null, invoice_date: ex && ex.invoice_date,
+      odometer: rec.odometer, subtotal: rec.subtotal, tax: rec.tax, total: rec.total,
+      summary: ex && ex.is_repair_invoice === false ? 'Not recognised as a repair invoice. ' + (rec.summary || '') : rec.summary,
+      file_path: path, file_name: toStr(b.filename, 200), email_from: toStr(b.from, 300), email_subject: toStr(b.subject, 300),
+      ai_confidence: ex ? ex.confidence : null
+    };
+    const ir = await sb('/rest/v1/repair_invoices', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
+    if (!ir.ok) throw httpErr(502, 'save_failed', 'Could not save the invoice record.');
+    const inv = (await ir.json())[0];
+    if (!firstId) firstId = inv.id;
+    if (rec.lines.length) {
+      const lr = await sb('/rest/v1/repair_lines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec.lines.map((l) => Object.assign({ invoice_id: inv.id }, l))) });
+      if (!lr.ok) console.error('lines save failed', await lr.text());
+    }
   }
-  const vehicle_id = ex ? await matchVehicle(ex.truck_unit) : null;
-
-  const row = {
-    source: 'email', status: 'review', vehicle_id, unit_text: ex ? ex.truck_unit : null,
-    vendor: ex && ex.vendor, invoice_number: ex && ex.invoice_number, invoice_date: ex && ex.invoice_date,
-    odometer: ex && ex.odometer, subtotal: ex && ex.subtotal, tax: ex && ex.tax, total: ex && ex.total,
-    summary: ex ? ex.summary : (aiNote ? 'Could not be read automatically. Fill in by hand.' : null),
-    file_path: path, file_name: toStr(b.filename, 200), email_from: toStr(b.from, 300), email_subject: toStr(b.subject, 300),
-    ai_confidence: ex ? ex.confidence : null
-  };
-  const ir = await sb('/rest/v1/repair_invoices', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
-  if (!ir.ok) throw httpErr(502, 'save_failed', 'Could not save the invoice record.');
-  const inv = (await ir.json())[0];
-  if (ex && ex.lines.length) {
-    const lr = await sb('/rest/v1/repair_lines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ex.lines.map((l) => Object.assign({ invoice_id: inv.id }, l))) });
-    if (!lr.ok) console.error('lines save failed', await lr.text());
-  }
-  res.status(201).json({ id: inv.id, read: !!ex });
+  res.status(201).json({ id: firstId, records: records.length, read: !!ex });
 });

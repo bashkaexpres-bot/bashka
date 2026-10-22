@@ -1,5 +1,5 @@
 'use strict';
-const { httpErr, sb, requireStaff, matchVehicle, extract, mediaFor, handler } = require('./_invoice');
+const { httpErr, sb, requireStaff, toRecords, extract, mediaFor, handler } = require('./_invoice');
 
 // Portal button "Upload invoice": the file is already in the private receipts bucket; read it and return the fields.
 module.exports = handler(async (req, res) => {
@@ -14,6 +14,6 @@ module.exports = handler(async (req, res) => {
   const buf = Buffer.from(await r.arrayBuffer());
   if (buf.length > 12 * 1024 * 1024) return res.status(200).json({ extraction: null, reason: 'File is too large to read automatically.' });
   const extraction = await extract(buf, mime);
-  const vehicle_id = extraction ? await matchVehicle(extraction.truck_unit) : null;
-  res.status(200).json({ extraction, vehicle_id });
+  const records = extraction ? await toRecords(extraction) : null;
+  res.status(200).json({ extraction, records, vehicle_id: records && records[0] ? records[0].vehicle_id : null });
 });

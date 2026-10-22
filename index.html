@@ -2264,20 +2264,26 @@ async function handleFile(file){
   const path='uploads/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))+'/'+safe;
   const up=await sb.storage.from('receipts').upload(path,file,{contentType:file.type||undefined});
   if(up.error){toast('Upload failed: '+up.error.message,'error');return null}
-  let ex=null,vid=null,note=null;
+  let ex=null,recs=null,note=null;
   try{
     const h=await authHdr();
     const r=await fetch('/api/invoice-extract',{method:'POST',headers:h,body:JSON.stringify({path})});
     const j=await r.json().catch(()=>({}));
-    if(r.ok){ex=j.extraction||null;vid=j.vehicle_id||null;note=j.reason||null}else note=j.message||'The invoice reader is not available.';
+    if(r.ok){ex=j.extraction||null;recs=j.records||null;note=j.reason||null}else note=j.message||'The invoice reader is not available.';
   }catch(x){note='The invoice reader is not available.'}
-  const row={source:'upload',status:'review',file_path:path,file_name:file.name.slice(0,200),vehicle_id:vid,unit_text:ex?ex.truck_unit:null,
-    vendor:ex&&ex.vendor,invoice_number:ex&&ex.invoice_number,invoice_date:ex&&ex.invoice_date,odometer:ex&&ex.odometer,subtotal:ex&&ex.subtotal,tax:ex&&ex.tax,total:ex&&ex.total,
-    summary:ex?ex.summary:(note?'Not read automatically: '+note:null),ai_confidence:ex?ex.confidence:null};
-  const ins=await sb.from('repair_invoices').insert(row).select('id').single();
-  if(ins.error){toast('Could not save: '+ins.error.message,'error');return null}
-  if(ex)await addLines(ins.data.id,ex.lines);
-  return ins.data.id;
+  if(!recs||!recs.length)recs=[{vehicle_id:null,unit_text:null,odometer:null,invoice_number:null,subtotal:null,tax:null,total:null,summary:null,lines:[]}];
+  let firstId=null;
+  for(const rc of recs){
+    const row={source:'upload',status:'review',file_path:path,file_name:file.name.slice(0,200),vehicle_id:rc.vehicle_id||null,unit_text:rc.unit_text,
+      vendor:ex&&ex.vendor,invoice_number:ex?rc.invoice_number:null,invoice_date:ex&&ex.invoice_date,odometer:rc.odometer,subtotal:rc.subtotal,tax:rc.tax,total:rc.total,
+      summary:ex?rc.summary:(note?'Not read automatically: '+note:null),ai_confidence:ex?ex.confidence:null};
+    const ins=await sb.from('repair_invoices').insert(row).select('id').single();
+    if(ins.error){toast('Could not save: '+ins.error.message,'error');return firstId}
+    if(!firstId)firstId=ins.data.id;
+    if(ex)await addLines(ins.data.id,rc.lines);
+  }
+  if(recs.length>1)toast('This invoice covers '+recs.length+' units. Made '+recs.length+' records to review.');
+  return firstId;
 }
 document.addEventListener('change',async ev=>{
   if(!ev.target||ev.target.id!=='maint-file')return;
@@ -2422,8 +2428,8 @@ window.maintReopen=async function(){
 };
 window.maintDelete=async function(){
   if(!cur)return;if(!needDelete())return;
-  if(!confirm('Delete this invoice and its receipt file? This cannot be undone.'))return;
-  if(cur.file_path){await sb.storage.from('receipts').remove([cur.file_path])}
+  if(!confirm('Delete this invoice record? (Its receipt file is deleted too unless another record from the same invoice still uses it.) This cannot be undone.'))return;
+  if(cur.file_path){const sh=await sb.from('repair_invoices').select('id',{count:'exact',head:true}).eq('file_path',cur.file_path).neq('id',cur.id);if(!sh.error&&!(sh.count>0))await sb.storage.from('receipts').remove([cur.file_path])}
   const d=await sb.from('repair_invoices').delete().eq('id',cur.id);
   if(d.error){toast('Error: '+d.error.message,'error');return}
   try{logActivity('Deleted repair invoice','vehicle',cur.vehicle_id,{vendor:cur.vendor,total:cur.total})}catch(x){}
