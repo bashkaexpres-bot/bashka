@@ -122,7 +122,7 @@ const TOOL = {
 const PROMPT = 'You read truck repair and maintenance invoices for a trucking fleet. Copy only what is printed. Never guess or invent a value: use null when something is not shown. ' +
   'Dates must be YYYY-MM-DD. Amounts are plain numbers. Put each part as kind "part", each labor charge as kind "labor", and shop fees, supplies, disposal, towing or similar as kind "other". ' +
   'Do not put tax in the lines; use the tax field. If the invoice covers several trucks or units, put each one in its own trucks entry with only its own lines, and do not make a line out of a unit subtotal. Copy each unit label exactly as printed. Pick the closest category for every line (oil_change for oil, filters and lube service). ' +
-  'If the page is not a repair, parts or maintenance invoice, set is_repair_invoice to false. Call record_invoice once.';
+  'If the page is not a repair, parts or maintenance invoice, set is_repair_invoice to false. You must answer by calling the record_invoice tool exactly once, and write nothing else.';
 
 const MEDIA = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 function mediaFor(name, mime) {
@@ -206,7 +206,7 @@ async function extract(buffer, mime) {
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODEL, max_tokens: 16000,
-      tools: [TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
+      tools: [TOOL], tool_choice: { type: 'auto' },
       messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }]
     })
   });
