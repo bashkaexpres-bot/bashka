@@ -583,6 +583,7 @@ select.form-input{appearance:none}
       <button class="sidebar-item" onclick="showDash(&#39;map&#39;,this)">🗺️ Live Map</button>
       <button class="sidebar-item" onclick="showDash(&#39;vehicles&#39;,this)">🚚 Vehicles</button>
       <button class="sidebar-item" id="nav-inspect" onclick="showDash(&#39;inspect&#39;,this)">🛠️ Truck Status<span id="insp-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle"></span></button>
+      <button class="sidebar-item" id="nav-maint" onclick="showDash(&#39;maint&#39;,this)">🔧 Maintenance<span id="maint-badge" style="display:none;margin-left:6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px"></span></button>
       <button class="sidebar-item" onclick="showDash(&#39;assign&#39;,this)">🗓️ Route Assignments</button>
       <button class="sidebar-item" onclick="showDash(&#39;pay&#39;,this)">💰 Driver Pay</button>
       <button class="sidebar-item" onclick="showDash(&#39;hours&#39;,this)">⏱️ Driver Hours</button>
@@ -751,6 +752,22 @@ select.form-input{appearance:none}
             </table>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.6">A truck goes on HOLD when the inspection finds a safety-critical defect. It cannot be assigned until a manager marks it repaired in the truck inspection app. Minor defects show a warning and ask for confirmation.</div>
+        </div>
+        <div id="dash-maint" class="dash-section">
+          <div class="kpi-row" id="maint-kpis" style="margin-bottom:18px"></div>
+          <div class="panel">
+            <div class="panel-header" style="flex-wrap:wrap;gap:10px"><div><div class="panel-title">Maintenance Records</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Repair invoices, parts, labor and the original receipts — one record per truck</div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action-btn action-btn-sm" onclick="maintPick()">📎 Upload invoice</button><button class="action-btn action-btn-sm" onclick="maintNew()">＋ Add by hand</button><button class="action-btn action-btn-sm" onclick="loadMaint()">↻ Refresh</button></div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 16px 14px">
+              <button class="action-btn action-btn-sm" id="mt-review" onclick="maintView('review')">Review</button>
+              <button class="action-btn action-btn-sm" id="mt-history" onclick="maintView('history')">History</button>
+              <button class="action-btn action-btn-sm" id="mt-costs" onclick="maintView('costs')">Costs</button>
+              <select class="form-input" id="maint-truck" style="width:auto" onchange="maintRender()"><option value="">All trucks</option></select>
+              <button class="action-btn action-btn-sm" id="maint-dot" onclick="maintPrintDot()" style="display:none">🖨 Print DOT record</button>
+            </div>
+            <div id="maint-body" style="overflow-x:auto"><div class="loading">Loading...</div></div>
+          </div>
+          <input type="file" id="maint-file" accept="application/pdf,image/*" multiple style="display:none">
         </div>
         <div id="dash-compliance" class="dash-section">
           <div class="panel">
@@ -957,10 +974,10 @@ function applyRoleUI(){const isAdmin=myRole==='admin';document.querySelectorAll(
 async function logActivity(action,entity_type,entity_id,details){try{await sb.from('activity_log').insert({user_id:currentUser?.id||null,user_name:document.getElementById('sidebar-user').textContent,action,entity_type:entity_type||null,entity_id:entity_id||null,details:details||null});}catch(e){}}
 async function doLogout(){await sb.auth.signOut();currentUser=null;document.getElementById('login-screen').style.display='flex';document.getElementById('sys-bar').style.display='none';document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});if(voiceListening&&voiceRecognition){try{voiceRecognition.stop();}catch(e){}}const fab=document.getElementById('ai-chat-fab');if(fab)fab.style.display='none';const acp=document.getElementById('ai-chat-panel');if(acp)acp.style.display='none';aiMessages=[];aiPendingAction=null;}
 function showScreen(n){if(n==='site'){var _f=document.getElementById('site-frame');if(_f&&!_f.src)_f.src=_f.dataset.src;}document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.querySelectorAll('.sys-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelectorAll('.sys-tab')[n==='site'?0:1].classList.add('active');}
-const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',dmsg:'Driver Messages',apps:'Driver Applications',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
+const TITLES={overview:'Operations Overview',shipments:'Shipments',pod:'Delivery Proof',dmsg:'Driver Messages',apps:'Driver Applications',drivers:'Driver Management',customers:'Customers',map:'Live Map',vehicles:'Fleet Vehicles',trailers:'Trailers',inspect:'Truck Status',compliance:'Compliance Center',maint:'Maintenance Records',assign:'Route Assignments',pay:'Driver Pay',hours:'Driver Hours',team:'Team Accounts',activity:'Activity Log',messages:'Contact Messages',driversubs:'Driver Info Submissions'};
 function toggleSidebar(){document.querySelector('.dash-sidebar').classList.toggle('open');document.getElementById('dash-backdrop').classList.toggle('open');}
 window.toggleSidebar=toggleSidebar;
-function showDash(n,b){if(n==='activity'&&!window.canActivity){toast('Ask the owner for access to the Activity Log','error');return}document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='dmsg'&&window.loadDriverInbox)loadDriverInbox();if(n==='apps'&&window.loadApplications)loadApplications();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
+function showDash(n,b){if(n==='activity'&&!window.canActivity){toast('Ask the owner for access to the Activity Log','error');return}document.querySelector('.dash-sidebar').classList.remove('open');document.getElementById('dash-backdrop').classList.remove('open');document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));document.getElementById('dash-'+n).classList.add('active');document.getElementById('dash-title').textContent=TITLES[n]||n;if(b)b.classList.add('active');if(n==='shipments')loadShipments();if(n==='pod'&&window.loadPod)loadPod();if(n==='dmsg'&&window.loadDriverInbox)loadDriverInbox();if(n==='apps'&&window.loadApplications)loadApplications();if(n==='maint'&&window.loadMaint)loadMaint();if(n==='drivers')loadDrivers();if(n==='customers')loadCustomers();if(n==='overview')loadOverview();if(n==='map'){initMap();}if(n==='vehicles')loadVehicles();if(n==='trailers')loadTrailers();if(n==='inspect')loadInspect();if(n==='compliance')loadCompliance();if(n==='assign')loadAssignTab();if(n==='pay')loadPayTab();if(n==='hours')loadDriverHours();if(n==='team')loadTeam();if(n==='messages')loadMessages();if(n==='driversubs')loadDriverSubmissions();if(n==='activity')loadActivityLog();if(n!=='map'&&mapPollInterval){clearInterval(mapPollInterval);mapPollInterval=null;}}
 window.showScreen=showScreen;window.showDash=showDash;
 function openModal(id,mode){if(id==='modal-driver'){document.getElementById('modal-driver-title').textContent='Add Driver';document.getElementById('d-id').value='';['d-name','d-phone','d-license','d-email'].forEach(f=>document.getElementById(f).value='');document.getElementById('d-status').value='active';const dew=document.getElementById('d-email-wrap');if(dew)dew.style.display='';}if(id==='modal-shipment'){['s-tracking','s-customer','s-origin','s-dest'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-pickup').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('s-delivery').value='';document.getElementById('s-pay-rate').value='';const sel=document.getElementById('s-driver');sel.innerHTML='<option value="">— Select Driver —</option>'+allDrivers.filter(d=>d.status==='active').map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name,status').eq('status','active').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Select Driver —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});const vsel=document.getElementById('s-vehicle');vsel.innerHTML='<option value="">— Select Truck —</option>';sb.from('vehicles').select('id,vehicle_code').order('vehicle_code').then(({data})=>{if(data)vsel.innerHTML='<option value="">— Select Truck —</option>'+data.map(v=>`<option value="${v.id}">${escHtml(v.vehicle_code)}</option>`).join('');});const rsel=document.getElementById('s-route');rsel.innerHTML='<option value="">— No Route —</option>';sb.rpc('admin_list_payroll_routes').then(({data,error})=>{if(!error&&data)rsel.innerHTML='<option value="">— No Route —</option>'+data.filter(r=>r.active!==false).map(r=>`<option value="${r.id}" data-price="${r.price||0}" data-customer="${escHtml(r.customer_name||'')}" data-pickup-address="${escHtml(r.pickup_address||'')}" data-drop-address="${escHtml(r.drop_address||'')}" data-pickup-time="${r.pickup_time||''}" data-delivery-time="${r.delivery_time||''}">${escHtml(r.name)} — ${fmtMoneyPay(r.price)}</option>`).join('');});document.getElementById('s-tracking').value='BE-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);}if(id==='modal-vehicle'){document.getElementById('modal-vehicle-title').textContent='Add Vehicle';document.getElementById('v-id').value='';['v-unit','v-make','v-model','v-year','v-vin','v-plate'].forEach(f=>document.getElementById(f).value='');document.getElementById('v-status').value='active';const sel=document.getElementById('v-driver');sel.innerHTML='<option value="">— Unassigned —</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');sb.from('drivers').select('id,full_name').order('full_name').then(({data})=>{if(data)sel.innerHTML='<option value="">— Unassigned —</option>'+data.map(d=>`<option value="${d.id}">${d.full_name}</option>`).join('');});}if(id==='modal-trailer'){document.getElementById('modal-trailer-title').textContent='Add Trailer';document.getElementById('t-id').value='';['t-unit','t-type','t-reg'].forEach(f=>document.getElementById(f).value='');document.getElementById('t-status').value='active';}if(id==='modal-policy'){document.getElementById('modal-policy-title').textContent='Add Policy';document.getElementById('cp-id').value='';['cp-name','cp-number','cp-expires','cp-notes'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-driver'&&mode==='new'){const w=document.getElementById('d-exp-wrap');if(w)w.style.display='none';}if(id==='modal-team'){['tm-name','tm-email','tm-phone'].forEach(f=>document.getElementById(f).value='');document.getElementById('tm-role').value='dispatcher';}if(id==='modal-customer'){['c-name','c-email','c-phone','c-city'].forEach(f=>document.getElementById(f).value='');}if(id==='modal-change-password'){['cp-pass','cp-pass2'].forEach(f=>document.getElementById(f).value='');document.getElementById('cp-err').style.display='none';}document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1620,6 +1637,12 @@ window.inspLogLoad=inspLogLoad;window.inspLogRender=inspLogRender;window.inspLog
 
 
 
+<div id="modal-maint" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
+  <div style="background:#fff;color:#1a202c;max-width:1040px;width:100%;border-radius:12px;overflow:hidden">
+    <div style="background:#1a202c;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:16px" id="mi-title">Invoice</div><button onclick="maintClose()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button></div>
+    <div id="mi-body" style="padding:18px 20px;font-size:14px"></div>
+  </div>
+</div>
 <div id="modal-app" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
   <div style="background:#fff;color:#1a202c;max-width:720px;width:100%;border-radius:12px;overflow:hidden">
     <div style="background:#1a202c;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:16px" id="app-title">Application</div><button onclick="closeApplication()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button></div>
@@ -2125,6 +2148,299 @@ window.podExportZip=async function(){
     toast(failed.length?('ZIP ready — '+failed.length+' file(s) failed, see FAILED_FILES.txt'):'ZIP downloaded',failed.length?'error':'success');
   }catch(e){toast('Export failed: '+(e.message||e),'error');}
   btn.disabled=false;btn.textContent='⬇ Photos (ZIP)';
+};
+})();
+</script>
+<script>
+(function(){
+const e=escHtml,$=id=>document.getElementById(id);
+const money=n=>(n===null||n===undefined||n===''||isNaN(n))?'—':'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const day=d=>d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
+const CATS=['oil_change','brakes','tires','engine','transmission','electrical','suspension','cooling','exhaust','air_system','trailer','body','inspection','other'];
+const cl=c=>String(c||'other').replace(/_/g,' ');
+let invs=[],vehs=[],view='review',cur=null,curLines=[],removed=[];
+const num=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(String(v).replace(/[$,\s]/g,''));return isFinite(n)?n:null};
+const vname=id=>{const v=vehs.find(x=>x.id===id);return v?(v.unit_number||v.vehicle_code):'—'};
+const lineAmt=l=>l.amount!=null?Number(l.amount):((l.quantity!=null&&l.unit_price!=null)?Number(l.quantity)*Number(l.unit_price):0);
+function totals(i){
+  const t={parts:0,labor:0,other:0};
+  (i.repair_lines||[]).forEach(l=>{t[l.kind==='part'?'parts':l.kind==='labor'?'labor':'other']+=lineAmt(l)});
+  if((i.repair_lines||[]).length&&i.tax!=null)t.other+=Number(i.tax);
+  const sum=t.parts+t.labor+t.other;
+  t.total=i.total!=null?Number(i.total):sum;
+  if(!(i.repair_lines||[]).length)t.other=t.total;
+  return t;
+}
+const isImg=n=>/\.(jpe?g|png|webp|heic|heif)$/i.test(n||'');
+
+window.maintView=function(v){view=v;maintRender()};
+window.loadMaint=async function(){
+  $('maint-body').innerHTML='<div class="loading">Loading...</div>';
+  const[a,b]=await Promise.all([
+    sb.from('vehicles').select('id,unit_number,vehicle_code,make,model,year,vin,plate,status').order('unit_number'),
+    sb.from('repair_invoices').select('*,repair_lines(*)').order('invoice_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false}).limit(2000)
+  ]);
+  if(b.error){$('maint-body').innerHTML='<div class="empty">Could not load: '+e(b.error.message)+'<br>If this is the first time, the maintenance database step has not been run yet.</div>';return}
+  vehs=a.data||[];invs=b.data||[];
+  const sel=$('maint-truck'),keep=sel.value;
+  sel.innerHTML='<option value="">All trucks</option>'+vehs.map(v=>'<option value="'+e(v.id)+'">'+e(v.unit_number||v.vehicle_code)+'</option>').join('');
+  sel.value=vehs.some(v=>v.id===keep)?keep:'';
+  const n=invs.filter(i=>i.status==='review').length;
+  const bd=$('maint-badge');if(bd){bd.textContent=n;bd.style.display=n?'inline-block':'none'}
+  if(view==='review'&&!n&&invs.some(i=>i.status==='approved'))view='history';
+  maintRender();
+};
+window.maintRender=function(){
+  ['review','history','costs'].forEach(v=>{const b=$('mt-'+v);if(b)b.style.outline=v===view?'2px solid var(--gold)':'none'});
+  const truck=$('maint-truck').value;
+  $('maint-dot').style.display=(view==='history'&&truck)?'':'none';
+  const appr=invs.filter(i=>i.status==='approved');
+  const now=new Date(),ym=now.toISOString().slice(0,7),yearAgo=new Date(now.getTime()-365*86400000).toISOString().slice(0,10);
+  let mTot=0,yTot=0,yParts=0,yLabor=0;
+  appr.forEach(i=>{const t=totals(i);if((i.invoice_date||'').slice(0,7)===ym)mTot+=t.total;if((i.invoice_date||'')>=yearAgo){yTot+=t.total;yParts+=t.parts;yLabor+=t.labor}});
+  const rv=invs.filter(i=>i.status==='review').length;
+  $('maint-kpis').innerHTML=
+    '<div class="kpi-card gold"><div class="kpi-label">This month</div><div class="kpi-val">'+money(mTot)+'</div><div class="kpi-delta">approved invoices</div></div>'+
+    '<div class="kpi-card blue"><div class="kpi-label">Last 12 months</div><div class="kpi-val">'+money(yTot)+'</div><div class="kpi-delta">all trucks</div></div>'+
+    '<div class="kpi-card green"><div class="kpi-label">Parts / Labor</div><div class="kpi-val" style="font-size:18px">'+money(yParts)+' / '+money(yLabor)+'</div><div class="kpi-delta">last 12 months</div></div>'+
+    '<div class="kpi-card orange"><div class="kpi-label">Waiting for review</div><div class="kpi-val">'+rv+'</div><div class="kpi-delta">not counted yet</div></div>';
+  const box=$('maint-body');
+  if(view==='review'){
+    const rows=invs.filter(i=>i.status==='review'&&(!truck||i.vehicle_id===truck));
+    box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
+      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(i.vehicle_id?e(vname(i.vehicle_id)):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
+      '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
+  }else if(view==='history'){
+    const rows=appr.filter(i=>!truck||i.vehicle_id===truck);
+    let P=0,L=0,O=0,T=0;
+    box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Date</th><th>Truck</th><th>Vendor</th><th>What was done</th><th>Parts</th><th>Labor</th><th>Total</th><th></th></tr></thead><tbody>'+rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
+      return '<tr><td style="white-space:nowrap;font-size:12px">'+day(i.invoice_date)+(i.odometer?'<div style="font-size:11px;color:var(--text3)">'+Number(i.odometer).toLocaleString()+' mi</div>':'')+'</td><td><span style="font-family:var(--mono);color:var(--gold)">'+e(vname(i.vehicle_id))+'</span></td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td style="font-size:12px;color:var(--text2);max-width:340px">'+e(i.summary||(i.repair_lines||[]).map(l=>l.description).slice(0,3).join('; '))+'</td><td>'+money(t.parts)+'</td><td>'+money(t.labor)+'</td><td><b>'+money(t.total)+'</b></td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Open</button></td></tr>'}).join('')+
+      '<tr><td colspan="4" style="text-align:right;color:var(--text3)">Totals ('+rows.length+' invoices)</td><td><b>'+money(P)+'</b></td><td><b>'+money(L)+'</b></td><td><b>'+money(T)+'</b></td><td></td></tr></tbody></table>':
+      '<div class="empty">No approved invoices'+(truck?' for this truck':'')+' yet.</div>';
+  }else{
+    const by={},ven={},mon={};
+    appr.forEach(i=>{const t=totals(i);
+      const k=i.vehicle_id||'none';by[k]=by[k]||{n:0,p:0,l:0,o:0,t:0};by[k].n++;by[k].p+=t.parts;by[k].l+=t.labor;by[k].o+=t.other;by[k].t+=t.total;
+      const vk=(i.vendor||'Unknown').trim();ven[vk]=ven[vk]||{n:0,t:0};ven[vk].n++;ven[vk].t+=t.total;
+      const mk=(i.invoice_date||'').slice(0,7)||'—';mon[mk]=(mon[mk]||0)+t.total});
+    const tr=Object.keys(by).sort((a,b)=>by[b].t-by[a].t);
+    box.innerHTML=appr.length?
+      '<table class="data-table"><thead><tr><th>Truck</th><th>Invoices</th><th>Parts</th><th>Labor</th><th>Other</th><th>Total</th></tr></thead><tbody>'+tr.map(k=>'<tr><td><span style="font-family:var(--mono);color:var(--gold)">'+e(k==='none'?'No truck':vname(k))+'</span></td><td>'+by[k].n+'</td><td>'+money(by[k].p)+'</td><td>'+money(by[k].l)+'</td><td>'+money(by[k].o)+'</td><td><b>'+money(by[k].t)+'</b></td></tr>').join('')+'</tbody></table>'+
+      '<div style="display:flex;gap:18px;flex-wrap:wrap;padding:16px"><div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">BY VENDOR</div>'+Object.keys(ven).sort((a,b)=>ven[b].t-ven[a].t).slice(0,12).map(k=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+e(k)+' <span style="color:var(--text3);font-size:11px">('+ven[k].n+')</span></span><b>'+money(ven[k].t)+'</b></div>').join('')+'</div>'+
+      '<div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">BY MONTH</div>'+Object.keys(mon).sort().reverse().slice(0,12).map(k=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+e(k)+'</span><b>'+money(mon[k])+'</b></div>').join('')+'</div></div>':
+      '<div class="empty">Costs will show here after you approve invoices.</div>';
+  }
+};
+
+/* ---------- upload ---------- */
+window.maintPick=function(){$('maint-file').click()};
+async function authHdr(){const{data:{session}}=await sb.auth.getSession();return session?{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'}:null}
+async function addLines(id,lines){if(!lines||!lines.length)return;await sb.from('repair_lines').insert(lines.map((l,i)=>({invoice_id:id,sort_order:i,kind:l.kind,category:l.category,description:l.description,part_number:l.part_number,quantity:l.quantity,unit_price:l.unit_price,amount:l.amount})))}
+async function handleFile(file){
+  if(file.size>15*1024*1024){toast(file.name+' is over 15 MB','error');return null}
+  const ok=/^(application\/pdf|image\/)/.test(file.type)||/\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(file.name);
+  if(!ok){toast(file.name+': only PDF or photos','error');return null}
+  const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80);
+  const path='uploads/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))+'/'+safe;
+  const up=await sb.storage.from('receipts').upload(path,file,{contentType:file.type||undefined});
+  if(up.error){toast('Upload failed: '+up.error.message,'error');return null}
+  let ex=null,vid=null,note=null;
+  try{
+    const h=await authHdr();
+    const r=await fetch('/api/invoice-extract',{method:'POST',headers:h,body:JSON.stringify({path})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){ex=j.extraction||null;vid=j.vehicle_id||null;note=j.reason||null}else note=j.message||'The invoice reader is not available.';
+  }catch(x){note='The invoice reader is not available.'}
+  const row={source:'upload',status:'review',file_path:path,file_name:file.name.slice(0,200),vehicle_id:vid,unit_text:ex?ex.truck_unit:null,
+    vendor:ex&&ex.vendor,invoice_number:ex&&ex.invoice_number,invoice_date:ex&&ex.invoice_date,odometer:ex&&ex.odometer,subtotal:ex&&ex.subtotal,tax:ex&&ex.tax,total:ex&&ex.total,
+    summary:ex?ex.summary:(note?'Not read automatically: '+note:null),ai_confidence:ex?ex.confidence:null};
+  const ins=await sb.from('repair_invoices').insert(row).select('id').single();
+  if(ins.error){toast('Could not save: '+ins.error.message,'error');return null}
+  if(ex)await addLines(ins.data.id,ex.lines);
+  return ins.data.id;
+}
+document.addEventListener('change',async ev=>{
+  if(!ev.target||ev.target.id!=='maint-file')return;
+  const files=Array.from(ev.target.files||[]);ev.target.value='';if(!files.length)return;
+  toast('Reading '+files.length+' file'+(files.length>1?'s':'')+'…');
+  let first=null;
+  for(const f of files){const id=await handleFile(f);if(id&&!first)first=id}
+  await loadMaint();
+  if(first){view='review';maintRender();maintOpen(first)}
+});
+window.maintNew=async function(){
+  const ins=await sb.from('repair_invoices').insert({source:'manual',status:'review'}).select('id').single();
+  if(ins.error){toast('Could not start: '+ins.error.message,'error');return}
+  await loadMaint();maintOpen(ins.data.id);
+};
+
+/* ---------- review / edit ---------- */
+window.maintClose=function(){$('modal-maint').style.display='none';cur=null};
+const inp='width:100%;box-sizing:border-box;border:1px solid #cbd5e0;border-radius:8px;padding:8px;font-family:inherit;font-size:14px';
+function lineRow(l,i){
+  return '<tr data-i="'+i+'"><td><select class="ml-kind" style="'+inp+';padding:6px">'+['part','labor','other'].map(k=>'<option'+(l.kind===k?' selected':'')+'>'+k+'</option>').join('')+'</select></td>'+
+    '<td><select class="ml-cat" style="'+inp+';padding:6px">'+CATS.map(c=>'<option value="'+c+'"'+((l.category||'other')===c?' selected':'')+'>'+cl(c)+'</option>').join('')+'</select></td>'+
+    '<td><input class="ml-desc" style="'+inp+'" value="'+e(l.description||'')+'"></td>'+
+    '<td><input class="ml-qty" inputmode="decimal" style="'+inp+';width:60px" value="'+(l.quantity==null?'':e(l.quantity))+'"></td>'+
+    '<td><input class="ml-unit" inputmode="decimal" style="'+inp+';width:80px" value="'+(l.unit_price==null?'':e(l.unit_price))+'"></td>'+
+    '<td><input class="ml-amt" inputmode="decimal" style="'+inp+';width:90px" value="'+(l.amount==null?'':e(l.amount))+'"></td>'+
+    '<td><button onclick="maintDelLine('+i+')" style="background:none;border:none;color:#c53030;font-size:18px;cursor:pointer" title="Remove line">✕</button></td></tr>';
+}
+function readLines(){
+  return Array.from(document.querySelectorAll('#mi-lines tr[data-i]')).map(tr=>{const i=+tr.dataset.i,o=curLines[i]||{};return{id:o.id||null,kind:tr.querySelector('.ml-kind').value,category:tr.querySelector('.ml-cat').value,description:tr.querySelector('.ml-desc').value.trim()||'(no description)',part_number:o.part_number||null,quantity:num(tr.querySelector('.ml-qty').value),unit_price:num(tr.querySelector('.ml-unit').value),amount:num(tr.querySelector('.ml-amt').value)}});
+}
+function paintLines(){
+  $('mi-lines').innerHTML=curLines.map(lineRow).join('')||'<tr><td colspan="7" style="color:#718096;padding:8px">No lines yet. Add the parts and labor from the receipt.</td></tr>';
+  document.querySelectorAll('#mi-lines input,#mi-lines select').forEach(x=>x.addEventListener('input',sumCheck));sumCheck();
+}
+function sumCheck(){
+  const ls=readLines();let s=0;ls.forEach(l=>{s+=lineAmt(l)});
+  const tax=num($('mi-tax').value)||0,tot=num($('mi-total').value);
+  const el=$('mi-sum');if(!el)return;
+  const diff=tot!=null?Math.abs(s+tax-tot):0;
+  el.innerHTML='Lines '+money(s)+' + tax '+money(tax)+' = <b>'+money(s+tax)+'</b>'+(tot!=null&&diff>0.05?' <span style="color:#c53030">· does not match the total '+money(tot)+'. Check the lines.</span>':tot!=null?' <span style="color:#2f855a">· matches ✓</span>':'');
+}
+window.maintAddLine=function(){curLines=readLines().map((l,k)=>Object.assign({},curLines[k]||{},l));curLines.push({kind:'part',category:'other',description:''});paintLines()};
+window.maintDelLine=function(i){
+  const ls=readLines().map((l,k)=>Object.assign({},curLines[k]||{},l));
+  const gone=ls[i];if(gone&&gone.id)removed.push(gone.id);
+  ls.splice(i,1);curLines=ls;paintLines();
+};
+window.maintOpen=async function(id){
+  cur=invs.find(x=>x.id===id);if(!cur){return}
+  curLines=(cur.repair_lines||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));removed=[];
+  $('mi-title').textContent=(cur.status==='approved'?'Approved invoice':'Review invoice')+(cur.vendor?' — '+cur.vendor:'');
+  let pv='<div style="color:#718096;padding:20px;text-align:center;border:1px dashed #cbd5e0;border-radius:8px">No receipt file attached</div>';
+  if(cur.file_path){
+    const s=await sb.storage.from('receipts').createSignedUrl(cur.file_path,900);
+    if(s.data&&s.data.signedUrl){const u=e(s.data.signedUrl);
+      pv=(isImg(cur.file_name||cur.file_path)?'<a href="'+u+'" target="_blank" rel="noopener"><img src="'+u+'" style="width:100%;border:1px solid #e2e8f0;border-radius:8px"></a>':'<iframe src="'+u+'" style="width:100%;height:560px;border:1px solid #e2e8f0;border-radius:8px"></iframe>')+'<div style="margin-top:6px"><a href="'+u+'" target="_blank" rel="noopener" style="font-size:12px">Open original in new tab ↗</a> <span style="color:#718096;font-size:12px">· '+e(cur.file_name||'')+'</span></div>';}
+  }
+  const meta=cur.source==='email'?'<div style="font-size:12px;color:#718096;margin-bottom:8px">✉️ From '+e(cur.email_from||'')+' · “'+e(cur.email_subject||'')+'”</div>':'';
+  const conf=cur.ai_confidence?'<span style="background:'+(cur.ai_confidence==='high'?'#2f855a':cur.ai_confidence==='medium'?'#b7791f':'#c53030')+';color:#fff;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:6px">read: '+e(cur.ai_confidence)+'</span>':'';
+  const f=(lab,idn,val,extra)=>'<div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">'+lab+'</div><input id="'+idn+'" style="'+inp+'" value="'+e(val==null?'':val)+'" '+(extra||'')+'></div>';
+  $('mi-body').innerHTML='<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1 1 380px;min-width:280px">'+pv+'</div><div style="flex:1 1 440px;min-width:300px">'+meta+
+   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+f('Vendor','mi-vendor',cur.vendor)+f('Invoice #','mi-num',cur.invoice_number)+'</div>'+
+   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">Invoice date</div><input id="mi-date" type="date" style="'+inp+'" value="'+e(cur.invoice_date||'')+'"></div>'+
+   '<div style="flex:1;min-width:120px"><div style="font-size:12px;color:#718096;margin-bottom:3px">Truck'+(cur.unit_text&&!cur.vehicle_id?' <span style="color:#b7791f">(invoice says “'+e(cur.unit_text)+'”)</span>':'')+'</div><select id="mi-truck" style="'+inp+'"><option value="">— pick truck —</option>'+vehs.map(v=>'<option value="'+e(v.id)+'"'+(v.id===cur.vehicle_id?' selected':'')+'>'+e(v.unit_number||v.vehicle_code)+'</option>').join('')+'</select></div>'+
+   f('Odometer','mi-odo',cur.odometer,'inputmode="numeric"')+'</div>'+
+   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+f('Subtotal','mi-sub',cur.subtotal,'inputmode="decimal"')+f('Tax','mi-tax',cur.tax,'inputmode="decimal"')+f('Total','mi-total',cur.total,'inputmode="decimal"')+'</div>'+
+   '<div style="font-size:12px;color:#718096;margin:6px 0 3px">WHAT WAS DONE'+conf+'</div><textarea id="mi-summary" rows="2" style="'+inp+'">'+e(cur.summary||'')+'</textarea>'+
+   '<div style="font-size:12px;color:#718096;margin:10px 0 3px">PARTS & LABOR</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#718096;font-size:11px"><th>Type</th><th>Category</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th><th></th></tr></thead><tbody id="mi-lines"></tbody></table></div>'+
+   '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;flex-wrap:wrap;gap:6px"><button onclick="maintAddLine()" style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:8px;padding:6px 12px;cursor:pointer">＋ Add line</button><div id="mi-sum" style="font-size:12px;color:#4a5568"></div></div>'+
+   '<div style="font-size:12px;color:#718096;margin:10px 0 3px">NOTES (only staff see these)</div><textarea id="mi-notes" rows="2" style="'+inp+'">'+e(cur.notes||'')+'</textarea>'+
+   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">'+
+   '<button onclick="maintSave(false)" style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer">Save</button>'+
+   (cur.status!=='approved'?'<button onclick="maintSave(true)" style="background:#2f855a;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer">✓ Approve</button><button onclick="maintReject()" style="background:#fff;color:#c53030;border:1px solid #c53030;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer">Reject</button>':'<button onclick="maintReopen()" style="background:#fff;border:1px solid #cbd5e0;border-radius:8px;padding:10px 16px;cursor:pointer">Back to review</button>')+
+   '<button onclick="maintDelete()" style="background:#fff;color:#c53030;border:1px solid #feb2b2;border-radius:8px;padding:10px 16px;cursor:pointer;margin-left:auto">Delete</button></div></div></div>';
+  paintLines();
+  ['mi-tax','mi-total'].forEach(k=>$(k).addEventListener('input',sumCheck));
+  $('modal-maint').style.display='flex';
+};
+function collect(){
+  return{vendor:$('mi-vendor').value.trim()||null,invoice_number:$('mi-num').value.trim()||null,invoice_date:$('mi-date').value||null,vehicle_id:$('mi-truck').value||null,
+    odometer:num($('mi-odo').value)!=null?Math.round(num($('mi-odo').value)):null,subtotal:num($('mi-sub').value),tax:num($('mi-tax').value),total:num($('mi-total').value),
+    summary:$('mi-summary').value.trim()||null,notes:$('mi-notes').value.trim()||null};
+}
+async function persist(fields){
+  const ls=readLines().map((l,k)=>Object.assign({},l,{sort_order:k}));
+  if(removed.length){
+    if(window.canDeleteData!==true){toast('Only the owner (or someone allowed) can remove lines','error');return false}
+    const d=await sb.from('repair_lines').delete().in('id',removed);if(d.error){toast('Error: '+d.error.message,'error');return false}removed=[];
+  }
+  const u=await sb.from('repair_invoices').update(Object.assign({},fields,{updated_at:new Date().toISOString()})).eq('id',cur.id);
+  if(u.error){toast('Error: '+u.error.message,'error');return false}
+  const olds=ls.filter(l=>l.id),news=ls.filter(l=>!l.id);
+  for(const l of olds){const r=await sb.from('repair_lines').update({sort_order:l.sort_order,kind:l.kind,category:l.category,description:l.description,quantity:l.quantity,unit_price:l.unit_price,amount:l.amount}).eq('id',l.id);if(r.error){toast('Error: '+r.error.message,'error');return false}}
+  if(news.length){const r=await sb.from('repair_lines').insert(news.map(l=>({invoice_id:cur.id,sort_order:l.sort_order,kind:l.kind,category:l.category,description:l.description,part_number:l.part_number,quantity:l.quantity,unit_price:l.unit_price,amount:l.amount})));if(r.error){toast('Error: '+r.error.message,'error');return false}}
+  return true;
+}
+window.maintSave=async function(approve){
+  if(!cur)return;
+  const fl=collect();
+  if(approve){
+    if(!fl.vehicle_id){toast('Pick the truck first','error');return}
+    if(!fl.invoice_date){toast('Enter the invoice date','error');return}
+    const ls=readLines();if(!ls.length&&!(fl.total>0)){toast('Add the lines or the total first','error');return}
+    if(fl.invoice_number&&fl.vendor){
+      const dup=invs.find(x=>x.id!==cur.id&&x.status==='approved'&&(x.invoice_number||'').toLowerCase()===fl.invoice_number.toLowerCase()&&(x.vendor||'').toLowerCase()===fl.vendor.toLowerCase());
+      if(dup&&!confirm('Invoice #'+fl.invoice_number+' from '+fl.vendor+' is already approved ('+day(dup.invoice_date)+'). Approve again?'))return;
+    }
+    const ls2=readLines();let s=0;ls2.forEach(l=>{s+=lineAmt(l)});const tot=fl.total;
+    if(tot!=null&&ls2.length&&Math.abs(s+(fl.tax||0)-tot)>0.05&&!confirm('The lines add up to '+money(s+(fl.tax||0))+' but the total says '+money(tot)+'. Approve anyway?'))return;
+    fl.status='approved';fl.approved_at=new Date().toISOString();
+    try{const{data:{session}}=await sb.auth.getSession();fl.approved_by=session&&session.user&&session.user.email||null}catch(x){}
+  }
+  if(!(await persist(fl)))return;
+  if(approve){
+    try{
+      const ls=readLines();
+      if(fl.odometer&&ls.some(l=>l.category==='oil_change')){
+        const ex=await sb.from('vehicle_service').select('last_oil_date').eq('vehicle_id',fl.vehicle_id).maybeSingle();
+        if(!ex.data||!ex.data.last_oil_date||ex.data.last_oil_date<=fl.invoice_date){
+          await sb.from('vehicle_service').upsert({vehicle_id:fl.vehicle_id,last_oil_miles:fl.odometer,last_oil_date:fl.invoice_date,updated_at:new Date().toISOString()});
+          if(typeof oilLoad==='function')oilLoad(true);
+        }
+      }
+    }catch(x){}
+    try{logActivity('Approved repair invoice','vehicle',fl.vehicle_id,{vendor:fl.vendor,total:fl.total})}catch(x){}
+  }
+  toast(approve?'Approved ✓ — saved to the truck record':'Saved ✓');
+  maintClose();await loadMaint();
+};
+window.maintReject=async function(){
+  if(!cur||!confirm('Reject this invoice? It stays saved but is not counted.'))return;
+  const u=await sb.from('repair_invoices').update({status:'rejected',updated_at:new Date().toISOString()}).eq('id',cur.id);
+  if(u.error){toast('Error: '+u.error.message,'error');return}
+  toast('Rejected');maintClose();loadMaint();
+};
+window.maintReopen=async function(){
+  if(!cur)return;
+  const u=await sb.from('repair_invoices').update({status:'review',approved_at:null,approved_by:null,updated_at:new Date().toISOString()}).eq('id',cur.id);
+  if(u.error){toast('Error: '+u.error.message,'error');return}
+  toast('Moved back to review');maintClose();view='review';loadMaint();
+};
+window.maintDelete=async function(){
+  if(!cur)return;if(!needDelete())return;
+  if(!confirm('Delete this invoice and its receipt file? This cannot be undone.'))return;
+  if(cur.file_path){await sb.storage.from('receipts').remove([cur.file_path])}
+  const d=await sb.from('repair_invoices').delete().eq('id',cur.id);
+  if(d.error){toast('Error: '+d.error.message,'error');return}
+  try{logActivity('Deleted repair invoice','vehicle',cur.vehicle_id,{vendor:cur.vendor,total:cur.total})}catch(x){}
+  toast('Deleted');maintClose();loadMaint();
+};
+
+/* ---------- DOT record (print) ---------- */
+window.maintPrintDot=async function(){
+  const vid=$('maint-truck').value;if(!vid){toast('Pick a truck first','error');return}
+  const v=vehs.find(x=>x.id===vid);if(!v)return;
+  const withImg=confirm('Include the receipt photos at the end of the printout?\n\nOK = yes (photos only; PDFs are listed)\nCancel = list only');
+  const rows=invs.filter(i=>i.status==='approved'&&i.vehicle_id===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
+  let oil='';
+  try{const o=await sb.from('vehicle_service').select('*').eq('vehicle_id',vid).maybeSingle();
+    if(o.data&&o.data.last_oil_date){oil='Last oil change: '+day(o.data.last_oil_date)+(o.data.last_oil_miles!=null?' at '+Number(o.data.last_oil_miles).toLocaleString()+' mi':'');}
+    if(typeof oilStatus==='function'){const d=document.createElement('div');d.innerHTML=oilStatus(v).html;const t=(d.textContent||'').replace(/\s+/g,' ').trim();if(t&&!/Set up/.test(t))oil+=(oil?' · ':'')+'Status: '+t}
+  }catch(x){}
+  let P=0,L=0,O=0,T=0;
+  const body=rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
+    const ls=(i.repair_lines||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const det=ls.length?'<ul style="margin:3px 0 0 16px;padding:0;font-size:11px;color:#444">'+ls.map(l=>'<li>'+e(l.kind)+': '+e(l.description)+(l.part_number?' ['+e(l.part_number)+']':'')+(l.quantity!=null?' ×'+e(l.quantity):'')+' — '+money(lineAmt(l))+'</li>').join('')+'</ul>':'';
+    return '<tr><td style="white-space:nowrap">'+day(i.invoice_date)+'</td><td>'+(i.odometer?Number(i.odometer).toLocaleString():'—')+'</td><td>'+e(i.vendor||'—')+'<br><span style="font-size:11px;color:#555">'+(i.invoice_number?'Inv #'+e(i.invoice_number):'')+'</span></td><td>'+e(i.summary||'')+det+'</td><td style="text-align:right">'+money(t.parts)+'</td><td style="text-align:right">'+money(t.labor)+'</td><td style="text-align:right">'+money(t.other)+'</td><td style="text-align:right"><b>'+money(t.total)+'</b></td></tr>'}).join('');
+  let imgs='';const files=[];
+  for(const i of rows){if(!i.file_path)continue;
+    if(withImg&&isImg(i.file_name||i.file_path)){const s=await sb.storage.from('receipts').createSignedUrl(i.file_path,3600);if(s.data&&s.data.signedUrl){imgs+='<div style="page-break-before:always"><h3 style="margin:0 0 6px">Receipt — '+e(i.vendor||'')+' '+(i.invoice_number?'#'+e(i.invoice_number):'')+' · '+day(i.invoice_date)+'</h3><img src="'+e(s.data.signedUrl)+'" style="max-width:100%;max-height:900px"></div>';continue}}
+    files.push(e(i.vendor||'')+' '+(i.invoice_number?'#'+e(i.invoice_number)+' ':'')+'('+day(i.invoice_date)+') — file on record: '+e(i.file_name||'receipt'))}
+  const w=window.open('','_blank');if(!w){toast('Allow pop-ups to print','error');return}
+  const css='body{font-family:Arial,sans-serif;max-width:1000px;margin:18px auto;color:#111;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:5px 6px;vertical-align:top;text-align:left}th{background:#eee}h2{margin:0}@media print{button{display:none}}';
+  w.document.write('<!doctype html><title>DOT record — Unit '+e(v.unit_number||'')+'</title><style>'+css+'</style><body>'+
+   '<button onclick="print()" style="float:right;padding:8px 14px">🖨 Print</button><h2>Bashka Express LLC — Vehicle Inspection, Repair &amp; Maintenance Record</h2>'+
+   '<div style="color:#444;margin:3px 0 12px">USDOT 1930147 · MC 1041182 · 3299 Valley Ridge Dr, Eagan, MN 55121 · Printed '+new Date().toLocaleDateString()+'</div>'+
+   '<table style="margin-bottom:12px"><tr><th>Unit / company number</th><th>Year</th><th>Make</th><th>Model</th><th>VIN (serial number)</th><th>Plate</th></tr><tr><td><b>'+e(v.unit_number||v.vehicle_code||'')+'</b></td><td>'+e(v.year||'')+'</td><td>'+e(v.make||'')+'</td><td>'+e(v.model||'')+'</td><td>'+e(v.vin||'')+'</td><td>'+e(v.plate||'')+'</td></tr></table>'+
+   (oil?'<div style="margin-bottom:10px"><b>Maintenance schedule:</b> '+e(oil)+'</div>':'')+
+   '<h3 style="margin:10px 0 4px">Repair and maintenance history</h3>'+
+   (rows.length?'<table><thead><tr><th>Date</th><th>Odometer</th><th>Vendor</th><th>Work performed</th><th>Parts</th><th>Labor</th><th>Other</th><th>Total</th></tr></thead><tbody>'+body+'<tr><td colspan="4" style="text-align:right"><b>Totals ('+rows.length+' records)</b></td><td style="text-align:right"><b>'+money(P)+'</b></td><td style="text-align:right"><b>'+money(L)+'</b></td><td style="text-align:right"><b>'+money(O)+'</b></td><td style="text-align:right"><b>'+money(T)+'</b></td></tr></tbody></table>':'<div>No approved repair records for this truck yet.</div>')+
+   (files.length?'<h3 style="margin:14px 0 4px">Receipts kept on file</h3><ul>'+files.map(x=>'<li>'+x+'</li>').join('')+'</ul>':'')+imgs+'</body>');
+  w.document.close();
 };
 })();
 </script>
