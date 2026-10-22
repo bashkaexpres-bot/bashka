@@ -732,8 +732,8 @@ select.form-input{appearance:none}
           <div class="panel">
             <div class="panel-header"><div><div class="panel-title">Truck Status — Return Inspections</div><div style="font-size:11px;color:var(--text3);margin-top:3px" id="insp-sub">Loading…</div></div><button class="action-btn action-btn-sm" onclick="loadInspect(true)">↻ Refresh</button></div>
             <table class="data-table">
-              <thead><tr><th>Truck</th><th>Safe to assign?</th><th>Open defects</th><th>Last inspected</th></tr></thead>
-              <tbody id="insp-table"><tr><td colspan="4"><div class="loading">Loading...</div></td></tr></tbody>
+              <thead><tr><th>Truck</th><th>Safe to assign?</th><th>Open defects</th><th>Last inspected</th><th>Oil change</th></tr></thead>
+              <tbody id="insp-table"><tr><td colspan="5"><div class="loading">Loading...</div></td></tr></tbody>
             </table>
           </div>
           <div class="panel" style="margin-top:18px">
@@ -1031,8 +1031,10 @@ async function loadCompliance(){
   const grouped=order.map(k=>groups[k]);
   grouped.forEach(g=>{g.soonest=null;g.rows.forEach(r=>{if(!r.date)return;if(g.soonest===null||r.date<g.soonest)g.soonest=r.date;});});
   grouped.sort((a,b)=>{if(!a.soonest&&!b.soonest)return 0;if(!a.soonest)return 1;if(!b.soonest)return -1;return a.soonest<b.soonest?-1:a.soonest>b.soonest?1:0;});
+  await oilLoad();
+  (vehicles||[]).forEach(v=>{if(v.status==='out_of_service')return;const o=oilStatus(v);if(o.level==='over'||o.level==='soon'){const d=new Date(Date.now()+(o.level==='over'?0:7)*86400000).toISOString().slice(0,10);items.push({category:'Truck',unit:v.unit_number,item:'Oil Change',date:d,entity:'oil',id:v.id,oilHtml:o.html});}});
   window.__complianceItems=items;
-  tbody.innerHTML=grouped.length?grouped.map(g=>`<tr><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(g.category)}</td><td class="td-primary">${escHtml(g.unit)}</td><td style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">${g.rows.map(r=>`<span onclick="editComplianceItem(${items.indexOf(r)})" title="Click to edit date" style="cursor:pointer;font-size:12px;color:var(--text2);display:flex;gap:6px;align-items:center;padding:3px 6px;border-radius:6px;border:1px dashed transparent" onmouseover="this.style.borderColor='var(--border)'" onmouseout="this.style.borderColor='transparent'">${escHtml(r.item)}: ${expiryBadge(r.date)} <span style="font-size:10px;color:var(--text3)">✎</span></span>`).join('')}</td></tr>`).join(''):'<tr><td colspan="3"><div class="empty">Nothing to track yet</div></td></tr>';
+  tbody.innerHTML=grouped.length?grouped.map(g=>`<tr><td style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(g.category)}</td><td class="td-primary">${escHtml(g.unit)}</td><td style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">${g.rows.map(r=>`<span onclick="${r.entity==='oil'?`oilMark('${r.id}','${escHtml(r.unit||'')}')`:`editComplianceItem(${items.indexOf(r)})`}" title="${r.entity==='oil'?'Click to record the oil change':'Click to edit date'}" style="cursor:pointer;font-size:12px;color:var(--text2);display:flex;gap:6px;align-items:center;padding:3px 6px;border-radius:6px;border:1px dashed transparent" onmouseover="this.style.borderColor='var(--border)'" onmouseout="this.style.borderColor='transparent'">${escHtml(r.item)}: ${r.entity==='oil'?r.oilHtml:expiryBadge(r.date)} <span style="font-size:10px;color:var(--text3)">✎</span></span>`).join('')}</td></tr>`).join(''):'<tr><td colspan="3"><div class="empty">Nothing to track yet</div></td></tr>';
   const urgent=items.filter(it=>it.date&&daysUntil(it.date)<=30).length;
   const badge=document.getElementById('compliance-badge');if(badge){if(urgent){badge.textContent=urgent;badge.style.display='inline-block';}else{badge.style.display='none';}}
   const pill=document.getElementById('compliance-pill');const pillCount=document.getElementById('compliance-pill-count');if(pill&&pillCount){if(urgent){pillCount.textContent=urgent;pill.style.display='flex';}else{pill.style.display='none';}}
@@ -1465,9 +1467,10 @@ async function inspGuard(vehicleId){
 }
 async function loadInspect(force){
   const tb=document.getElementById('insp-table');
-  if(tb&&!inspData)tb.innerHTML='<tr><td colspan="4"><div class="loading">Loading...</div></td></tr>';
+  if(tb&&!inspData)tb.innerHTML='<tr><td colspan="5"><div class="loading">Loading...</div></td></tr>';
   await inspLoadVehicles(true);
   await inspFetch(true);
+  await oilLoad(true);
   inspRender();
   await inspLogLoad();
 }
@@ -1475,7 +1478,7 @@ function inspRender(){
   const tb=document.getElementById('insp-table');if(!tb)return;
   const sub=document.getElementById('insp-sub');
   if(sub)sub.innerHTML=inspError&&!inspData?'⚠ Can’t reach the inspection app':(inspError?'⚠ Offline — showing the last update ('+inspAgo(inspLastOk)+')':'<span style="color:var(--green)">● Live</span> · checked '+inspAgo(inspLastOk)+' · updates automatically');
-  if(!inspData){tb.innerHTML=`<tr><td colspan="4"><div class="empty">Inspection data isn’t available yet${inspError?' ('+escHtml(inspError)+')':''}.</div></td></tr>`;document.getElementById('insp-kpis').innerHTML='';return;}
+  if(!inspData){tb.innerHTML=`<tr><td colspan="5"><div class="empty">Inspection data isn’t available yet${inspError?' ('+escHtml(inspError)+')':''}.</div></td></tr>`;document.getElementById('insp-kpis').innerHTML='';return;}
   const rows=inspVeh.map(v=>({v,e:inspEval(v)}));
   const used={};rows.forEach(r=>{if(r.e.t)used[r.e.t.key]=1;});
   inspData.trucks.forEach(t=>{if(!used[t.key])rows.push({v:{unit_number:t.truck,status:'active',_extra:true},e:inspEval({unit_number:t.truck,status:'active'})});});
@@ -1492,8 +1495,8 @@ function inspRender(){
     const stale=t&&t.lastTs&&Date.now()-t.lastTs>36*3600000;
     const defects=t&&t.defects.length?t.defects.map(d=>`<div style="font-size:12px;color:${d.crit?'#FF7070':'var(--text2)'}">${d.crit?'⛔':'•'} ${escHtml(d.label)}${d.note?' — '+escHtml(d.note):''}</div>`).join(''):(e.level==='block'&&!t?`<div style="font-size:12px;color:#FF7070">${escHtml(e.reasons[0]||'')}</div>`:'<span style="color:var(--text3)">None</span>');
     const last=t&&t.lastTs?`${inspAgo(t.lastTs)}<div style="font-size:11px;color:${stale?'var(--orange)':'var(--text3)'}">${escHtml(t.lastBy||'')}${stale?' · check overdue':''}</div>`:'<span style="color:var(--text3)">Never</span>';
-    return `<tr style="${e.level==='block'?'background:rgba(229,53,53,0.07)':''}"><td><span style="font-family:var(--mono);font-size:12px;color:var(--gold)">${escHtml(v.unit_number||v.vehicle_code)}</span>${v._extra?'<div style="font-size:10px;color:var(--text3)">not in portal fleet</div>':''}</td><td>${inspTagHtml(e)}</td><td>${defects}</td><td>${last}</td></tr>`;
-  }).join('')||'<tr><td colspan="4"><div class="empty">No trucks yet</div></td></tr>';
+    return `<tr style="${e.level==='block'?'background:rgba(229,53,53,0.07)':''}"><td><span style="font-family:var(--mono);font-size:12px;color:var(--gold)">${escHtml(v.unit_number||v.vehicle_code)}</span>${v._extra?'<div style="font-size:10px;color:var(--text3)">not in portal fleet</div>':''}</td><td>${inspTagHtml(e)}</td><td>${defects}</td><td>${last}</td><td>${v.id?oilStatus(v).html+`<button class="action-btn-neutral" style="margin-top:4px" onclick="oilMark('${v.id}','${escHtml(v.unit_number||'')}')">Mark oil changed</button>`:'<span style="color:var(--text3)">—</span>'}</td></tr>`;
+  }).join('')||'<tr><td colspan="5"><div class="empty">No trucks yet</div></td></tr>';
 }
 function inspStart(){
   if(inspTimer)return;
@@ -1518,6 +1521,60 @@ async function inspLogLoad(){
   finally{ilogBusy=false;}
   inspLogRender();
 }
+/* ---- Oil change tracking (semi 15,000 mi / 6 mo, box truck 7,500 mi / 4 mo) ---- */
+let oilRows={},oilOdo={},oilLoaded=0;
+const OIL_DEF={tractor:{mi:15000,days:182},straight:{mi:7500,days:122}};
+async function oilLoad(force){
+  if(!force&&Date.now()-oilLoaded<60000)return;
+  try{
+    const{data}=await sb.from('vehicle_service').select('*');
+    oilRows={};(data||[]).forEach(r=>{oilRows[r.vehicle_id]=r;});
+    const{data:{session}}=await sb.auth.getSession();
+    if(session){
+      const r=await fetch(INSPECTION_LOG_API+'?days=30',{headers:{Authorization:'Bearer '+session.access_token}});
+      if(r.ok){const j=await r.json();const m={};
+        (j.entries||[]).forEach(e=>{const k=inspNorm(e.truck);const o=parseInt(String(e.odo==null?'':e.odo).replace(/[^0-9]/g,''),10);const ts=Number(e.ts)||Date.parse(e.ts)||0;if(!k)return;const c=m[k]||(m[k]={ts:0,odo:null,type:null});if(e.truckType)c.type=e.truckType;if(o>0&&ts>=c.ts){c.ts=ts;c.odo=o;}});
+        oilOdo=m;}
+    }
+    oilLoaded=Date.now();
+  }catch(x){}
+}
+function oilToday(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago'}).format(new Date());}
+function oilStatus(v){
+  const row=v&&v.id?oilRows[v.id]:null;
+  const info=oilOdo[inspNorm(v&&v.unit_number)]||oilOdo[inspNorm(v&&v.vehicle_code)]||null;
+  const def=OIL_DEF[(info&&info.type)==='straight'?'straight':'tractor'];
+  if(!row)return{level:'setup',html:'<span class="tag tag-muted">Set up</span>',odo:info&&info.odo};
+  const intMi=row.interval_miles||def.mi,intDays=row.interval_days||def.days;
+  const odo=info&&info.odo;
+  const left=(odo!=null&&row.last_oil_miles!=null)?row.last_oil_miles+intMi-odo:null;
+  const dueDate=row.last_oil_date?new Date(new Date(row.last_oil_date+'T12:00:00').getTime()+intDays*86400000):null;
+  const dLeft=dueDate?Math.round((dueDate.getTime()-Date.now())/86400000):null;
+  const over=(left!=null&&left<=0)||(dLeft!=null&&dLeft<=0);
+  const soon=!over&&((left!=null&&left<=1500)||(dLeft!=null&&dLeft<=14));
+  const parts=[];
+  if(left!=null)parts.push(left<=0?'overdue by '+Math.abs(left).toLocaleString()+' mi':'in '+left.toLocaleString()+' mi');
+  if(dLeft!=null)parts.push(dLeft<=0?'overdue by '+Math.abs(dLeft)+' d':'in '+dLeft+' d');
+  const txt=parts.join(' · ')||'no mileage yet';
+  const cls=over?'tag-red':soon?'tag-orange':'tag-green';
+  const ic=over?'⛔ ':soon?'⚠ ':'✓ ';
+  return{level:over?'over':soon?'soon':'ok',odo,html:'<span class="tag '+cls+'">'+ic+(over?'OVERDUE':soon?'DUE SOON':'OK')+'</span><div style="font-size:11px;color:var(--text3);margin-top:3px">Due '+escHtml(txt)+'</div>'};
+}
+window.oilMark=async function(id,unit){
+  const v=(inspVeh||[]).find(x=>x.id===id)||{id,unit_number:unit};
+  const st=oilStatus(v);
+  const inp=prompt('Truck '+(unit||v.unit_number||'')+' — oil change done.\nOdometer (miles) at the oil change:',st.odo!=null?String(st.odo):'');
+  if(inp===null)return;
+  const odo=parseInt(String(inp).replace(/[^0-9]/g,''),10);
+  if(!odo||odo<1){toast('Enter the odometer reading','error');return;}
+  const{error}=await sb.from('vehicle_service').upsert({vehicle_id:id,last_oil_miles:odo,last_oil_date:oilToday(),updated_at:new Date().toISOString()});
+  if(error){toast('Could not save: '+error.message,'error');return;}
+  try{logActivity('Oil change recorded','vehicle',id,{odometer:odo});}catch(x){}
+  toast('Oil change saved ✓');
+  await oilLoad(true);
+  if(document.getElementById('dash-inspect')?.classList.contains('active'))inspRender();
+  if(document.getElementById('dash-compliance')?.classList.contains('active'))loadCompliance();
+};
 function inspLogToggle(id){ilogOpen[id]=!ilogOpen[id];inspLogRender();}
 function inspLogRender(){
   const tb=document.getElementById('ilog-table');if(!tb)return;
