@@ -2220,7 +2220,7 @@ window.maintRender=function(){
   if(view==='review'){
     const rows=invs.filter(i=>i.status==='review'&&inK(i)&&(!truck||ukey(i)===truck));
     box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
-      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
+      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(/^\[ESTIMATE\]/.test(i.summary||'')?' <span class="tag tag-red">ESTIMATE – not counted</span>':'')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
       '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
   }else if(view==='history'){
     const rows=appr.filter(i=>!truck||ukey(i)===truck);
@@ -2403,6 +2403,7 @@ window.maintSave=async function(approve){
   if(approve){
     if(!fl.vehicle_id&&!fl.trailer_id){toast('Pick the truck or trailer first','error');return}
     if(!fl.invoice_date){toast('Enter the invoice date','error');return}
+    if(/^\[ESTIMATE\]/.test((fl.summary||cur.summary||''))&&!confirm('This looks like an ESTIMATE or quote, not a final invoice.\n\nApproving counts it in your totals. Approve anyway?'))return;
     const ls=readLines();if(!ls.length&&!(fl.total>0)){toast('Add the lines or the total first','error');return}
     if(fl.invoice_number&&fl.vendor){
       const dup=invs.find(x=>x.id!==cur.id&&x.status==='approved'&&(x.invoice_number||'').toLowerCase()===fl.invoice_number.toLowerCase()&&(x.vendor||'').toLowerCase()===fl.vendor.toLowerCase());

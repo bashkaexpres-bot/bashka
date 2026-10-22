@@ -85,6 +85,7 @@ const TOOL = {
     type: 'object',
     properties: {
       is_repair_invoice: { type: 'boolean', description: 'false if this is not a repair, parts or maintenance invoice or receipt' },
+      document_type: { type: 'string', enum: ['invoice', 'estimate', 'quote', 'other'], description: 'What the document calls itself. Use estimate or quote ONLY if the page says so (Estimate, Quote, Proposal, Quotation, Not an invoice, Valid for N days, Pre-authorization). Otherwise invoice.' },
       vendor: { type: ['string', 'null'], description: 'Shop or supplier name' },
       invoice_number: { type: ['string', 'null'] },
       invoice_date: { type: ['string', 'null'], description: 'YYYY-MM-DD' },
@@ -173,6 +174,7 @@ function clean(inp) {
   const first = trucks[0];
   return {
     is_repair_invoice: inp.is_repair_invoice !== false,
+    document_type: ['invoice', 'estimate', 'quote', 'other'].indexOf(inp.document_type) !== -1 ? inp.document_type : 'invoice',
     vendor: toStr(inp.vendor, 200), invoice_number: toStr(inp.invoice_number, 80), invoice_date: toDate(inp.invoice_date),
     subtotal: toNum(inp.subtotal), tax: toNum(inp.tax), total: toNum(inp.total),
     summary: toStr(inp.summary, 2000),
@@ -186,6 +188,7 @@ function clean(inp) {
 /* Turns one reading into one record per truck. A single-truck invoice gives one record, same as before. */
 async function toRecords(ex) {
   const multi = ex.trucks.length > 1;
+  const est = ex.document_type === 'estimate' || ex.document_type === 'quote' ? '[ESTIMATE] The page says it is an ' + ex.document_type + ', not a final invoice. ' : '';
   const sum = (ls) => Math.round(ls.reduce((a, l) => a + (l.amount || 0), 0) * 100) / 100;
   const out = [];
   for (const t of ex.trucks) {
@@ -195,7 +198,7 @@ async function toRecords(ex) {
       vehicle_id: m.vehicle_id, trailer_id: m.trailer_id, unit_text: t.truck_unit, odometer: t.odometer,
       invoice_number: multi && ex.invoice_number ? (ex.invoice_number + ' / ' + (t.truck_unit || '?')).slice(0, 80) : ex.invoice_number,
       subtotal: multi ? lineTotal : ex.subtotal, tax: multi ? null : ex.tax, total: multi ? lineTotal : ex.total,
-      summary: (multi ? '[1 of ' + ex.trucks.length + ' units on one invoice' + (ex.total != null ? ', whole invoice $' + ex.total.toFixed(2) : '') + ']  ' : '') + (t.summary || ex.summary || ''),
+      summary: est + (multi ? '[1 of ' + ex.trucks.length + ' units on one invoice' + (ex.total != null ? ', whole invoice $' + ex.total.toFixed(2) : '') + ']  ' : '') + (t.summary || ex.summary || ''),
       lines: t.lines
     });
   }
