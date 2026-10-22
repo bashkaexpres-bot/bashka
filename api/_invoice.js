@@ -8,7 +8,11 @@ const MODEL = process.env.INVOICE_MODEL || 'claude-sonnet-5-5';
 function httpErr(status, code, message) { const e = new Error(message || code); e.status = status; e.code = code; return e; }
 
 function service() {
-  const k = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let k = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!k) { // tolerate a mistyped variable name: any variable with SERVICE_ROLE in its name that holds a JWT
+    const alt = Object.keys(process.env).find((n) => /SERVICE.?ROLE/i.test(n) && /^eyJ/.test(process.env[n] || ''));
+    if (alt) k = process.env[alt];
+  }
   if (!k) throw httpErr(500, 'not_configured', 'SUPABASE_SERVICE_ROLE_KEY is not set on the server.');
   return k;
 }
