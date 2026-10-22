@@ -7,7 +7,8 @@ const ENDPOINT = 'https://bashka-three.vercel.app/api/invoice-intake';
 const MAX_BYTES = 3000000;   // larger files: upload them from the portal instead
 const MIN_BYTES = 15000;     // skips tiny logos and signature images
 
-// Only mail from these senders is read. Use full addresses, or @domain.com for a whole company.
+// Known shops. Mail from anyone ELSE is still read and goes to Review, but is tagged [NEW SENDER] at the end of the summary so you can check it.
+// Use full addresses, or @domain.com for a whole company.
 // You can also add more in Project Settings > Script properties > ALLOWED_SENDERS (comma separated), no code change needed.
 const ALLOWED_SENDERS = [
   'tstruckandtrailer@gmail.com',
@@ -31,13 +32,12 @@ function processInbox() {
   if (!secret) throw new Error('Add the INTAKE_SECRET script property first.');
   const sent = GmailApp.getUserLabelByName('invoice-sent') || GmailApp.createLabel('invoice-sent');
   const problem = GmailApp.getUserLabelByName('invoice-problem') || GmailApp.createLabel('invoice-problem');
-  const ignored = GmailApp.getUserLabelByName('invoice-ignored') || GmailApp.createLabel('invoice-ignored');
   const allowed = allowedList_();
-  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem -label:invoice-ignored newer_than:30d', 0, 20);
+  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem newer_than:30d', 0, 20);
   threads.forEach(function (th) {
-    let ok = 0, fail = 0, skipped = 0;
+    let ok = 0, fail = 0;
     th.getMessages().forEach(function (m) {
-      if (!senderOk_(m.getFrom(), allowed)) { skipped++; return; } // not on the allowed list: never sent to the portal
+      const known = senderOk_(m.getFrom(), allowed);
       m.getAttachments({ includeInlineImages: false, includeAttachments: true }).forEach(function (a) {
         const type = a.getContentType(), name = a.getName();
         const good = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(type) || /\.(pdf|jpe?g|png|webp)$/i.test(name);
@@ -46,12 +46,12 @@ function processInbox() {
         const res = UrlFetchApp.fetch(ENDPOINT, {
           method: 'post', contentType: 'application/json', muteHttpExceptions: true,
           headers: { 'x-intake-secret': secret },
-          payload: JSON.stringify({ filename: name, mime: type, data: Utilities.base64Encode(a.getBytes()), from: m.getFrom(), subject: m.getSubject() })
+          payload: JSON.stringify({ filename: name, mime: type, data: Utilities.base64Encode(a.getBytes()), from: m.getFrom(), subject: m.getSubject(), known: known })
         });
         if (res.getResponseCode() === 201) ok++; else fail++;
       });
     });
-    th.addLabel(fail ? problem : (ok ? sent : (skipped ? ignored : sent)));
+    th.addLabel(fail ? problem : sent);
   });
 }
 

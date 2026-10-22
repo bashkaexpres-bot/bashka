@@ -37,7 +37,7 @@ module.exports = handler(async (req, res) => {
       source: 'email', status: 'review', vehicle_id: rec.vehicle_id, unit_text: rec.unit_text,
       vendor: ex && ex.vendor, invoice_number: ex ? rec.invoice_number : null, invoice_date: ex && ex.invoice_date,
       odometer: rec.odometer, subtotal: rec.subtotal, tax: rec.tax, total: rec.total,
-      summary: ex && ex.is_repair_invoice === false ? 'Not recognised as a repair invoice. ' + (rec.summary || '') : rec.summary,
+      summary: (ex && ex.is_repair_invoice === false ? 'Not recognised as a repair invoice. ' + (rec.summary || '') : (rec.summary || '')) + (b.known === false ? ' [NEW SENDER]' : ''),
       file_path: path, file_name: toStr(b.filename, 200), email_from: toStr(b.from, 300), email_subject: toStr(b.subject, 300),
       ai_confidence: ex ? ex.confidence : null
     };
