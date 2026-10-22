@@ -1534,7 +1534,19 @@ async function oilLoad(force){
       const r=await fetch(INSPECTION_LOG_API+'?days=30',{headers:{Authorization:'Bearer '+session.access_token}});
       if(r.ok){const j=await r.json();const m={};
         (j.entries||[]).forEach(e=>{const k=inspNorm(e.truck);const o=parseInt(String(e.odo==null?'':e.odo).replace(/[^0-9]/g,''),10);const ts=Number(e.ts)||Date.parse(e.ts)||0;if(!k)return;const c=m[k]||(m[k]={ts:0,odo:null,type:null});if(e.truckType)c.type=e.truckType;if(o>0&&ts>=c.ts){c.ts=ts;c.odo=o;}});
-        oilOdo=m;}
+        oilOdo=m;
+        /* oil changes logged in the truck inspection app: save the newest one per truck as the truck's last oil change */
+        const oilLog={};
+        (j.entries||[]).forEach(e=>{const k=inspNorm(e.truck);const o=parseInt(String(e.odo==null?'':e.odo).replace(/[^0-9]/g,''),10);if(!e.oil||!k||!o||!e.date)return;const c=oilLog[k];if(!c||e.date>c.date||(e.date===c.date&&(Number(e.ts)||0)>c.ts))oilLog[k]={date:e.date,odo:o,ts:Number(e.ts)||0};});
+        await inspLoadVehicles();
+        for(const v of (inspVeh||[])){
+          const L=oilLog[inspNorm(v.unit_number)]||oilLog[inspNorm(v.vehicle_code)];
+          if(!L)continue;const cur=oilRows[v.id];
+          if(cur&&cur.last_oil_date&&cur.last_oil_date>=L.date)continue;
+          const rec={vehicle_id:v.id,last_oil_miles:L.odo,last_oil_date:L.date,updated_at:new Date().toISOString()};
+          const{error:ue}=await sb.from('vehicle_service').upsert(rec);
+          if(!ue)oilRows[v.id]=Object.assign({},cur||{},rec);
+        }}
     }
     oilLoaded=Date.now();
   }catch(x){}
