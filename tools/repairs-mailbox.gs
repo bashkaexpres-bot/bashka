@@ -7,15 +7,37 @@ const ENDPOINT = 'https://bashka-three.vercel.app/api/invoice-intake';
 const MAX_BYTES = 3000000;   // larger files: upload them from the portal instead
 const MIN_BYTES = 15000;     // skips tiny logos and signature images
 
+// Only mail from these senders is read. Use full addresses, or @domain.com for a whole company.
+// You can also add more in Project Settings > Script properties > ALLOWED_SENDERS (comma separated), no code change needed.
+const ALLOWED_SENDERS = [
+  'tstruckandtrailer@gmail.com',
+  'ali@bashkaexpress.com',
+  'bashkaexpres@gmail.com'
+];
+
+function allowedList_() {
+  const extra = (PropertiesService.getScriptProperties().getProperty('ALLOWED_SENDERS') || '').split(',');
+  return ALLOWED_SENDERS.concat(extra).map(function (x) { return String(x).trim().toLowerCase(); }).filter(Boolean);
+}
+
+function senderOk_(from, list) {
+  const m = /<([^>]+)>/.exec(from || '');
+  const addr = (m ? m[1] : String(from || '')).trim().toLowerCase();
+  return list.some(function (a) { return a.charAt(0) === '@' ? addr.slice(-a.length) === a : addr === a; });
+}
+
 function processInbox() {
   const secret = PropertiesService.getScriptProperties().getProperty('INTAKE_SECRET');
   if (!secret) throw new Error('Add the INTAKE_SECRET script property first.');
   const sent = GmailApp.getUserLabelByName('invoice-sent') || GmailApp.createLabel('invoice-sent');
   const problem = GmailApp.getUserLabelByName('invoice-problem') || GmailApp.createLabel('invoice-problem');
-  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem newer_than:30d', 0, 20);
+  const ignored = GmailApp.getUserLabelByName('invoice-ignored') || GmailApp.createLabel('invoice-ignored');
+  const allowed = allowedList_();
+  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem -label:invoice-ignored newer_than:30d', 0, 20);
   threads.forEach(function (th) {
-    let ok = 0, fail = 0;
+    let ok = 0, fail = 0, skipped = 0;
     th.getMessages().forEach(function (m) {
+      if (!senderOk_(m.getFrom(), allowed)) { skipped++; return; } // not on the allowed list: never sent to the portal
       m.getAttachments({ includeInlineImages: false, includeAttachments: true }).forEach(function (a) {
         const type = a.getContentType(), name = a.getName();
         const good = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(type) || /\.(pdf|jpe?g|png|webp)$/i.test(name);
@@ -29,7 +51,7 @@ function processInbox() {
         if (res.getResponseCode() === 201) ok++; else fail++;
       });
     });
-    th.addLabel(fail ? problem : sent);
+    th.addLabel(fail ? problem : (ok ? sent : (skipped ? ignored : sent)));
   });
 }
 
