@@ -762,7 +762,7 @@ select.form-input{appearance:none}
               <button class="action-btn action-btn-sm" id="mt-review" onclick="maintView('review')">Review</button>
               <button class="action-btn action-btn-sm" id="mt-history" onclick="maintView('history')">History</button>
               <button class="action-btn action-btn-sm" id="mt-costs" onclick="maintView('costs')">Costs</button>
-              <select class="form-input" id="maint-truck" style="width:auto" onchange="maintRender()"><option value="">All trucks</option></select>
+              <select class="form-input" id="maint-kind" style="width:auto" onchange="maintKind()"><option value="">Trucks + trailers</option><option value="trucks">Trucks only</option><option value="trailers">Trailers only</option></select> <select class="form-input" id="maint-truck" style="width:auto" onchange="maintRender()"><option value="">All</option></select>
               <button class="action-btn action-btn-sm" id="maint-dot" onclick="maintPrintDot()" style="display:none">🖨 Print DOT record</button>
               <button class="action-btn action-btn-sm" id="maint-xls" onclick="maintExportXlsx()" style="display:none">⬇ Excel file</button>
               <button class="action-btn action-btn-sm" id="maint-zip" onclick="maintExportZip()" style="display:none">⬇ ZIP with receipts</button>
@@ -2161,6 +2161,13 @@ const day=d=>d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:
 const CATS=['oil_change','brakes','tires','engine','transmission','electrical','suspension','cooling','exhaust','air_system','trailer','body','inspection','other'];
 const cl=c=>String(c||'other').replace(/_/g,' ');
 let invs=[],vehs=[],view='review',cur=null,curLines=[],removed=[],cmpN=3;
+function fillUnits(){
+  const sel=$('maint-truck'),keep=sel.value,k=$('maint-kind').value;
+  const list=vehs.filter(v=>k==='trucks'?!v.isTrailer:k==='trailers'?v.isTrailer:true);
+  sel.innerHTML='<option value="">'+(k==='trailers'?'All trailers':k==='trucks'?'All trucks':'All trucks + trailers')+'</option>'+list.map(v=>'<option value="'+e(v.id)+'">'+e(v.unit_number||v.vehicle_code)+(v.isTrailer&&!k?' (trailer)':'')+'</option>').join('');
+  sel.value=list.some(v=>v.id===keep)?keep:'';
+}
+window.maintKind=function(){fillUnits();maintRender()};
 window.maintCmp=function(n){cmpN=+n||3;maintRender()};
 const num=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(String(v).replace(/[$,\s]/g,''));return isFinite(n)?n:null};
 const vname=id=>{const v=vehs.find(x=>x.id===id);return v?(v.unit_number||v.vehicle_code)+(v.isTrailer?' (trailer)':''):'—'};
@@ -2188,9 +2195,7 @@ window.loadMaint=async function(){
   if(b.error){$('maint-body').innerHTML='<div class="empty">Could not load: '+e(b.error.message)+'<br>If this is the first time, the maintenance database step has not been run yet.</div>';return}
   vehs=a.data||[];invs=b.data||[];
   try{const tr=await sb.from('trailers').select('id,unit_number,trailer_type,status').order('unit_number');if(!tr.error&&tr.data)tr.data.forEach(t=>vehs.push({id:'T:'+t.id,unit_number:t.unit_number,make:t.trailer_type||'Trailer',status:t.status,isTrailer:true}))}catch(x){}
-  const sel=$('maint-truck'),keep=sel.value;
-  sel.innerHTML='<option value="">All trucks and trailers</option>'+vehs.map(v=>'<option value="'+e(v.id)+'">'+e(v.unit_number||v.vehicle_code)+(v.isTrailer?' (trailer)':'')+'</option>').join('');
-  sel.value=vehs.some(v=>v.id===keep)?keep:'';
+  fillUnits();
   const n=invs.filter(i=>i.status==='review').length;
   const bd=$('maint-badge');if(bd){bd.textContent=n;bd.style.display=n?'inline-block':'none'}
   if(view==='review'&&!n&&invs.some(i=>i.status==='approved'))view='history';
@@ -2200,11 +2205,12 @@ window.maintRender=function(){
   ['review','history','costs'].forEach(v=>{const b=$('mt-'+v);if(b)b.style.outline=v===view?'2px solid var(--gold)':'none'});
   const truck=$('maint-truck').value;
   $('maint-dot').style.display=(view==='history'&&truck)?'':'none';$('maint-xls').style.display=$('maint-zip').style.display=(view==='history'&&truck)?'':'none';
-  const appr=invs.filter(i=>i.status==='approved');
+  const kind=$('maint-kind').value;const inK=i=>kind==='trucks'?!i.trailer_id:kind==='trailers'?!!i.trailer_id:true;
+  const appr=invs.filter(i=>i.status==='approved'&&inK(i));
   const now=new Date(),ym=now.toISOString().slice(0,7),yearAgo=new Date(now.getTime()-365*86400000).toISOString().slice(0,10);
   let mTot=0,yTot=0,yParts=0,yLabor=0;
   appr.forEach(i=>{const t=totals(i);if((i.invoice_date||'').slice(0,7)===ym)mTot+=t.total;if((i.invoice_date||'')>=yearAgo){yTot+=t.total;yParts+=t.parts;yLabor+=t.labor}});
-  const rv=invs.filter(i=>i.status==='review').length;
+  const rv=invs.filter(i=>i.status==='review'&&inK(i)).length;
   $('maint-kpis').innerHTML=
     '<div class="kpi-card gold"><div class="kpi-label">This month</div><div class="kpi-val">'+money(mTot)+'</div><div class="kpi-delta">approved invoices</div></div>'+
     '<div class="kpi-card blue"><div class="kpi-label">Last 12 months</div><div class="kpi-val">'+money(yTot)+'</div><div class="kpi-delta">all trucks</div></div>'+
@@ -2212,7 +2218,7 @@ window.maintRender=function(){
     '<div class="kpi-card orange"><div class="kpi-label">Waiting for review</div><div class="kpi-val">'+rv+'</div><div class="kpi-delta">not counted yet</div></div>';
   const box=$('maint-body');
   if(view==='review'){
-    const rows=invs.filter(i=>i.status==='review'&&(!truck||ukey(i)===truck));
+    const rows=invs.filter(i=>i.status==='review'&&inK(i)&&(!truck||ukey(i)===truck));
     box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
       '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
       '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
@@ -2233,7 +2239,7 @@ window.maintRender=function(){
     /* truck-by-truck comparison over the last N months */
     const months=[];for(let k=cmpN-1;k>=0;k--){const d=new Date(now.getFullYear(),now.getMonth()-k,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
     const mlab=m=>new Date(m+'-15T12:00:00').toLocaleDateString([],{month:'short',year:'2-digit'});
-    const act=vehs.filter(v=>v.status!=='out_of_service'&&!v.isTrailer);
+    const act=vehs.filter(v=>v.status!=='out_of_service'&&(kind==='trailers'?v.isTrailer:!v.isTrailer));
     const grid={};act.forEach(v=>{grid[v.id]=months.map(()=>0)});
     appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[ukey(i)])return;grid[ukey(i)][k]+=totals(i).total});
     const tot=id=>grid[id].reduce((a,b)=>a+b,0);
