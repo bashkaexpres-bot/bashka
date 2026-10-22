@@ -764,6 +764,7 @@ select.form-input{appearance:none}
               <button class="action-btn action-btn-sm" id="mt-costs" onclick="maintView('costs')">Costs</button>
               <select class="form-input" id="maint-truck" style="width:auto" onchange="maintRender()"><option value="">All trucks</option></select>
               <button class="action-btn action-btn-sm" id="maint-dot" onclick="maintPrintDot()" style="display:none">🖨 Print DOT record</button>
+              <button class="action-btn action-btn-sm" id="maint-xls" onclick="maintExportXlsx()" style="display:none">⬇ Export Excel</button>
             </div>
             <div id="maint-body" style="overflow-x:auto"><div class="loading">Loading...</div></div>
           </div>
@@ -2193,7 +2194,7 @@ window.loadMaint=async function(){
 window.maintRender=function(){
   ['review','history','costs'].forEach(v=>{const b=$('mt-'+v);if(b)b.style.outline=v===view?'2px solid var(--gold)':'none'});
   const truck=$('maint-truck').value;
-  $('maint-dot').style.display=(view==='history'&&truck)?'':'none';
+  $('maint-dot').style.display=(view==='history'&&truck)?'':'none';$('maint-xls').style.display=(view==='history'&&truck)?'':'none';
   const appr=invs.filter(i=>i.status==='approved');
   const now=new Date(),ym=now.toISOString().slice(0,7),yearAgo=new Date(now.getTime()-365*86400000).toISOString().slice(0,10);
   let mTot=0,yTot=0,yParts=0,yLabor=0;
@@ -2408,6 +2409,44 @@ window.maintDelete=async function(){
   if(d.error){toast('Error: '+d.error.message,'error');return}
   try{logActivity('Deleted repair invoice','vehicle',cur.vehicle_id,{vendor:cur.vendor,total:cur.total})}catch(x){}
   toast('Deleted');maintClose();loadMaint();
+};
+
+
+/* ---------- Excel export (one truck) ---------- */
+function loadXlsx(){
+  if(window.XLSX)return Promise.resolve();
+  return new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=()=>rej(new Error('Could not load the Excel tool'));document.head.appendChild(s)});
+}
+window.maintExportXlsx=async function(){
+  const vid=$('maint-truck').value;if(!vid){toast('Pick a truck first','error');return}
+  const v=vehs.find(x=>x.id===vid);if(!v)return;
+  try{await loadXlsx()}catch(x){toast(x.message,'error');return}
+  const rows=invs.filter(i=>i.status==='approved'&&i.vehicle_id===vid).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
+  if(!rows.length){toast('No approved records for this truck yet','error');return}
+  const unit=v.unit_number||v.vehicle_code||'truck';
+  let P=0,L=0,O=0,T=0;
+  const rep=[['Date','Odometer','Vendor','Invoice #','Work performed','Parts','Labor','Other (fees + tax)','Total']];
+  const lin=[['Date','Vendor','Invoice #','Type','Category','Description','Part #','Qty','Unit price','Amount']];
+  rows.forEach(i=>{
+    const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
+    rep.push([i.invoice_date||'',i.odometer==null?'':Number(i.odometer),i.vendor||'',i.invoice_number||'',i.summary||'',t.parts,t.labor,t.other,t.total]);
+    (i.repair_lines||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).forEach(l=>lin.push([i.invoice_date||'',i.vendor||'',i.invoice_number||'',l.kind,cl(l.category),l.description||'',l.part_number||'',l.quantity==null?'':Number(l.quantity),l.unit_price==null?'':Number(l.unit_price),lineAmt(l)]));
+  });
+  rep.push(['','','','','TOTAL',P,L,O,T]);
+  const sum=[['Bashka Express LLC — Maintenance record'],['USDOT 1930147 · MC 1041182 · 3299 Valley Ridge Dr, Eagan, MN 55121'],[],
+    ['Unit',unit],['Year',v.year||''],['Make',v.make||''],['Model',v.model||''],['VIN',v.vin||''],['Plate',v.plate||''],[],
+    ['Records',rows.length],['Parts',P],['Labor',L],['Other (fees + tax)',O],['Total spent',T],[],['Exported',new Date().toLocaleDateString()]];
+  const wb=XLSX.utils.book_new();
+  const add=(name,aoa,widths,money)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=widths.map(w=>({wch:w}));
+    (money||[]).forEach(c=>{aoa.forEach((r,ri)=>{const a=XLSX.utils.encode_cell({r:ri,c});if(ws[a]&&ws[a].t==='n')ws[a].z='$#,##0.00'})});
+    XLSX.utils.book_append_sheet(wb,ws,name)};
+  add('Summary',sum,[22,60]);
+  const ws=wb.Sheets['Summary'];[11,12,13,14].forEach(r=>{const a='B'+(r+1);if(ws[a])ws[a].z='$#,##0.00'});
+  add('Repairs',rep,[12,10,28,14,60,12,12,16,12],[5,6,7,8]);
+  add('Line items',lin,[12,28,14,8,16,50,14,6,12,12],[8,9]);
+  const date=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'Truck-'+String(unit).replace(/[^A-Za-z0-9_-]/g,'')+' maintenance record '+date+'.xlsx');
+  toast('Excel file downloaded ✓ — attach it to your email');
 };
 
 /* ---------- DOT record (print) ---------- */
