@@ -2160,7 +2160,8 @@ const money=n=>(n===null||n===undefined||n===''||isNaN(n))?'—':'$'+Number(n).t
 const day=d=>d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—';
 const CATS=['oil_change','brakes','tires','engine','transmission','electrical','suspension','cooling','exhaust','air_system','trailer','body','inspection','other'];
 const cl=c=>String(c||'other').replace(/_/g,' ');
-let invs=[],vehs=[],view='review',cur=null,curLines=[],removed=[];
+let invs=[],vehs=[],view='review',cur=null,curLines=[],removed=[],cmpN=3;
+window.maintCmp=function(n){cmpN=+n||3;maintRender()};
 const num=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(String(v).replace(/[$,\s]/g,''));return isFinite(n)?n:null};
 const vname=id=>{const v=vehs.find(x=>x.id===id);return v?(v.unit_number||v.vehicle_code):'—'};
 const lineAmt=l=>l.amount!=null?Number(l.amount):((l.quantity!=null&&l.unit_price!=null)?Number(l.quantity)*Number(l.unit_price):0);
@@ -2226,7 +2227,24 @@ window.maintRender=function(){
       const vk=(i.vendor||'Unknown').trim();ven[vk]=ven[vk]||{n:0,t:0};ven[vk].n++;ven[vk].t+=t.total;
       const mk=(i.invoice_date||'').slice(0,7)||'—';mon[mk]=(mon[mk]||0)+t.total});
     const tr=Object.keys(by).sort((a,b)=>by[b].t-by[a].t);
-    box.innerHTML=appr.length?
+    /* truck-by-truck comparison over the last N months */
+    const months=[];for(let k=cmpN-1;k>=0;k--){const d=new Date(now.getFullYear(),now.getMonth()-k,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
+    const mlab=m=>new Date(m+'-15T12:00:00').toLocaleDateString([],{month:'short',year:'2-digit'});
+    const act=vehs.filter(v=>v.status!=='out_of_service');
+    const grid={};act.forEach(v=>{grid[v.id]=months.map(()=>0)});
+    appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[i.vehicle_id])return;grid[i.vehicle_id][k]+=totals(i).total});
+    const tot=id=>grid[id].reduce((a,b)=>a+b,0);
+    const fleet=act.reduce((a,v)=>a+tot(v.id),0),avg=act.length?fleet/act.length:0;
+    const list=act.map(v=>({v,t:tot(v.id),g:grid[v.id]})).sort((a,b)=>b.t-a.t);
+    const flag=r=>{if(!(r.t>0)||!(avg>0))return '';const x=r.t/avg;const early=r.g.slice(0,-1),last=r.g[r.g.length-1];const eavg=early.length?early.reduce((a,b)=>a+b,0)/early.length:0;const up=eavg>0&&last>eavg*1.3&&last>100;
+      return (x>=2?'<span class="tag tag-red">🔴 Draining?</span>':x>=1.5?'<span class="tag tag-orange">⚠ High</span>':'')+(up?' <span class="tag tag-orange">↑ rising</span>':'')};
+    const top3=list.slice(0,3).reduce((a,r)=>a+r.t,0);
+    const cmp='<div style="padding:14px 16px 0"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div><div style="font-weight:700">Truck comparison</div><div style="font-size:12px;color:var(--text3)">Fleet spent <b style="color:var(--text)">'+money(fleet)+'</b> in the last '+cmpN+' months · average per truck <b style="color:var(--text)">'+money(avg)+'</b>'+(fleet>0?' · top 3 trucks = <b style="color:var(--text)">'+Math.round(top3/fleet*100)+'%</b> of spend':'')+'</div></div>'+
+      '<select class="form-input" style="width:auto" onchange="maintCmp(this.value)">'+[3,6,12].map(n=>'<option value="'+n+'"'+(n===cmpN?' selected':'')+'>Last '+n+' months</option>').join('')+'</select></div></div>'+
+      '<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Truck</th>'+(cmpN<=6?months.map(m=>'<th>'+mlab(m)+'</th>').join(''):'')+'<th>Total</th><th>vs average</th><th>Share</th><th></th></tr></thead><tbody>'+
+      list.map(r=>'<tr><td><span style="font-family:var(--mono);color:var(--gold)">'+e(r.v.unit_number||r.v.vehicle_code)+'</span></td>'+(cmpN<=6?r.g.map(x=>'<td>'+(x?money(x):'<span style="color:var(--text3)">—</span>')+'</td>').join(''):'')+'<td><b>'+money(r.t)+'</b></td><td>'+(avg>0?(r.t/avg>=1?'+':'')+Math.round((r.t/avg-1)*100)+'%':'—')+'</td><td style="min-width:90px"><div style="background:var(--border);border-radius:4px;height:8px"><div style="background:'+(avg>0&&r.t/avg>=2?'#e53535':avg>0&&r.t/avg>=1.5?'var(--orange)':'var(--gold)')+';height:8px;border-radius:4px;width:'+(fleet>0?Math.max(2,Math.round(r.t/fleet*100*3)):0)+'%;max-width:100%"></div></div><div style="font-size:10px;color:var(--text3)">'+(fleet>0?Math.round(r.t/fleet*100):0)+'% of fleet</div></td><td>'+flag(r)+'</td></tr>').join('')+'</tbody></table></div>'+
+      '<div style="font-size:11px;color:var(--text3);padding:6px 16px 14px">Flags: ⚠ High = 1.5× the truck average or more · 🔴 Draining? = 2× or more · ↑ rising = this month is 30% above the earlier months. Counts approved invoices with an invoice date only. A flag is a reason to look closer, not proof.</div>';
+    box.innerHTML=appr.length?cmp+
       '<table class="data-table"><thead><tr><th>Truck</th><th>Invoices</th><th>Parts</th><th>Labor</th><th>Other</th><th>Total</th></tr></thead><tbody>'+tr.map(k=>'<tr><td><span style="font-family:var(--mono);color:var(--gold)">'+e(k==='none'?'No truck':vname(k))+'</span></td><td>'+by[k].n+'</td><td>'+money(by[k].p)+'</td><td>'+money(by[k].l)+'</td><td>'+money(by[k].o)+'</td><td><b>'+money(by[k].t)+'</b></td></tr>').join('')+'</tbody></table>'+
       '<div style="display:flex;gap:18px;flex-wrap:wrap;padding:16px"><div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">BY VENDOR</div>'+Object.keys(ven).sort((a,b)=>ven[b].t-ven[a].t).slice(0,12).map(k=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+e(k)+' <span style="color:var(--text3);font-size:11px">('+ven[k].n+')</span></span><b>'+money(ven[k].t)+'</b></div>').join('')+'</div>'+
       '<div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--text3);margin-bottom:6px">BY MONTH</div>'+Object.keys(mon).sort().reverse().slice(0,12).map(k=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+e(k)+'</span><b>'+money(mon[k])+'</b></div>').join('')+'</div></div>':
