@@ -32,13 +32,14 @@ function processInbox() {
   if (!secret) throw new Error('Add the INTAKE_SECRET script property first.');
   const sent = GmailApp.getUserLabelByName('invoice-sent') || GmailApp.createLabel('invoice-sent');
   const problem = GmailApp.getUserLabelByName('invoice-problem') || GmailApp.createLabel('invoice-problem');
+  const skipped = GmailApp.getUserLabelByName('invoice-skipped') || GmailApp.createLabel('invoice-skipped');
   const allowed = allowedList_();
-  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem newer_than:30d', 0, 20);
+  const threads = GmailApp.search('in:inbox has:attachment -label:invoice-sent -label:invoice-problem -label:invoice-skipped newer_than:30d', 0, 20);
   threads.forEach(function (th) {
     let ok = 0, fail = 0;
     th.getMessages().forEach(function (m) {
       const known = senderOk_(m.getFrom(), allowed);
-      m.getAttachments({ includeInlineImages: false, includeAttachments: true }).forEach(function (a) {
+      m.getAttachments({ includeInlineImages: true, includeAttachments: true }).forEach(function (a) {
         const type = a.getContentType(), name = a.getName();
         const good = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(type) || /\.(pdf|jpe?g|png|webp)$/i.test(name);
         if (!good || a.getSize() < MIN_BYTES) return;
@@ -51,7 +52,7 @@ function processInbox() {
         if (res.getResponseCode() === 201) ok++; else fail++;
       });
     });
-    th.addLabel(fail ? problem : sent);
+    th.addLabel(fail ? problem : (ok ? sent : skipped)); // skipped = nothing usable was attached
   });
 }
 
