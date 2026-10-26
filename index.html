@@ -2190,6 +2190,14 @@ function totals(i){
 }
 const isImg=n=>/\.(jpe?g|png|webp|heic|heif)$/i.test(n||'');
 
+let hf='',ht='';
+window.maintDates=function(a,b){hf=a||'';ht=b||'';maintRender()};
+window.maintQuick=function(r){const n=new Date(),iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(r==='month'){hf=iso(new Date(n.getFullYear(),n.getMonth(),1));ht=iso(new Date(n.getFullYear(),n.getMonth()+1,0))}
+  else if(r==='last'){hf=iso(new Date(n.getFullYear(),n.getMonth()-1,1));ht=iso(new Date(n.getFullYear(),n.getMonth(),0))}
+  else if(r==='year'){hf=n.getFullYear()+'-01-01';ht=n.getFullYear()+'-12-31'}
+  else{hf='';ht=''}
+  maintRender()};
 const bsel=new Set();
 /* ready for one-click approval: not an estimate, has a date and amount, repairs have a unit, not already approved as the same unit+invoice */
 function bulkOk(i){
@@ -2263,12 +2271,13 @@ window.maintRender=function(){
       '<tr><td style="width:28px">'+(bulkOk(i)?'<input type="checkbox" '+(bsel.has(i.id)?'checked ':'')+'onchange="maintBulkOne(\''+i.id+'\',this.checked)">':'')+'</td><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(/^\[ESTIMATE\]/.test(i.summary||'')?' <span class="tag tag-red">ESTIMATE – not counted</span>':'')+rtTag(i)+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):rt(i)!=='repair'?'<span class="tag tag-muted">Fleet cost</span>'+(i.unit_text?'<div style="font-size:11px;color:var(--text3)">'+e(i.unit_text)+'</div>':''):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
       '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
   }else if(view==='history'){
-    const rows=appr.filter(i=>!truck||ukey(i)===truck);
+    const rows=appr.filter(i=>(!truck||ukey(i)===truck)&&(!hf||(i.invoice_date||'')>=hf)&&(!ht||(i.invoice_date||'')<=ht));
     let P=0,L=0,O=0,T=0;
-    box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Date</th><th>Truck</th><th>Vendor</th><th>What was done</th><th>Parts</th><th>Labor</th><th>Total</th><th></th></tr></thead><tbody>'+rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
+    const dbar='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text3)">DATES</span><input type="date" id="hf" value="'+hf+'" onchange="maintDates(this.value,$(\'ht\').value)" style="background:var(--bg3,#1a2236);color:var(--text,#fff);border:1px solid var(--border);border-radius:6px;padding:6px 8px"> <span style="color:var(--text3)">to</span> <input type="date" id="ht" value="'+ht+'" onchange="maintDates($(\'hf\').value,this.value)" style="background:var(--bg3,#1a2236);color:var(--text,#fff);border:1px solid var(--border);border-radius:6px;padding:6px 8px"><button class="action-btn-neutral" onclick="maintQuick(\'month\')">This month</button><button class="action-btn-neutral" onclick="maintQuick(\'last\')">Last month</button><button class="action-btn-neutral" onclick="maintQuick(\'year\')">This year</button><button class="action-btn-neutral" onclick="maintQuick(\'all\')">All</button>'+((hf||ht)?'<span style="font-size:12px;color:var(--gold)">Showing '+rows.length+' of '+appr.filter(i=>!truck||ukey(i)===truck).length+'</span>':'')+'</div>';
+    box.innerHTML=dbar+(rows.length?'<table class="data-table"><thead><tr><th>Date</th><th>Truck</th><th>Vendor</th><th>What was done</th><th>Parts</th><th>Labor</th><th>Total</th><th></th></tr></thead><tbody>'+rows.map(i=>{const t=totals(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
       return '<tr><td style="white-space:nowrap;font-size:12px">'+day(i.invoice_date)+(i.odometer?'<div style="font-size:11px;color:var(--text3)">'+Number(i.odometer).toLocaleString()+' mi</div>':'')+'</td><td><span style="font-family:var(--mono);color:var(--gold)">'+e(ukey(i)?vname(ukey(i)):'Fleet')+'</span></td><td class="td-primary">'+e(i.vendor||'—')+rtTag(i)+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td style="font-size:12px;color:var(--text2);max-width:340px">'+e(i.summary||(i.repair_lines||[]).map(l=>l.description).slice(0,3).join('; '))+'</td><td>'+money(t.parts)+'</td><td>'+money(t.labor)+'</td><td><b>'+money(t.total)+'</b></td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Open</button></td></tr>'}).join('')+
       '<tr><td colspan="4" style="text-align:right;color:var(--text3)">Totals ('+rows.length+' invoices)</td><td><b>'+money(P)+'</b></td><td><b>'+money(L)+'</b></td><td><b>'+money(T)+'</b></td><td></td></tr></tbody></table>':
-      '<div class="empty">No approved invoices'+(truck?' for this truck':'')+' yet.</div>';
+      '<div class="empty">No approved invoices'+(truck?' for this truck':'')+((hf||ht)?' in these dates.':' yet.')+'</div>');
   }else{
     const by={},ven={},mon={},byT={};
     appr.forEach(i=>{const t=totals(i);
@@ -2631,7 +2640,7 @@ window.maintExportOpen=function(){
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"><button style="'+sm+'" onclick="expSet(\'all\')">Select all</button><button style="'+sm+'" onclick="expSet(\'none\')">None</button><button style="'+sm+'" onclick="expSet(\'trucks\')">Trucks only</button><button style="'+sm+'" onclick="expSet(\'trailers\')">Trailers only</button></div>'+
     '<div style="border:1px solid #e2e8f0;border-radius:8px;max-height:230px;overflow:auto;padding:4px 8px">'+keys.map(k=>'<label style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9;cursor:pointer"><input type="checkbox" class="ex-unit" value="'+e(k)+'"'+(on(k)?' checked':'')+'><span style="flex:1">'+e(expName(k))+'</span><span style="color:#718096;font-size:12px">'+by[k].n+' · '+money(by[k].t)+'</span></label>').join('')+'</div>'+
     '<div style="font-size:12px;color:#718096;margin:12px 0 4px">DATES (invoice date)</div>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="ex-from" type="date" style="'+inpS+'"> to <input id="ex-to" type="date" style="'+inpS+'"></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="ex-from" type="date" value="'+hf+'" style="'+inpS+'"> to <input id="ex-to" type="date" value="'+ht+'" style="'+inpS+'"></div>'+
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button style="'+sm+'" onclick="expRange(\'year\')">This year</button><button style="'+sm+'" onclick="expRange(\'12m\')">Last 12 months</button><button style="'+sm+'" onclick="expRange(\'last\')">Last year</button><button style="'+sm+'" onclick="expRange(\'all\')">All time</button></div>'+
     '<div style="font-size:12px;color:#718096;margin:12px 0 4px">TYPES</div>'+
     '<div style="display:flex;gap:14px;flex-wrap:wrap">'+EXP_TYPES.map(k=>'<label style="cursor:pointer"><input type="checkbox" class="ex-type" value="'+k+'" checked> '+RT_LAB[k]+'</label>').join('')+'</div>'+
