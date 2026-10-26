@@ -84,9 +84,10 @@ const TOOL = {
   input_schema: {
     type: 'object',
     properties: {
-      is_repair_invoice: { type: 'boolean', description: 'false if this is not a repair, parts or maintenance invoice or receipt' },
+      is_repair_invoice: { type: 'boolean', description: 'false only if this is not a repair, rental, parts or maintenance invoice or receipt at all' },
       document_type: { type: 'string', enum: ['invoice', 'estimate', 'quote', 'other'], description: 'What the document calls itself. Use estimate or quote ONLY if the page says so (Estimate, Quote, Proposal, Quotation, Not an invoice, Valid for N days, Pre-authorization). Otherwise invoice.' },
-      vendor: { type: ['string', 'null'], description: 'Shop or supplier name' },
+      record_type: { type: 'string', enum: ['repair', 'rental', 'parts'], description: 'repair = shop work on a unit (parts and/or labor). rental = a rented truck, trailer or equipment (rental company invoice: daily or weekly rate, mileage, fuel, insurance or damage waiver). parts = a parts, tires or supplies purchase from a store or supplier with no shop labor (a receipt or counter sale). If unsure, repair.' },
+      vendor: { type: ['string', 'null'], description: 'Shop, rental company or supplier name' },
       invoice_number: { type: ['string', 'null'] },
       invoice_date: { type: ['string', 'null'], description: 'YYYY-MM-DD' },
       subtotal: { type: ['number', 'null'] },
@@ -132,7 +133,7 @@ const TOOL = {
 const PROMPT = 'You read truck repair and maintenance invoices for a trucking fleet. Copy only what is printed. Never guess or invent a value: use null when something is not shown. ' +
   'Dates must be YYYY-MM-DD. Amounts are plain numbers. Put each part as kind "part", each labor charge as kind "labor", and shop fees, supplies, disposal, towing or similar as kind "other". ' +
   'Do not put tax in the lines; use the tax field. If the invoice covers several trucks or units, put each one in its own trucks entry with only its own lines, and do not make a line out of a unit subtotal. Copy each unit label exactly as printed. Pick the closest category for every line (oil_change for oil, filters and lube service). ' +
-  'If the page is not a repair, parts or maintenance invoice, set is_repair_invoice to false. You must answer by calling the record_invoice tool exactly once, and write nothing else.';
+  'Set record_type to rental when a rental company bills for a rented truck, trailer or equipment (put each charge such as rate, mileage, fuel, insurance, taxes and fees as a line with kind "other", and give the rental unit number or plate as truck_unit if shown), to parts when it is a parts, tires or supplies purchase with no shop labor, and otherwise to repair. If the page is not a repair, rental, parts or maintenance invoice at all, set is_repair_invoice to false. You must answer by calling the record_invoice tool exactly once, and write nothing else.';
 
 const MEDIA = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 function mediaFor(name, mime) {
@@ -174,6 +175,7 @@ function clean(inp) {
   const first = trucks[0];
   return {
     is_repair_invoice: inp.is_repair_invoice !== false,
+    record_type: ['repair', 'rental', 'parts'].indexOf(inp.record_type) !== -1 ? inp.record_type : 'repair',
     document_type: ['invoice', 'estimate', 'quote', 'other'].indexOf(inp.document_type) !== -1 ? inp.document_type : 'invoice',
     vendor: toStr(inp.vendor, 200), invoice_number: toStr(inp.invoice_number, 80), invoice_date: toDate(inp.invoice_date),
     subtotal: toNum(inp.subtotal), tax: toNum(inp.tax), total: toNum(inp.total),
@@ -192,10 +194,10 @@ async function toRecords(ex) {
   const sum = (ls) => Math.round(ls.reduce((a, l) => a + (l.amount || 0), 0) * 100) / 100;
   const out = [];
   for (const t of ex.trucks) {
-    const m = await matchUnit(t.truck_unit);
+    const m = ex.record_type === 'rental' ? { vehicle_id: null, trailer_id: null } : await matchUnit(t.truck_unit);
     const lineTotal = sum(t.lines);
     out.push({
-      vehicle_id: m.vehicle_id, trailer_id: m.trailer_id, unit_text: t.truck_unit, odometer: t.odometer,
+      record_type: ex.record_type, vehicle_id: m.vehicle_id, trailer_id: m.trailer_id, unit_text: t.truck_unit, odometer: t.odometer,
       invoice_number: multi && ex.invoice_number ? (ex.invoice_number + ' / ' + (t.truck_unit || '?')).slice(0, 80) : ex.invoice_number,
       subtotal: multi ? lineTotal : ex.subtotal, tax: multi ? null : ex.tax, total: multi ? lineTotal : ex.total,
       summary: est + (multi ? '[1 of ' + ex.trucks.length + ' units on one invoice' + (ex.total != null ? ', whole invoice $' + ex.total.toFixed(2) : '') + ']  ' : '') + (t.summary || ex.summary || ''),
