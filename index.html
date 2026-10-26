@@ -2190,6 +2190,38 @@ function totals(i){
 }
 const isImg=n=>/\.(jpe?g|png|webp|heic|heif)$/i.test(n||'');
 
+const bsel=new Set();
+/* ready for one-click approval: not an estimate, has a date and amount, repairs have a unit, not already approved as the same unit+invoice */
+function bulkOk(i){
+  if(i.status!=='review')return false;
+  if(/^\[ESTIMATE\]/.test(i.summary||''))return false;
+  if(!i.invoice_date||!(totals(i).total>0))return false;
+  if(rt(i)==='repair'&&!ukey(i))return false;
+  if(i.invoice_number&&i.vendor&&invs.some(x=>x.id!==i.id&&x.status==='approved'&&(x.invoice_number||'').toLowerCase()===i.invoice_number.toLowerCase()&&(x.vendor||'').toLowerCase()===i.vendor.toLowerCase()&&ukey(x)===ukey(i)))return false;
+  return true;
+}
+function bulkVisible(){const kind=$('maint-kind').value,rtype=($('maint-type')||{}).value||'',truck=$('maint-truck').value;
+  return invs.filter(i=>i.status==='review'&&(kind==='trucks'?!i.trailer_id:kind==='trailers'?!!i.trailer_id:true)&&(!rtype||rt(i)===rtype)&&(!truck||ukey(i)===truck)&&bulkOk(i))}
+window.maintBulkOne=function(id,on){on?bsel.add(id):bsel.delete(id);maintRender()};
+window.maintBulkAll=function(on){bsel.clear();if(on)bulkVisible().forEach(i=>bsel.add(i.id));maintRender()};
+window.maintBulkHigh=function(){bsel.clear();bulkVisible().filter(i=>i.ai_confidence==='high').forEach(i=>bsel.add(i.id));maintRender()};
+window.maintBulkApprove=async function(){
+  const list=invs.filter(i=>bsel.has(i.id)&&bulkOk(i));if(!list.length)return;
+  const tot=list.reduce((a,i)=>a+totals(i).total,0);
+  if(!confirm('Approve '+list.length+' record'+(list.length>1?'s':'')+' totalling '+money(tot)+'?\n\nEach one is counted in the truck / fleet totals. You can still reopen any of them later.'))return;
+  let by=null;try{const{data:{session}}=await sb.auth.getSession();by=session&&session.user&&session.user.email||null}catch(x){}
+  const now=new Date().toISOString();
+  const r=await sb.from('repair_invoices').update({status:'approved',approved_at:now,approved_by:by,updated_at:now}).in('id',list.map(i=>i.id)).eq('status','review');
+  if(r.error){toast('Could not approve: '+r.error.message,'error');return}
+  for(const i of list){
+    try{if(i.vehicle_id&&i.odometer&&(i.repair_lines||[]).some(l=>l.category==='oil_change')){
+      const ex=await sb.from('vehicle_service').select('last_oil_date').eq('vehicle_id',i.vehicle_id).maybeSingle();
+      if(!ex.data||!ex.data.last_oil_date||ex.data.last_oil_date<=i.invoice_date)await sb.from('vehicle_service').upsert({vehicle_id:i.vehicle_id,last_oil_miles:i.odometer,last_oil_date:i.invoice_date,updated_at:now});
+    }}catch(x){}
+    try{logActivity('Approved '+rt(i)+' invoice (bulk)',i.trailer_id?'trailer':'vehicle',i.vehicle_id||i.trailer_id,{vendor:i.vendor,total:totals(i).total})}catch(x){}
+  }
+  bsel.clear();toast('Approved ✓ — '+list.length+' records ('+money(tot)+')');await loadMaint();
+};
 window.maintView=function(v){view=v;maintRender()};
 window.loadMaint=async function(){
   $('maint-body').innerHTML='<div class="loading">Loading...</div>';
@@ -2224,8 +2256,11 @@ window.maintRender=function(){
   const box=$('maint-body');
   if(view==='review'){
     const rows=invs.filter(i=>i.status==='review'&&inK(i)&&(!truck||ukey(i)===truck));
-    box.innerHTML=rows.length?'<table class="data-table"><thead><tr><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
-      '<tr><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(/^\[ESTIMATE\]/.test(i.summary||'')?' <span class="tag tag-red">ESTIMATE – not counted</span>':'')+rtTag(i)+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):rt(i)!=='repair'?'<span class="tag tag-muted">Fleet cost</span>'+(i.unit_text?'<div style="font-size:11px;color:var(--text3)">'+e(i.unit_text)+'</div>':''):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
+    const okIds=rows.filter(bulkOk).map(i=>i.id);bsel.forEach(id=>{if(!okIds.includes(id))bsel.delete(id)});
+    const bsum=rows.filter(i=>bsel.has(i.id)).reduce((a,i)=>a+totals(i).total,0);
+    const bbar=okIds.length?'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)"><label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" id="bsel-all" onchange="maintBulkAll(this.checked)" '+(okIds.length&&okIds.every(id=>bsel.has(id))?'checked':'')+'> Select all ready ('+okIds.length+')</label><button class="action-btn-neutral" onclick="maintBulkHigh()">Select high-confidence only</button>'+(bsel.size?'<button class="action-btn-neutral" onclick="maintBulkAll(false)">Clear</button><button class="btn-gold" style="margin-left:auto;width:auto;padding:9px 16px;font-size:13px" onclick="maintBulkApprove()">✓ Approve selected ('+bsel.size+') · '+money(bsum)+'</button>':'<span style="font-size:12px;color:var(--text3)">Tick the records you want, then approve them all at once.</span>')+'</div>':'';
+    box.innerHTML=rows.length?bbar+'<table class="data-table"><thead><tr><th></th><th>Received</th><th>From</th><th>Vendor</th><th>Truck</th><th>Total</th><th>Reading</th><th></th></tr></thead><tbody>'+rows.map(i=>
+      '<tr><td style="width:28px">'+(bulkOk(i)?'<input type="checkbox" '+(bsel.has(i.id)?'checked ':'')+'onchange="maintBulkOne(\''+i.id+'\',this.checked)">':'')+'</td><td style="font-size:12px;color:var(--text3);white-space:nowrap">'+new Date(i.created_at).toLocaleDateString()+'</td><td style="font-size:12px;color:var(--text2)">'+(i.source==='email'?'✉️ '+e(i.email_from||'email'):i.source==='upload'?'📎 Uploaded':'✍️ By hand')+'</td><td class="td-primary">'+e(i.vendor||'—')+(/^\[ESTIMATE\]/.test(i.summary||'')?' <span class="tag tag-red">ESTIMATE – not counted</span>':'')+rtTag(i)+(i.invoice_number?'<div style="font-size:11px;color:var(--text3)">#'+e(i.invoice_number)+'</div>':'')+'</td><td>'+(ukey(i)?e(vname(ukey(i))):rt(i)!=='repair'?'<span class="tag tag-muted">Fleet cost</span>'+(i.unit_text?'<div style="font-size:11px;color:var(--text3)">'+e(i.unit_text)+'</div>':''):'<span class="tag tag-orange">'+e(i.unit_text?'? '+i.unit_text:'Pick truck')+'</span>')+'</td><td>'+money(totals(i).total)+'</td><td>'+(i.ai_confidence?'<span class="tag '+(i.ai_confidence==='high'?'tag-green':i.ai_confidence==='medium'?'tag-orange':'tag-red')+'">'+e(i.ai_confidence)+'</span>':'<span class="tag tag-muted">by hand</span>')+'</td><td><button class="action-btn-neutral" onclick="maintOpen(\''+i.id+'\')">Review</button></td></tr>').join('')+'</tbody></table>':
       '<div class="empty">Nothing waiting. Email invoices to the repairs address, or tap “Upload invoice”.</div>';
   }else if(view==='history'){
     const rows=appr.filter(i=>!truck||ukey(i)===truck);
