@@ -42,6 +42,7 @@ module.exports = handler(async (req, res) => {
       ai_confidence: ex ? ex.confidence : null
     };
     if (rec.trailer_id) row.trailer_id = rec.trailer_id;
+    if (rec.record_type && rec.record_type !== 'repair') row.record_type = rec.record_type; // only sent when needed, so older databases keep working
     const ir = await sb('/rest/v1/repair_invoices', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
     if (!ir.ok) throw httpErr(502, 'save_failed', 'Could not save the invoice record.');
     const inv = (await ir.json())[0];
