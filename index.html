@@ -766,6 +766,7 @@ select.form-input{appearance:none}
               <button class="action-btn action-btn-sm" id="maint-dot" onclick="maintPrintDot()" style="display:none">🖨 Print DOT record</button>
               <button class="action-btn action-btn-sm" id="maint-xls" onclick="maintExportXlsx()" style="display:none">⬇ Excel file</button>
               <button class="action-btn action-btn-sm" id="maint-zip" onclick="maintExportZip()" style="display:none">⬇ ZIP with receipts</button>
+              <button class="action-btn action-btn-sm" id="maint-exp-btn" onclick="maintExportOpen()" style="display:none">⬇ Export…</button>
             </div>
             <div id="maint-body" style="overflow-x:auto"><div class="loading">Loading...</div></div>
           </div>
@@ -2208,7 +2209,7 @@ window.loadMaint=async function(){
 window.maintRender=function(){
   ['review','history','costs'].forEach(v=>{const b=$('mt-'+v);if(b)b.style.outline=v===view?'2px solid var(--gold)':'none'});
   const truck=$('maint-truck').value;
-  $('maint-dot').style.display=(view==='history'&&truck)?'':'none';$('maint-xls').style.display=$('maint-zip').style.display=(view==='history'&&truck)?'':'none';
+  $('maint-dot').style.display=(view==='history'&&truck)?'':'none';$('maint-xls').style.display=$('maint-zip').style.display=(view==='history'&&truck)?'':'none';$('maint-exp-btn').style.display=view==='review'?'none':'';
   const kind=$('maint-kind').value,rtype=($('maint-type')||{}).value||'';const inK=i=>(kind==='trucks'?!i.trailer_id:kind==='trailers'?!!i.trailer_id:true)&&(!rtype||rt(i)===rtype);
   const appr=invs.filter(i=>i.status==='approved'&&inK(i));
   const now=new Date(),ym=now.toISOString().slice(0,7),yearAgo=new Date(now.getTime()-365*86400000).toISOString().slice(0,10);
@@ -2538,6 +2539,143 @@ window.maintExportZip=async function(){
   }catch(x){toast('Export failed: '+(x.message||x),'error')}
   btn.disabled=false;btn.textContent=old;
 };
+
+/* ---------- Export panel: tick units, dates and types, then Excel or ZIP ---------- */
+const EXP_TYPES=['repair','rental','parts','wash'];
+const expName=k=>k==='fleet'?'Fleet (no unit)':vname(k);
+function expRows(){
+  const q=s=>Array.from(document.querySelectorAll('#maint-exp '+s));
+  const units=q('.ex-unit:checked').map(x=>x.value),types=q('.ex-type:checked').map(x=>x.value);
+  const from=$('ex-from').value,to=$('ex-to').value;
+  return invs.filter(i=>{
+    if(i.status!=='approved')return false;
+    if(units.indexOf(ukey(i)||'fleet')===-1)return false;
+    if(types.indexOf(rt(i))===-1)return false;
+    const d=i.invoice_date||'';
+    if((from||to)&&!d)return false;
+    if(from&&d<from)return false;
+    if(to&&d>to)return false;
+    return true;
+  }).sort((a,b)=>String(a.invoice_date||'').localeCompare(String(b.invoice_date||'')));
+}
+function expUpdate(){
+  const rows=expRows();let t=0;rows.forEach(i=>{t+=totals(i).total});
+  const files=new Set(rows.filter(i=>i.file_path).map(i=>i.file_path)).size;
+  $('ex-sum').innerHTML='<b>'+rows.length+'</b> record'+(rows.length===1?'':'s')+' · <b>'+money(t)+'</b> · '+files+' receipt file'+(files===1?'':'s')+(files>25?' <span style="color:#b7791f">(a big ZIP can be too large to email; the Excel file alone is small)</span>':'');
+  ['ex-xls','ex-zip'].forEach(id=>{$(id).disabled=!rows.length;$(id).style.opacity=rows.length?1:.5});
+}
+window.maintExportClose=function(){const x=$('maint-exp');if(x)x.remove()};
+window.expSet=function(what){
+  const cb=Array.from(document.querySelectorAll('#maint-exp .ex-unit'));
+  cb.forEach(x=>{x.checked=what==='all'?true:what==='none'?false:what==='trucks'?(x.value.indexOf('T:')!==0):(x.value.indexOf('T:')===0)});
+  expUpdate();
+};
+window.expRange=function(r){
+  const now=new Date(),iso=d=>d.toISOString().slice(0,10);
+  if(r==='year'){$('ex-from').value=now.getFullYear()+'-01-01';$('ex-to').value=iso(now)}
+  else if(r==='12m'){$('ex-from').value=iso(new Date(now.getTime()-365*86400000));$('ex-to').value=iso(now)}
+  else if(r==='last'){$('ex-from').value=(now.getFullYear()-1)+'-01-01';$('ex-to').value=(now.getFullYear()-1)+'-12-31'}
+  else{$('ex-from').value='';$('ex-to').value=''}
+  expUpdate();
+};
+window.maintExportOpen=function(){
+  const appr=invs.filter(i=>i.status==='approved');
+  const by={};appr.forEach(i=>{const k=ukey(i)||'fleet';by[k]=by[k]||{n:0,t:0};by[k].n++;by[k].t+=totals(i).total});
+  const keys=Object.keys(by).sort((a,b)=>expName(a).localeCompare(expName(b),undefined,{numeric:true}));
+  if(!keys.length){toast('No approved records to export yet','error');return}
+  maintExportClose();
+  const pick=$('maint-truck').value,kind=$('maint-kind').value;
+  const on=k=>pick?k===pick:(kind==='trucks'?k.indexOf('T:')!==0:kind==='trailers'?k.indexOf('T:')===0:true);
+  const sm='background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#2d3748';
+  const inpS='border:1px solid #cbd5e0;border-radius:8px;padding:7px;font-family:inherit;font-size:14px';
+  const div=document.createElement('div');div.id='maint-exp';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px';
+  div.innerHTML='<div style="background:#fff;color:#1a202c;border-radius:12px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:18px;font-size:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:17px">Export records</b><button onclick="maintExportClose()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#718096">✕</button></div>'+
+    '<div style="font-size:12px;color:#718096;margin-bottom:4px">UNITS (only units with approved records are listed)</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"><button style="'+sm+'" onclick="expSet(\'all\')">Select all</button><button style="'+sm+'" onclick="expSet(\'none\')">None</button><button style="'+sm+'" onclick="expSet(\'trucks\')">Trucks only</button><button style="'+sm+'" onclick="expSet(\'trailers\')">Trailers only</button></div>'+
+    '<div style="border:1px solid #e2e8f0;border-radius:8px;max-height:230px;overflow:auto;padding:4px 8px">'+keys.map(k=>'<label style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9;cursor:pointer"><input type="checkbox" class="ex-unit" value="'+e(k)+'"'+(on(k)?' checked':'')+'><span style="flex:1">'+e(expName(k))+'</span><span style="color:#718096;font-size:12px">'+by[k].n+' · '+money(by[k].t)+'</span></label>').join('')+'</div>'+
+    '<div style="font-size:12px;color:#718096;margin:12px 0 4px">DATES (invoice date)</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="ex-from" type="date" style="'+inpS+'"> to <input id="ex-to" type="date" style="'+inpS+'"></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button style="'+sm+'" onclick="expRange(\'year\')">This year</button><button style="'+sm+'" onclick="expRange(\'12m\')">Last 12 months</button><button style="'+sm+'" onclick="expRange(\'last\')">Last year</button><button style="'+sm+'" onclick="expRange(\'all\')">All time</button></div>'+
+    '<div style="font-size:12px;color:#718096;margin:12px 0 4px">TYPES</div>'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap">'+EXP_TYPES.map(k=>'<label style="cursor:pointer"><input type="checkbox" class="ex-type" value="'+k+'" checked> '+RT_LAB[k]+'</label>').join('')+'</div>'+
+    '<div id="ex-sum" style="margin:14px 0;padding:10px;background:#f7fafc;border-radius:8px"></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="ex-xls" onclick="maintExportRun(false)" style="background:#2f855a;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer">⬇ Excel file</button><button id="ex-zip" onclick="maintExportRun(true)" style="background:#2b6cb0;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer">⬇ ZIP with receipts</button><button onclick="maintExportClose()" style="background:#fff;border:1px solid #cbd5e0;border-radius:8px;padding:10px 16px;cursor:pointer;color:#2d3748">Cancel</button></div></div>';
+  document.body.appendChild(div);
+  div.addEventListener('input',expUpdate);div.addEventListener('change',expUpdate);
+  expUpdate();
+};
+function expBook(rows){
+  const unitOf=i=>expName(ukey(i)||'fleet');
+  const byU={},byT={};let P=0,L=0,O=0,T=0;
+  const rec=[['Date','Unit','Type','Vendor','Invoice #','Work performed','Parts','Labor','Other (fees + tax)','Total']];
+  const lin=[['Date','Unit','Record type','Vendor','Invoice #','Line type','Category','Description','Part #','Qty','Unit price','Amount']];
+  rows.forEach(i=>{
+    const t=totals(i),u=unitOf(i);P+=t.parts;L+=t.labor;O+=t.other;T+=t.total;
+    const bu=byU[u]=byU[u]||{n:0,p:0,l:0,o:0,t:0};bu.n++;bu.p+=t.parts;bu.l+=t.labor;bu.o+=t.other;bu.t+=t.total;
+    const bt=byT[rt(i)]=byT[rt(i)]||{n:0,t:0};bt.n++;bt.t+=t.total;
+    rec.push([i.invoice_date||'',u,RT_LAB[rt(i)],i.vendor||'',i.invoice_number||'',i.summary||'',t.parts,t.labor,t.other,t.total]);
+    (i.repair_lines||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).forEach(l=>lin.push([i.invoice_date||'',u,RT_LAB[rt(i)],i.vendor||'',i.invoice_number||'',l.kind,cl(l.category),l.description||'',l.part_number||'',l.quantity==null?'':Number(l.quantity),l.unit_price==null?'':Number(l.unit_price),lineAmt(l)]));
+  });
+  rec.push(['','','','','','TOTAL',P,L,O,T]);
+  const from=$('ex-from').value,to=$('ex-to').value;
+  const sum=[['Bashka Express LLC — Maintenance and cost export'],['USDOT 1930147 · MC 1041182 · 3299 Valley Ridge Dr, Eagan, MN 55121'],[],
+    ['Period',(from||to)?((from||'start')+' to '+(to||'today')):'All time'],['Records',rows.length],['Exported',new Date().toLocaleDateString()],[],
+    ['BY UNIT','Records','Parts','Labor','Other (fees + tax)','Total']];
+  Object.keys(byU).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(u=>sum.push([u,byU[u].n,byU[u].p,byU[u].l,byU[u].o,byU[u].t]));
+  sum.push(['ALL UNITS',rows.length,P,L,O,T],[],['BY TYPE','Records','','','','Total']);
+  EXP_TYPES.forEach(k=>{if(byT[k])sum.push([RT_LAB[k],byT[k].n,'','','',byT[k].t])});
+  sum.push(['ALL SPENDING',rows.length,'','','',T]);
+  const wb=XLSX.utils.book_new();
+  const add=(name,aoa,widths,moneyCols)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=widths.map(w=>({wch:w}));
+    (moneyCols||[]).forEach(c=>{aoa.forEach((r,ri)=>{const a=XLSX.utils.encode_cell({r:ri,c});if(ws[a]&&ws[a].t==='n')ws[a].z='$#,##0.00'})});
+    XLSX.utils.book_append_sheet(wb,ws,name)};
+  add('Summary',sum,[24,10,14,14,18,14],[2,3,4,5]);
+  add('Records',rec,[12,20,14,28,14,60,12,12,16,12],[6,7,8,9]);
+  add('Line items',lin,[12,20,14,28,14,8,16,50,14,6,12,12],[10,11]);
+  return wb;
+}
+function expFileName(rows){
+  const us=new Set(rows.map(i=>ukey(i)||'fleet'));
+  const base=us.size===1?safeFile(expName(Array.from(us)[0]).replace(/[()]/g,'')).replace(/\s+/g,'-'):'Fleet-'+us.size+'-units';
+  return base+' records '+new Date().toISOString().slice(0,10);
+}
+window.maintExportRun=async function(zipIt){
+  const rows=expRows();if(!rows.length)return;
+  const btn=$(zipIt?'ex-zip':'ex-xls'),old=btn.textContent;btn.disabled=true;
+  try{
+    await loadXlsx();
+    const wb=expBook(rows),name=expFileName(rows);
+    if(!zipIt){XLSX.writeFile(wb,name+'.xlsx');toast('Excel file downloaded ✓');btn.disabled=false;return}
+    btn.textContent='Preparing...';await loadZipLib();
+    const zip=new JSZip();zip.file(name+'.xlsx',XLSX.write(wb,{type:'array',bookType:'xlsx'}));
+    const failed=[],cache={},used={};let done=0;const withFile=rows.filter(i=>i.file_path);
+    for(const i of withFile){
+      try{
+        if(!cache[i.file_path]){
+          const sg=await sb.storage.from('receipts').createSignedUrl(i.file_path,900);
+          if(!sg.data||!sg.data.signedUrl)throw new Error('no link');
+          const res=await fetch(sg.data.signedUrl);if(!res.ok)throw new Error('HTTP '+res.status);
+          cache[i.file_path]=await res.blob();
+        }
+        const ext=(String(i.file_name||i.file_path).match(/\.([A-Za-z0-9]{2,5})$/)||[,'pdf'])[1].toLowerCase();
+        const folder=safeFile(expName(ukey(i)||'fleet').replace(/[()]/g,''))||'Fleet';
+        let nm=folder+'/'+(i.invoice_date||'no-date')+' '+safeFile(i.vendor||'receipt')+(i.invoice_number?' '+safeFile(i.invoice_number):'');
+        used[nm]=(used[nm]||0)+1;if(used[nm]>1)nm+=' ('+used[nm]+')';
+        zip.file('Receipts/'+nm+'.'+ext,cache[i.file_path]);
+      }catch(x){failed.push(expName(ukey(i)||'fleet')+' '+(i.vendor||'')+' '+(i.invoice_number||'')+' '+(i.invoice_date||''))}
+      done++;btn.textContent='⬇ '+done+' / '+withFile.length;
+    }
+    if(failed.length)zip.file('FAILED_RECEIPTS.txt',failed.join('\n'));
+    btn.textContent='Zipping...';
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast(failed.length?('ZIP ready — '+failed.length+' receipt(s) failed, see FAILED_RECEIPTS.txt'):'ZIP downloaded ✓',failed.length?'error':'success');
+  }catch(x){toast('Export failed: '+(x.message||x),'error')}
+  btn.disabled=false;btn.textContent=old;
+};
+window._expTest={expRows,expBook,expUpdate};
 
 /* ---------- DOT record (print) ---------- */
 window.maintPrintDot=async function(){
