@@ -353,6 +353,8 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   <div id="tab-extrawork" class="tab-content" style="display:none;overflow-y:auto;height:calc(100vh - 60px);background:#f7f8fa;">
     <div style="background:#1a202c;color:#fff;padding:14px 16px;font-weight:700;font-size:15px;">📋 Extra Work Request</div>
     <div style="padding:14px 14px 110px;display:flex;flex-direction:column;gap:12px;">
+      <div style="font-weight:700;font-size:13px;color:#4a5568;margin:2px 2px 0;">📣 OPEN WORK — TAP ACCEPT</div>
+      <div id="ow-list"><div style="color:#718096;font-size:13px;padding:6px 2px;">Loading...</div></div>
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
         <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Submit New Request</div>
         <label style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">ROUTE</label>
@@ -465,12 +467,52 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     loadEWHistory();
   }
 
+
+  // ── Open Work ──────────────────────────────────────────────
+  function owTime(t){if(!t)return'';const p=String(t).split(':');let h=+p[0];const m=p[1]||'00';const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ap;}
+  function owDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});}
+  async function loadOpenWorkList(){
+    const box=document.getElementById('ow-list');if(!box)return;
+    const {data,error}=await sb.rpc('driver_list_open_work');
+    if(error){box.innerHTML='<div style="color:#e53e3e;font-size:13px;">Could not load open work</div>';return;}
+    if(!data||!data.length){box.innerHTML='<div style="background:#fff;border-radius:12px;padding:14px;font-size:13px;color:#718096;box-shadow:0 1px 4px rgba(0,0,0,.08);">No open work right now.</div>';return;}
+    box.innerHTML=data.map(o=>{
+      const route=[o.pickup_address,o.drop_address].filter(Boolean).map(escHtml).join(' → ');
+      let action;
+      if(o.accepted) action='<div style="color:#2f855a;font-weight:700;font-size:14px;">✓ You accepted this</div><button onclick="cancelOpenWorkDriver(\''+o.id+'\')" style="margin-top:8px;background:#fff;color:#e53e3e;border:1px solid #e53e3e;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;">Cancel my acceptance</button>';
+      else if(o.blocked_reason) action='<div style="color:#c53030;font-size:13px;font-weight:600;">⛔ '+escHtml(o.blocked_reason)+'</div>';
+      else action='<button onclick="acceptOpenWork(\''+o.id+'\',this)" style="width:100%;background:#2f855a;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;">Accept</button>';
+      return '<div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);">'
+        +'<div style="font-weight:700;font-size:15px;">'+escHtml(o.title)+'</div>'
+        +'<div style="font-size:13px;color:#4a5568;margin:4px 0;">'+escHtml(owDate(o.work_date))+' · '+owTime(o.start_time)+' – '+owTime(o.end_time)+'</div>'
+        +(route?'<div style="font-size:13px;color:#4a5568;margin-bottom:4px;">'+route+'</div>':'')
+        +(o.description?'<div style="font-size:13px;color:#718096;margin-bottom:6px;">'+escHtml(o.description)+'</div>':'')
+        +'<div style="font-size:12px;color:#718096;margin-bottom:8px;">'+o.taken+' of '+o.slots+' taken</div>'
+        +action+'</div>';
+    }).join('');
+  }
+  window.loadOpenWorkList=loadOpenWorkList;
+  async function acceptOpenWork(id,btn){
+    if(btn){btn.disabled=true;btn.textContent='Accepting...';}
+    const {error}=await sb.rpc('driver_accept_open_work',{p_work_id:id});
+    if(error){toast(error.message,'error');}else{toast('Accepted ✓ — dispatch will see it');}
+    loadOpenWorkList();
+  }
+  window.acceptOpenWork=acceptOpenWork;
+  async function cancelOpenWorkDriver(id){
+    if(!confirm('Cancel your acceptance of this job?'))return;
+    const {error}=await sb.rpc('driver_cancel_open_work',{p_work_id:id});
+    if(error)toast(error.message,'error');else toast('Cancelled');
+    loadOpenWorkList();
+  }
+  window.cancelOpenWorkDriver=cancelOpenWorkDriver;
+
   // Hook into switchTab
   const _origST = window.switchTab;
   window.switchTab = function(tab) {
     _origST(tab);
     if (tab==='messages') { document.getElementById('tab-messages').style.display='flex'; fitMessagesTab(); loadDriverMessages(); }
-    if (tab==='extrawork') { loadEWHistory(); document.getElementById('tab-extrawork').style.display='block'; }
+    if (tab==='extrawork') { loadOpenWorkList(); loadEWHistory(); document.getElementById('tab-extrawork').style.display='block'; }
     document.getElementById('nav-messages')?.classList.toggle('active', tab==='messages');
     document.getElementById('nav-extrawork')?.classList.toggle('active', tab==='extrawork');
   };
