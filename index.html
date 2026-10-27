@@ -789,13 +789,14 @@ select.form-input{appearance:none}
             </table>
           </div>
         </div>
-        <div id="dash-openwork" class="dash-section">
+        <style>.ow-cal{color-scheme:dark;cursor:pointer}.ow-cal::-webkit-calendar-picker-indicator{filter:invert(1);opacity:1;cursor:pointer;width:20px;height:20px}</style>
+<div id="dash-openwork" class="dash-section">
           <div class="panel">
             <div class="panel-header"><div class="panel-title">Post Open Work — drivers see it in their app and tap Accept (pay is never shown to drivers)</div></div>
             <div class="panel-body">
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px">
                 <div class="form-group"><div class="form-label">Title *</div><input class="form-input" id="ow-title" placeholder="e.g. Extra pickup – Shakopee"></div>
-                <div class="form-group"><div class="form-label">Date *</div><input class="form-input" type="date" id="ow-date"></div>
+                <div class="form-group"><div class="form-label">Date *</div><input class="form-input ow-cal" type="date" id="ow-date" onclick="try{this.showPicker()}catch(e){}" onfocus="try{this.showPicker()}catch(e){}"></div>
                 <div class="form-group"><div class="form-label">Start time *</div><input class="form-input" type="time" id="ow-start"></div>
                 <div class="form-group"><div class="form-label">End time *</div><input class="form-input" type="time" id="ow-end"></div>
                 <div class="form-group"><div class="form-label">Pickup address</div><input class="form-input" id="ow-pickup"></div>
