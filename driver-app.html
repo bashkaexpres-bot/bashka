@@ -142,6 +142,7 @@ body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:1
 </head>
 <body>
 <div class="toast" id="toast"></div>
+<div id="ow-banner" onclick="openWorkBannerTap()" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#d69e2e;color:#1a202c;padding:16px 16px;font-weight:700;font-size:15px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:pointer;"></div>
 <div class="login-screen" id="login-screen">
   <div class="login-logo"><div class="login-badge">BE</div>Bashka Express</div>
   <div><div class="login-title">Driver Portal</div><div class="login-sub" style="margin-top:6px">Sign in to start your shift</div></div>
@@ -229,7 +230,7 @@ body{font-family:var(--body);color:var(--text);background:var(--bg);min-height:1
     <button class="nav-item" id="nav-truck" onclick="switchTab('truck')"><div class="nav-icon">🚚</div>Truck</button>
     <button class="nav-item" id="nav-pay" onclick="switchTab('pay')"><div class="nav-icon">💰</div>Pay</button>
     <button class="nav-item" id="nav-messages" onclick="switchTab('messages')" style="position:relative;"><div class="nav-icon">💬</div>Messages<span id="msg-badge" style="display:none;background:#e53e3e;color:#fff;border-radius:99px;font-size:10px;padding:1px 5px;position:absolute;top:2px;right:2px;">0</span></button>
-    <button class="nav-item" id="nav-extrawork" onclick="switchTab('extrawork')"><div class="nav-icon">📋</div>Extra Work</button>
+    <button class="nav-item" id="nav-extrawork" onclick="switchTab('extrawork')" style="position:relative;"><div class="nav-icon">📋</div>Extra Work<span id="ow-badge" style="display:none;background:#e53e3e;color:#fff;border-radius:99px;font-size:10px;padding:1px 5px;position:absolute;top:2px;right:2px;font-weight:700;">0</span></button>
     <button class="nav-item" id="nav-profile" onclick="switchTab('profile')"><div class="nav-icon">👤</div>Profile</button>
   </div>
 </div>
@@ -353,7 +354,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   <div id="tab-extrawork" class="tab-content" style="display:none;overflow-y:auto;height:calc(100vh - 60px);background:#f7f8fa;">
     <div style="background:#1a202c;color:#fff;padding:14px 16px;font-weight:700;font-size:15px;">📋 Extra Work Request</div>
     <div style="padding:14px 14px 110px;display:flex;flex-direction:column;gap:12px;">
-      <div style="font-weight:700;font-size:13px;color:#4a5568;margin:2px 2px 0;">📣 OPEN WORK — TAP ACCEPT</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 2px 0;"><div style="font-weight:700;font-size:13px;color:#4a5568;">📣 OPEN WORK — TAP ACCEPT</div><button id="ow-sound-btn" onclick="toggleOpenWorkSound()" style="background:#fff;border:1px solid #cbd5e0;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;color:#4a5568;">🔔 Sound on</button></div>
       <div id="ow-list"><div style="color:#718096;font-size:13px;padding:6px 2px;">Loading...</div></div>
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
         <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Submit New Request</div>
@@ -476,6 +477,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     const {data,error}=await sb.rpc('driver_list_open_work');
     if(error){box.innerHTML='<div style="color:#e53e3e;font-size:13px;">Could not load open work</div>';return;}
     if(!data||!data.length){box.innerHTML='<div style="background:#fff;border-radius:12px;padding:14px;font-size:13px;color:#718096;box-shadow:0 1px 4px rgba(0,0,0,.08);">No open work right now.</div>';return;}
+    if(window.pollOpenWork)setTimeout(pollOpenWork,300);
     box.innerHTML=data.map(o=>{
       const route=[o.pickup_address,o.drop_address].filter(Boolean).map(escHtml).join(' → ');
       let action;
@@ -506,6 +508,70 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     loadOpenWorkList();
   }
   window.cancelOpenWorkDriver=cancelOpenWorkDriver;
+
+
+  // ── Open Work alerts (badge, banner, sound, vibration) ─────
+  const OW_SEEN_KEY='ow_seen_ids', OW_SOUND_KEY='ow_sound_off';
+  let owAudio=null, owPollBusy=false;
+  const owMem={};
+  function owGet(k){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}return k in owMem?owMem[k]:null}
+  function owSet(k,v){owMem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
+  function owSoundOn(){return owGet(OW_SOUND_KEY)!=='1';}
+  function owUnlockAudio(){
+    try{
+      if(!owAudio){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;owAudio=new AC();}
+      if(owAudio.state==='suspended')owAudio.resume();
+    }catch(e){}
+  }
+  ['touchstart','click','keydown'].forEach(ev=>document.addEventListener(ev,owUnlockAudio,{passive:true}));
+  function owBeep(){
+    if(!owSoundOn())return;
+    try{
+      owUnlockAudio();if(!owAudio||owAudio.state!=='running')return;
+      const t0=owAudio.currentTime;
+      [[880,0],[1175,0.22],[880,0.44],[1175,0.66]].forEach(([f,d])=>{
+        const o=owAudio.createOscillator(),g=owAudio.createGain();
+        o.type='sine';o.frequency.value=f;o.connect(g);g.connect(owAudio.destination);
+        g.gain.setValueAtTime(0.0001,t0+d);g.gain.exponentialRampToValueAtTime(0.5,t0+d+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d+0.2);
+        o.start(t0+d);o.stop(t0+d+0.22);
+      });
+    }catch(e){}
+  }
+  function owVibrate(){try{if(navigator.vibrate)navigator.vibrate([200,100,200,100,300]);}catch(e){}}
+  function owRefreshSoundBtn(){const b=document.getElementById('ow-sound-btn');if(b)b.textContent=owSoundOn()?'🔔 Sound on':'🔕 Sound off';}
+  window.toggleOpenWorkSound=function(){owSet(OW_SOUND_KEY,owSoundOn()?'1':'0');owRefreshSoundBtn();if(owSoundOn()){owUnlockAudio();owBeep();}};
+  function owSetBadge(n){const b=document.getElementById('ow-badge');if(!b)return;b.textContent=n>9?'9+':String(n);b.style.display=n>0?'inline-block':'none';}
+  let owBannerTimer=null;
+  function owShowBanner(text){
+    const b=document.getElementById('ow-banner');if(!b)return;
+    b.textContent=text;b.style.display='block';
+    clearTimeout(owBannerTimer);owBannerTimer=setTimeout(()=>{b.style.display='none';},12000);
+  }
+  window.openWorkBannerTap=function(){const b=document.getElementById('ow-banner');if(b)b.style.display='none';switchTab('extrawork');};
+  async function pollOpenWork(){
+    if(owPollBusy||!driverRecord?.id)return;owPollBusy=true;
+    try{
+      const {data,error}=await sb.rpc('driver_list_open_work');
+      if(error||!data)return;
+      owSetBadge(data.filter(o=>!o.accepted&&!o.blocked_reason).length);
+      const ids=data.map(o=>o.id);
+      const seenRaw=owGet(OW_SEEN_KEY);
+      if(seenRaw===null){owSet(OW_SEEN_KEY,JSON.stringify(ids));return;} // first run: don't alert for old jobs
+      let seen=[];try{seen=JSON.parse(seenRaw)||[]}catch(e){}
+      const fresh=data.filter(o=>!seen.includes(o.id)&&!o.accepted);
+      owSet(OW_SEEN_KEY,JSON.stringify(Array.from(new Set(seen.concat(ids))).slice(-300)));
+      if(fresh.length){
+        const f=fresh[0];
+        owShowBanner('📣 New work: '+f.title+(fresh.length>1?' (+'+(fresh.length-1)+' more)':'')+' — tap to view');
+        owBeep();owVibrate();
+        if(document.getElementById('tab-extrawork').style.display!=='none')loadOpenWorkList();
+      }
+    }catch(e){}finally{owPollBusy=false;}
+  }
+  window.pollOpenWork=pollOpenWork;
+  setInterval(()=>{if(!document.hidden)pollOpenWork();},30000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollOpenWork();});
+  setTimeout(()=>{owRefreshSoundBtn();pollOpenWork();},2500);
 
   // Hook into switchTab
   const _origST = window.switchTab;
