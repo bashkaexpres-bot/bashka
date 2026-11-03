@@ -790,6 +790,7 @@ select.form-input{appearance:none}
           </div>
         </div>
         <div id="dash-openwork" class="dash-section">
+          <div id="ow-status-banner"></div>
           <div class="panel">
             <div class="panel-header"><div class="panel-title">Post Open Work — drivers see it in their app and tap Accept (pay is never shown to drivers)</div></div>
             <div class="panel-body">
@@ -2795,12 +2796,27 @@ window.maintPrintDot=async function(){
     if(r.error){tb.innerHTML='<tr><td colspan="7"><div class="empty">Error: '+escHtml(r.error.message)+'</div></td></tr>';return}
     var rows=r.data||[];
     if(!rows.length){tb.innerHTML='<tr><td colspan="7"><div class="empty">Nothing posted yet</div></td></tr>';return}
+    var today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    var waiting=[],partial=[];
+    rows.forEach(function(o){if(o.status!=='open'||o.work_date<today)return;var n=(o.open_work_claims||[]).filter(function(c){return c.status==='accepted'}).length;if(n===0)waiting.push(o);else partial.push(o)});
+    var bn=document.getElementById('ow-status-banner');
+    if(bn){
+      var bs='padding:12px 16px;border-radius:10px;margin-bottom:14px;font-weight:600;';
+      var list=function(a){return a.map(function(o){return escHtml(o.title)+' ('+escHtml(fmtD(o.work_date))+' '+fmtT(o.start_time)+')'}).join(' · ')};
+      if(waiting.length)bn.innerHTML='<div style="'+bs+'background:#7a1f24;color:#fff;border:1px solid #e5484d">🔴 '+waiting.length+' job'+(waiting.length>1?'s':'')+' NOT accepted yet<div style="font-weight:400;font-size:12px;margin-top:4px">'+list(waiting)+'</div>'+(partial.length?'<div style="font-weight:400;font-size:12px;margin-top:4px;color:#ffd48a">🟠 Still needs more drivers: '+list(partial)+'</div>':'')+'</div>';
+      else if(partial.length)bn.innerHTML='<div style="'+bs+'background:#6b4a10;color:#fff;border:1px solid #f5a524">🟠 Still needs more drivers<div style="font-weight:400;font-size:12px;margin-top:4px">'+list(partial)+'</div></div>';
+      else if(rows.some(function(o){return o.status!=='cancelled'&&o.work_date>=today}))bn.innerHTML='<div style="'+bs+'background:#14532d;color:#fff;border:1px solid #1f9d55">🟢 All posted jobs are accepted</div>';
+      else bn.innerHTML='';
+    }
     tb.innerHTML=rows.map(function(o){
       var cl=(o.open_work_claims||[]).filter(function(c){return c.status==='accepted'});
       var names=cl.map(function(c){return escHtml(c.drivers&&c.drivers.full_name||'?')}).join(', ')||'<span style="color:var(--text3)">nobody yet</span>';
       var st=o.status==='open'?'OPEN ('+cl.length+'/'+o.slots+')':o.status.toUpperCase()+' ('+cl.length+'/'+o.slots+')';
       var act=o.status==='cancelled'?'':'<button class="action-btn-danger action-btn-sm" onclick="cancelOpenWork(\''+o.id+'\')">Cancel job</button>';
-      return '<tr><td>'+escHtml(fmtD(o.work_date))+'</td><td><b>'+escHtml(o.title)+'</b><div style="font-size:11px;color:var(--text3)">'+escHtml([o.pickup_address,o.drop_address].filter(Boolean).join(' → '))+'</div></td><td>'+fmtT(o.start_time)+' – '+fmtT(o.end_time)+'</td><td>'+names+'</td><td>'+(o.pay!=null?'$'+Number(o.pay).toFixed(2):'—')+'</td><td>'+st+'</td><td>'+act+'</td></tr>';
+      var future=o.work_date>=today&&o.status!=='cancelled';
+      var bar=!future?'':(cl.length===0?'#e5484d':(cl.length<o.slots?'#f5a524':'#1f9d55'));
+      var pill=!future?'':(cl.length===0?' <span style="background:#e5484d;color:#fff;border-radius:6px;padding:1px 7px;font-size:11px">NOT ACCEPTED</span>':(cl.length<o.slots?' <span style="background:#f5a524;color:#000;border-radius:6px;padding:1px 7px;font-size:11px">NEEDS MORE</span>':' <span style="background:#1f9d55;color:#fff;border-radius:6px;padding:1px 7px;font-size:11px">ACCEPTED</span>'));
+      return '<tr'+(bar?' style="box-shadow:inset 4px 0 0 '+bar+'"':'')+'><td>'+escHtml(fmtD(o.work_date))+'</td><td><b>'+escHtml(o.title)+'</b><div style="font-size:11px;color:var(--text3)">'+escHtml([o.pickup_address,o.drop_address].filter(Boolean).join(' → '))+'</div></td><td>'+fmtT(o.start_time)+' – '+fmtT(o.end_time)+'</td><td>'+names+'</td><td>'+(o.pay!=null?'$'+Number(o.pay).toFixed(2):'—')+'</td><td>'+st+pill+'</td><td>'+act+'</td></tr>';
     }).join('');
   };
   window.postOpenWork=async function(){
