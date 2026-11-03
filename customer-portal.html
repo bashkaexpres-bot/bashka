@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Bashka Express — Track Your Shipments</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--bg:#080b10;--card:#10151d;--line:#222b38;--text:#eef2f7;--text2:#9aa7b8;--gold:#f5a524;--green:#1f9d55;--blue:#3b82f6;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.logo{background:var(--gold);color:#111;border-radius:8px;padding:6px 8px;font-weight:800;font-size:14px}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+h1{font-size:20px;margin:0 0 4px}
+.muted{color:var(--text2);font-size:13px}
+label{display:block;font-size:13px;color:var(--text2);margin:12px 0 4px}
+input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:#0b0f15;color:var(--text);font-size:16px}
+button{cursor:pointer;border:0;border-radius:8px;padding:11px 16px;font-weight:700;font-size:15px;background:var(--gold);color:#111}
+button.ghost{background:transparent;color:var(--text2);border:1px solid var(--line);padding:7px 12px;font-weight:600;font-size:13px}
+.err{color:#ff8a8a;font-size:14px;margin-top:10px;min-height:20px}
+.load{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-start}
+.load .id{font-weight:700;font-size:16px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.b-transit{background:#14325f;color:#9cc4ff;border:1px solid var(--blue)}
+.b-wait{background:#3a2c0b;color:#ffd58a;border:1px solid var(--gold)}
+.row{margin-top:8px;font-size:14px}
+.row b{color:var(--text2);font-weight:600;margin-right:6px}
+#map{height:340px;border-radius:12px;border:1px solid var(--line);margin-bottom:14px}
+a{color:#9cc4ff}
+.center{text-align:center;padding:36px 16px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">BE</span><span>Bashka Express <span class="muted">· Shipment tracking</span></span></div>
+  <button class="ghost hidden" id="out">Sign out</button>
+</header>
+<main>
+  <section id="login" class="card" style="max-width:420px;margin:40px auto">
+    <h1>Track your shipments</h1>
+    <div class="muted">Sign in with the login Bashka Express gave you.</div>
+    <form id="f" autocomplete="on">
+      <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+      <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+      <div class="err" id="lerr" role="alert"></div>
+      <button type="submit" id="go" style="width:100%;margin-top:6px">Sign in</button>
+    </form>
+  </section>
+
+  <section id="app" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div><h1 id="co"></h1><div class="muted" id="upd"></div></div>
+    </div>
+    <div id="mapwrap" class="hidden"><div id="map"></div></div>
+    <div id="loads"></div>
+    <div id="closed" class="card center hidden">
+      <h1>No active shipments</h1>
+      <div class="muted">Tracking is only available while a load is on its way. It opens again automatically when your next load is dispatched.</div>
+    </div>
+    <div id="none" class="card center hidden">
+      <h1>This login isn't set up for tracking</h1>
+      <div class="muted">Please contact Bashka Express dispatch.</div>
+    </div>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+'use strict';
+var SUPABASE_URL='https://ghrbrwusfyjprxhivxfo.supabase.co';
+var SUPABASE_KEY='sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var $=function(i){return document.getElementById(i)};
+var map=null,layer=null,timer=null,fitted=false;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmt(t){if(!t)return '—';var d=new Date(t);return isNaN(d)?'—':d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+function label(s){return s==='in_transit'?'In transit':s==='assigned'||s==='accepted'?'Driver assigned':s==='pending'?'Scheduled':String(s||'').replace(/_/g,' ')}
+function show(id){['closed','none','mapwrap','loads'].forEach(function(x){$(x).classList.add('hidden')});id.forEach(function(x){$(x).classList.remove('hidden')})}
+
+function showLogin(){
+  if(timer){clearInterval(timer);timer=null}
+  $('app').classList.add('hidden');$('login').classList.remove('hidden');$('out').classList.add('hidden');
+  if(map){map.remove();map=null;layer=null}
+  $('loads').innerHTML='';fitted=false;
+}
+function showApp(){$('login').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden')}
+
+function draw(loads){
+  var html='';var pts=[];
+  loads.forEach(function(l){
+    var loc=l.location;
+    html+='<div class="card"><div class="load"><div class="id">'+esc(l.job_number)+'</div>'+
+      '<span class="badge '+(l.status==='in_transit'?'b-transit':'b-wait')+'">'+esc(label(l.status))+'</span></div>'+
+      '<div class="row"><b>From</b>'+esc(l.pickup_address||'—')+'</div>'+
+      '<div class="row"><b>To</b>'+esc(l.drop_address||'—')+'</div>'+
+      '<div class="row"><b>Pickup</b>'+esc(fmt(l.scheduled_time))+' <b style="margin-left:14px">Delivery</b>'+esc(fmt(l.scheduled_delivery_time))+'</div>'+
+      (l.status==='in_transit'?'<div class="row"><b>Truck position</b>'+(loc?esc(fmt(loc.at))+' · <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q='+encodeURIComponent(loc.lat+','+loc.lng)+'">open in Google Maps</a>':'<span class="muted">waiting for a fresh position</span>')+'</div>':'')+
+      '</div>';
+    if(loc&&typeof loc.lat==='number'&&typeof loc.lng==='number')pts.push({id:l.job_number,lat:loc.lat,lng:loc.lng});
+  });
+  $('loads').innerHTML=html;
+  if(pts.length){
+    $('mapwrap').classList.remove('hidden');
+    if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);layer=L.layerGroup().addTo(map)}
+    layer.clearLayers();
+    var b=[];
+    pts.forEach(function(p){L.circleMarker([p.lat,p.lng],{radius:9,color:'#111',weight:2,fillColor:'#f5a524',fillOpacity:1}).bindTooltip(p.id,{permanent:true,direction:'top',offset:[0,-8]}).addTo(layer);b.push([p.lat,p.lng])});
+    if(!fitted){if(b.length===1)map.setView(b[0],10);else map.fitBounds(b,{padding:[40,40]});fitted=true}
+    setTimeout(function(){map&&map.invalidateSize()},50);
+  }
+}
+
+async function refresh(){
+  var r=await sb.rpc('customer_portal');
+  if(r.error){if(/jwt|auth/i.test(r.error.message||'')){await sb.auth.signOut();showLogin()}return}
+  var d=r.data||{access:'none'};
+  showApp();$('co').textContent=d.company||'';$('upd').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · refreshes automatically';
+  if(d.access==='open'){show(['loads']);draw(d.loads||[])}
+  else if(d.access==='closed'){show(['closed']);if(map){map.remove();map=null;layer=null;fitted=false}}
+  else{show(['none'])}
+}
+function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(function(){if(!document.hidden)refresh()},30000)}
+
+$('f').addEventListener('submit',async function(e){
+  e.preventDefault();$('lerr').textContent='';$('go').disabled=true;
+  var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+  $('go').disabled=false;
+  if(r.error){$('lerr').textContent='Wrong email or password.';return}
+  $('pw').value='';start();
+});
+$('out').addEventListener('click',async function(){await sb.auth.signOut();showLogin()});
+sb.auth.getSession().then(function(r){if(r.data&&r.data.session)start();else showLogin()});
+})();
+</script>
+</body>
+</html>
