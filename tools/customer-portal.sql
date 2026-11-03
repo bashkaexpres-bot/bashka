@@ -1,6 +1,7 @@
 -- Customer tracking portal. Run ONCE in the Supabase SQL editor. Safe to re-run. Changes nothing for staff or drivers.
 -- A customer login sees ONLY that customer's loads that are not yet delivered. Delivered/cancelled/failed loads vanish at once.
 -- Live truck position is shown only while a load is in transit. No driver name, phone or pay is ever returned.
+-- Only loads dated within the last 48 hours are shown, so old loads that were never marked delivered don't pile up.
 -- If a customer has no active load, the portal shows "No active shipments" and returns nothing (access auto-closes; it re-opens when a new load is posted).
 
 -- 1) Which login belongs to which customer. Nobody can read this table directly (no policies); only the functions below touch it.
@@ -8,9 +9,11 @@ create table if not exists public.customer_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   customer_id uuid not null references public.customers(id) on delete cascade,
   match_names text[] not null default '{}',        -- extra spellings of the customer's name used on loads
+  window_hours int not null default 48,            -- only loads dated within this many hours are shown (old, never-closed loads stay hidden)
   is_enabled boolean not null default true,        -- owner kill-switch
   created_at timestamptz not null default now()
 );
+alter table public.customer_users add column if not exists window_hours int not null default 48;
 alter table public.customer_users enable row level security;
 revoke all on public.customer_users from anon, authenticated;
 
@@ -37,7 +40,7 @@ declare
   cu record; names text[]; loads jsonb;
 begin
   if auth.uid() is null then return jsonb_build_object('access','none'); end if;
-  select u.match_names, c.name as company into cu
+  select u.match_names, u.window_hours, c.name as company into cu
   from public.customer_users u join public.customers c on c.id = u.customer_id
   where u.user_id = auth.uid() and u.is_enabled;
   if not found then return jsonb_build_object('access','none'); end if;
@@ -76,6 +79,7 @@ begin
     from public.jobs j
     where lower(btrim(j.customer_name)) = any (names)
       and coalesce(j.status,'') not in ('delivered','cancelled','failed')
+      and coalesce(j.scheduled_time, j.created_at) > now() - make_interval(hours => cu.window_hours)
       and j.delivered_at is null and j.failed_at is null
   ) l;
 
