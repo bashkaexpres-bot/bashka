@@ -39,9 +39,9 @@ async function loadsFor(day, token, customer) {
 }
 
 function slug(n) { return String(n || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown'; }
-function toFile(day, rows) {
-  const data = rows.map((x) => [day, x.job_number, x.customer, x.pickup_name, x.pickup_address, x.drop_name, x.drop_address, fmt(x.scheduled_pickup), fmt(x.scheduled_delivery), fmt(x.actual_pickup), minutesLate(x.actual_pickup, x.scheduled_pickup), fmt(x.actual_delivery), minutesLate(x.actual_delivery, x.scheduled_delivery), label(x.status), x.driver, x.truck]);
-  return buildXlsx('Loads ' + day, HEAD, data, WIDTH);
+function toFile(day, rows, name) {
+  const data = rows.map((x) => [x._day || day, x.job_number, x.customer, x.pickup_name, x.pickup_address, x.drop_name, x.drop_address, fmt(x.scheduled_pickup), fmt(x.scheduled_delivery), fmt(x.actual_pickup), minutesLate(x.actual_pickup, x.scheduled_pickup), fmt(x.actual_delivery), minutesLate(x.actual_delivery, x.scheduled_delivery), label(x.status), x.driver, x.truck]);
+  return buildXlsx(name || ('Loads ' + day), HEAD, data, WIDTH);
 }
 
 module.exports = handler(async (req, res) => {
@@ -74,6 +74,18 @@ module.exports = handler(async (req, res) => {
   const day = String((req.query && req.query.day) || centralDate(new Date()));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || isNaN(new Date(day + 'T12:00:00Z'))) throw httpErr(400, 'bad_day', 'Use a date like 2026-11-02.');
   const customer = req.query && req.query.customer ? String(req.query.customer).trim().slice(0, 120) : '';
+  const to = req.query && req.query.to ? String(req.query.to) : '';
+  if (to && to !== day) { // a range of days: one file, built fresh, each load keeps its own date
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || isNaN(new Date(to + 'T12:00:00Z'))) throw httpErr(400, 'bad_day', 'Use dates like 2026-11-02.');
+    if (to < day) throw httpErr(400, 'bad_range', 'The "to" date must be on or after the "from" date.');
+    const days = []; for (let t = new Date(day + 'T12:00:00Z'); centralDate(t) <= to && days.length < 32; t = new Date(t.getTime() + 86400000)) days.push(t.toISOString().slice(0, 10));
+    if (days.length > 31) throw httpErr(400, 'range_too_long', 'Pick 31 days or fewer at a time.');
+    const per = await Promise.all(days.map((d) => loadsFor(d, token, customer))); // also proves the caller has the right
+    const all = []; per.forEach((rs, i) => rs.forEach((x) => all.push(Object.assign({}, x, { _day: days[i] }))));
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Bashka-Loads-' + day + '-to-' + to + (customer ? '-' + slug(customer) : '') + '.xlsx"');
+    return res.status(200).send(toFile(day, all, 'Loads ' + day + ' to ' + to));
+  }
   const rows = await loadsFor(day, token, customer); // also proves the caller has the right
   let file = null;
   if (day < centralDate(new Date()) && !(req.query && req.query.live)) { // a finished day: prefer the saved end-of-day snapshot (add ?live=1 for a fresh one)
