@@ -2833,4 +2833,63 @@ window.maintPrintDot=async function(){
   };
 })();
 </script>
+<script>
+/* ===== Open Work: alert when a driver accepts (portal) ===== */
+(function(){
+  var seen=null,unread=0,timer=null,ctx=null,origTitle=document.title;
+  function store(a){try{return a?localStorage.getItem('ow_seen_claims'):null}catch(e){return null}}
+  function save(){try{localStorage.setItem('ow_seen_claims',JSON.stringify(Object.keys(seen).slice(-300)))}catch(e){}}
+  function beep(){
+    try{
+      ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+      if(ctx.state==='suspended')ctx.resume();
+      [[880,0],[1175,0.18],[1568,0.36]].forEach(function(p){
+        var o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=p[0];
+        g.gain.setValueAtTime(0.0001,ctx.currentTime+p[1]);g.gain.exponentialRampToValueAtTime(0.35,ctx.currentTime+p[1]+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+p[1]+0.2);
+        o.connect(g);g.connect(ctx.destination);o.start(ctx.currentTime+p[1]);o.stop(ctx.currentTime+p[1]+0.22);
+      });
+    }catch(e){}
+  }
+  function badge(){
+    var b=document.getElementById('nav-openwork');if(!b)return;
+    var s=document.getElementById('ow-accept-badge');
+    if(!unread){if(s)s.remove();document.title=origTitle;return}
+    if(!s){s=document.createElement('span');s.id='ow-accept-badge';s.style.cssText='background:#e5484d;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:8px';b.appendChild(s)}
+    s.textContent=unread;document.title='('+unread+') '+origTitle;
+  }
+  function banner(txt){
+    var d=document.getElementById('ow-accept-banner');
+    if(!d){d=document.createElement('div');d.id='ow-accept-banner';
+      d.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1f9d55;color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.45);max-width:92vw;cursor:pointer';
+      d.onclick=function(){d.remove();var n=document.getElementById('nav-openwork');if(n)n.click()};
+      document.body.appendChild(d)}
+    d.textContent='✅ '+txt+' — tap to view';
+    clearTimeout(d._t);d._t=setTimeout(function(){if(d.parentNode)d.remove()},12000);
+  }
+  async function poll(){
+    try{
+      var ss=await sb.auth.getSession();if(!(ss&&ss.data&&ss.data.session))return;
+      var since=new Date(Date.now()-14*86400000).toISOString();
+      var r=await sb.from('open_work_claims').select('id,status,claimed_at,drivers(full_name),open_work(title,work_date,start_time)').eq('status','accepted').gte('claimed_at',since).order('claimed_at',{ascending:false}).limit(100);
+      if(r.error||!r.data)return;
+      var first=false;
+      if(!seen){seen={};first=true;try{var st=localStorage.getItem('ow_seen_claims');if(st!==null){first=false;JSON.parse(st).forEach(function(k){seen[k]=1})}}catch(e){}}
+      var fresh=[];
+      r.data.forEach(function(c){if(!seen[c.id]){seen[c.id]=1;fresh.push(c)}});
+      save();
+      if(first||!fresh.length)return;
+      unread+=fresh.length;badge();beep();
+      if(navigator.vibrate)try{navigator.vibrate([200,100,200])}catch(e){}
+      var c=fresh[0],nm=(c.drivers&&c.drivers.full_name)||'A driver',tt=(c.open_work&&c.open_work.title)||'a job';
+      var msg=nm+' accepted '+tt+(fresh.length>1?' (+'+(fresh.length-1)+' more)':'');
+      banner(msg);if(typeof toast==='function')toast(msg);
+    }catch(e){}
+  }
+  var prev=window.loadOpenWork;
+  window.loadOpenWork=function(){unread=0;badge();return prev&&prev.apply(this,arguments)};
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)poll()});
+  setTimeout(poll,4000);timer=setInterval(poll,30000);
+})();
+</script>
 </body></html>
