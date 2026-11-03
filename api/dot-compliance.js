@@ -6,17 +6,17 @@ const { httpErr, SUPABASE_URL, handler } = require('./_invoice');
 const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const BASE = 'https://mobile.fmcsa.dot.gov/qc/services';
 
-async function requireAdmin(req) {
+async function requireDotRight(req) {
   const m = /^Bearer\s+(\S+)$/.exec(String(req.headers.authorization || ''));
   if (!m) throw httpErr(401, 'unauthorized', 'Sign in to the dispatch portal first.');
   const token = m[1];
   const u = await fetch(SUPABASE_URL + '/auth/v1/user', { headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + token } });
   if (!u.ok) throw httpErr(401, 'unauthorized', 'Sign in to the dispatch portal first.');
-  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/get_my_role', {
-    method: 'POST', headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}'
+  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/has_right', {
+    method: 'POST', headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_perm: 'dot' })
   });
-  const role = r.ok ? await r.json() : null;
-  if (role !== 'admin') throw httpErr(403, 'forbidden', 'Admins only.');
+  const ok = r.ok ? await r.json() : null;
+  if (ok !== true) throw httpErr(403, 'forbidden', 'Only the owner, or someone the owner allows, can see DOT Compliance.');
 }
 
 async function get(path, key) {
@@ -35,7 +35,7 @@ async function get(path, key) {
 
 module.exports = handler(async (req, res) => {
   if (req.method !== 'GET') throw httpErr(405, 'method', 'Use GET.');
-  await requireAdmin(req);
+  await requireDotRight(req);
   const key = process.env.FMCSA_WEBKEY;
   if (!key) throw httpErr(503, 'not_configured', 'FMCSA_WEBKEY is not set yet. Add it in Vercel (Settings, Environment Variables) and redeploy.');
   const dot = String(process.env.FMCSA_DOT || '1930147').replace(/\D/g, '');
