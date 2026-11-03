@@ -2799,6 +2799,7 @@ window.maintPrintDot=async function(){
     var today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     var waiting=[],partial=[];
     rows.forEach(function(o){if(o.status!=='open'||o.work_date<today)return;var n=(o.open_work_claims||[]).filter(function(c){return c.status==='accepted'}).length;if(n===0)waiting.push(o);else partial.push(o)});
+    if(window.owSetOpenCount)window.owSetOpenCount(waiting.length+partial.length);
     var bn=document.getElementById('ow-status-banner');
     if(bn){
       var bs='padding:12px 16px;border-radius:10px;margin-bottom:14px;font-weight:600;';
@@ -2867,12 +2868,19 @@ window.maintPrintDot=async function(){
       });
     }catch(e){}
   }
+  window.owSetOpenCount=function(n){
+    var b=document.getElementById('nav-openwork');if(!b)return;
+    var c=document.getElementById('ow-open-count');
+    if(!n){if(c)c.remove();return}
+    if(!c){c=document.createElement('span');c.id='ow-open-count';c.title='Open jobs not fully accepted';c.style.cssText='background:#e5484d;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:8px';b.insertBefore(c,document.getElementById('ow-accept-badge'))}
+    c.textContent=n;
+  };
   function badge(){
     var b=document.getElementById('nav-openwork');if(!b)return;
     var s=document.getElementById('ow-accept-badge');
     if(!unread){if(s)s.remove();document.title=origTitle;return}
-    if(!s){s=document.createElement('span');s.id='ow-accept-badge';s.style.cssText='background:#e5484d;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:8px';b.appendChild(s)}
-    s.textContent=unread;document.title='('+unread+') '+origTitle;
+    if(!s){s=document.createElement('span');s.id='ow-accept-badge';s.style.cssText='background:#1f9d55;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px';b.appendChild(s)}
+    s.title='New accepted jobs';s.textContent='✓'+unread;document.title='('+unread+') '+origTitle;
   }
   function banner(txt){
     var d=document.getElementById('ow-accept-banner');
@@ -2889,6 +2897,11 @@ window.maintPrintDot=async function(){
       var since=new Date(Date.now()-14*86400000).toISOString();
       var r=await sb.from('open_work_claims').select('id,status,claimed_at,drivers(full_name),open_work(title,work_date,start_time)').eq('status','accepted').gte('claimed_at',since).order('claimed_at',{ascending:false}).limit(100);
       if(r.error||!r.data)return;
+      try{
+        var today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+        var o=await sb.from('open_work').select('id').eq('status','open').gte('work_date',today).limit(200);
+        if(!o.error&&o.data)window.owSetOpenCount(o.data.length);
+      }catch(e){}
       var first=false;
       if(!seen){seen={};first=true;try{var st=localStorage.getItem('ow_seen_claims');if(st!==null){first=false;JSON.parse(st).forEach(function(k){seen[k]=1})}}catch(e){}}
       var fresh=[];
