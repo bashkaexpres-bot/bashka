@@ -43,8 +43,9 @@ create policy daily_reports_read on public.daily_reports for select to authentic
 -- 3) Private storage for the files. No storage policies = nobody can read them directly; only the server job and the download endpoint.
 insert into storage.buckets (id, name, public) values ('daily-reports', 'daily-reports', false) on conflict (id) do nothing;
 
--- 4) The load list for one Central-time day (by scheduled date). Allowed only for the server job or someone with the right.
-create or replace function public.report_loads(p_day date)
+-- 4) The load list for one Central-time day (by scheduled date), optionally for ONE customer. Allowed only for the server job or someone with the right.
+drop function if exists public.report_loads(date);
+create or replace function public.report_loads(p_day date, p_customer text default null)
 returns table (
   job_number text, customer text, pickup_address text, drop_address text,
   scheduled_pickup timestamptz, scheduled_delivery timestamptz,
@@ -65,8 +66,9 @@ begin
     left join public.drivers d on d.id = j.assigned_driver
     left join public.vehicles v on v.id = j.assigned_vehicle
     where ((coalesce(j.scheduled_time, j.created_at) at time zone 'America/Chicago')::date) = p_day
+      and (p_customer is null or lower(btrim(j.customer_name)) = lower(btrim(p_customer)))
     order by j.scheduled_time nulls last, j.customer_name, j.job_number;
 end;
 $$;
-revoke all on function public.report_loads(date) from public, anon;
-grant execute on function public.report_loads(date) to authenticated, service_role;
+revoke all on function public.report_loads(date, text) from public, anon;
+grant execute on function public.report_loads(date, text) to authenticated, service_role;

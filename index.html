@@ -849,11 +849,12 @@ select.form-input{appearance:none}
             <div class="panel-header"><div class="panel-title">Daily load reports (pickup and delivery times)</div></div>
             <div class="panel-body">
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">
+                <div><label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Customer</label><select id="rep-cust" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0b0f15);color:var(--text);min-width:180px"><option value="">All customers</option></select></div>
                 <div><label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Day</label><input type="date" id="rep-day" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0b0f15);color:var(--text)"></div>
                 <button class="btn-save" id="rep-dl" onclick="repDownload(false)">⬇ Download this day</button>
                 <button class="action-btn-neutral" id="rep-fresh" onclick="repDownload(true)">⟳ Fresh copy (latest times)</button>
               </div>
-              <div style="font-size:12px;color:var(--text3);margin-bottom:14px">A report is saved automatically every night just after midnight Central. "Download this day" gives that saved copy (or builds today's now). "Fresh copy" rebuilds it with the latest times. A load counts for the day it was scheduled.</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px">A report (one with all customers, plus one file per customer) is saved automatically every night just after midnight Central. Pick a customer to download only their loads. "Download this day" gives that saved copy (or builds today's now). "Fresh copy" rebuilds it with the latest times. A load counts for the day it was scheduled.</div>
               <div style="font-weight:700;margin:0 0 8px">Saved nightly reports</div>
               <div id="rep-list" style="display:flex;flex-direction:column;gap:6px"><span style="color:var(--text3)">Loading…</span></div>
             </div>
@@ -3377,6 +3378,7 @@ window.maintPrintDot=async function(){
   function today(){return new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'})}
   window.loadReports=async function(){
     var d=$('rep-day');if(d&&!d.value)d.value=today();
+    var cs=$('rep-cust');if(cs&&cs.options.length<=1){try{var cr=await sb.from('customers').select('name').order('name');(cr.data||[]).forEach(function(c){if(!c.name)return;var o=document.createElement('option');o.value=c.name;o.textContent=c.name;cs.appendChild(o)})}catch(e){}}
     var box=$('rep-list');if(!box)return;
     var r=await sb.from('daily_reports').select('day,row_count').order('day',{ascending:false}).limit(60);
     box.textContent='';
@@ -3391,12 +3393,13 @@ window.maintPrintDot=async function(){
     });
   };
   window.repGet=async function(day,fresh){
+    var cs=$('rep-cust');var cust=cs&&cs.value?cs.value:'';
     try{
       var s=await sb.auth.getSession();var tok=s&&s.data&&s.data.session&&s.data.session.access_token;
       if(!tok){toast('Please sign in again','error');return}
-      var r=await fetch('/api/daily-report?day='+encodeURIComponent(day)+(fresh?'&live=1':''),{headers:{Authorization:'Bearer '+tok}});
+      var r=await fetch('/api/daily-report?day='+encodeURIComponent(day)+(fresh?'&live=1':'')+(cust?'&customer='+encodeURIComponent(cust):''),{headers:{Authorization:'Bearer '+tok}});
       if(!r.ok){var j=null;try{j=await r.json()}catch(e){}toast((j&&j.message)||'Could not make the report','error');return}
-      var blob=await r.blob();var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Bashka-Loads-'+day+'.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+      var blob=await r.blob();var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Bashka-Loads-'+day+(cust?'-'+cust.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''):'')+'.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
     }catch(e){toast('Could not make the report','error')}
   };
   window.repDownload=function(fresh){var d=$('rep-day');var v=d&&d.value;if(!v){toast('Pick a day first','error');return}window.repGet(v,fresh)};
