@@ -355,6 +355,7 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
     <div style="background:#1a202c;color:#fff;padding:14px 16px;font-weight:700;font-size:15px;">📋 Extra Work Request</div>
     <div style="padding:14px 14px 110px;display:flex;flex-direction:column;gap:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 2px 0;"><div style="font-weight:700;font-size:13px;color:#4a5568;">📣 OPEN WORK — TAP ACCEPT</div><span style="display:flex;gap:6px;"><button onclick="testOpenWorkSound()" style="background:#fff;border:1px solid #cbd5e0;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;color:#4a5568;">▶ Test</button><button id="ow-sound-btn" onclick="toggleOpenWorkSound()" style="background:#fff;border:1px solid #cbd5e0;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;color:#4a5568;">🔔 Sound on</button></span></div>
+      <div id="ow-push-box"></div>
       <div id="ow-list"><div style="color:#718096;font-size:13px;padding:6px 2px;">Loading...</div></div>
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
         <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Submit New Request</div>
@@ -590,12 +591,75 @@ document.getElementById('recovery-pass2').addEventListener('keydown',e=>{if(e.ke
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollOpenWork();});
   setTimeout(()=>{owRefreshSoundBtn();pollOpenWork();},2500);
 
+
+  // ── Phone alerts (push notifications) ──────────────────────
+  function owIsIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+  function owStandalone(){return window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);}
+  function owPushCapable(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;}
+  function owB64uToBytes(s){s=String(s).replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const r=atob(s),a=new Uint8Array(r.length);for(let i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return a;}
+  async function owPushReg(){const reg=await navigator.serviceWorker.register('/driver-sw.js');await navigator.serviceWorker.ready;return reg;}
+  function owPushCard(inner){return '<div style="background:#fff;border-radius:12px;padding:12px 14px;margin:8px 0;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:13px;color:#4a5568;">'+inner+'</div>';}
+  async function owRenderPush(){
+    const box=document.getElementById('ow-push-box');if(!box)return;
+    if(!owPushCapable()){
+      box.innerHTML=owIsIOS()&&!owStandalone()
+        ?owPushCard('📲 <b>Get alerts when your phone is locked.</b><br>1) Tap the Share button ⬆ in Safari<br>2) Choose <b>Add to Home Screen</b><br>3) Open the app from the new Home Screen icon, then come back here and tap <b>Turn on phone alerts</b>.')
+        :owPushCard('Phone alerts are not available on this phone or browser. Keep the app open to hear alerts.');
+      return;
+    }
+    if(Notification.permission==='denied'){box.innerHTML=owPushCard('🔕 Phone alerts are blocked. Turn Notifications on for this app in your phone Settings, then reopen the app.');return;}
+    let sub=null;
+    try{const reg=await navigator.serviceWorker.getRegistration('/driver-sw.js');if(reg)sub=await reg.pushManager.getSubscription();}catch(e){}
+    box.innerHTML=sub&&Notification.permission==='granted'
+      ?owPushCard('✅ Phone alerts are on. You will be alerted even when your phone is locked.<br><button onclick="disableOpenWorkPush()" style="margin-top:8px;background:#fff;color:#718096;border:1px solid #cbd5e0;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;">Turn off</button>')
+      :owPushCard('📲 <b>Get alerts when your phone is locked.</b><br><button onclick="enableOpenWorkPush()" style="margin-top:8px;width:100%;background:#2b6cb0;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;">Turn on phone alerts</button>');
+  }
+  window.enableOpenWorkPush=async function(){
+    try{
+      if(!owPushCapable()){owRenderPush();return;}
+      const perm=await Notification.requestPermission(); // must come straight from the tap
+      if(perm!=='granted'){toast('Phone alerts were not allowed','error');owRenderPush();return;}
+      const kr=await fetch('/api/push-key');const kj=await kr.json().catch(()=>({}));
+      if(!kr.ok||!kj.key){toast('Phone alerts are not set up yet. Tell dispatch.','error');return;}
+      const reg=await owPushReg();
+      const keyBytes=owB64uToBytes(kj.key);
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){try{sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes});}catch(e){throw e;}}
+      let j=sub.toJSON();
+      let r=await sb.rpc('driver_save_push_subscription',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_ua:navigator.userAgent});
+      if(r.error)throw r.error;
+      toast('Phone alerts are on ✓');
+    }catch(e){toast('Could not turn on alerts: '+((e&&e.message)||e),'error');}
+    owRenderPush();
+  };
+  window.disableOpenWorkPush=async function(){
+    try{
+      const reg=await navigator.serviceWorker.getRegistration('/driver-sw.js');
+      const sub=reg&&await reg.pushManager.getSubscription();
+      if(sub){await sb.rpc('driver_remove_push_subscription',{p_endpoint:sub.endpoint});await sub.unsubscribe();}
+      toast('Phone alerts are off');
+    }catch(e){}
+    owRenderPush();
+  };
+  // keep the server's copy of this phone's address fresh
+  async function owPushRefresh(){
+    try{
+      if(!owPushCapable()||Notification.permission!=='granted'||!driverRecord?.id)return;
+      const reg=await navigator.serviceWorker.getRegistration('/driver-sw.js');if(!reg)return;
+      const sub=await reg.pushManager.getSubscription();if(!sub)return;
+      const j=sub.toJSON();
+      await sb.rpc('driver_save_push_subscription',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_ua:navigator.userAgent});
+    }catch(e){}
+  }
+  window.owRenderPush=owRenderPush;
+  setTimeout(()=>{owRenderPush();owPushRefresh();},3000);
+
   // Hook into switchTab
   const _origST = window.switchTab;
   window.switchTab = function(tab) {
     _origST(tab);
     if (tab==='messages') { document.getElementById('tab-messages').style.display='flex'; fitMessagesTab(); loadDriverMessages(); }
-    if (tab==='extrawork') { loadOpenWorkList(); loadEWHistory(); document.getElementById('tab-extrawork').style.display='block'; }
+    if (tab==='extrawork') { loadOpenWorkList(); owRenderPush(); loadEWHistory(); document.getElementById('tab-extrawork').style.display='block'; }
     document.getElementById('nav-messages')?.classList.toggle('active', tab==='messages');
     document.getElementById('nav-extrawork')?.classList.toggle('active', tab==='extrawork');
   };

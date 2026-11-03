@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Phone alerts setup</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0b0f16;color:#e6e9ef;margin:0;padding:24px;line-height:1.5}
+.box{max-width:640px;margin:0 auto}
+h1{font-size:20px}
+button{background:#f2b01e;color:#111;border:0;border-radius:8px;padding:10px 16px;font-weight:700;font-size:15px;cursor:pointer}
+.k{background:#141a24;border:1px solid #2a3344;border-radius:8px;padding:10px;margin:6px 0 14px;word-break:break-all;font-family:ui-monospace,monospace;font-size:13px}
+small{color:#9aa4b5}
+.warn{background:#3a1d1d;border:1px solid #7a2e2e;border-radius:8px;padding:10px;margin:14px 0}
+</style></head><body><div class="box">
+<h1>Phone alerts: make the key pair</h1>
+<p>This page makes a fresh secret key pair <b>inside your own browser</b>. Nothing is sent anywhere. Do not share the private key with anyone, including Claude.</p>
+<button id="go">Make my keys</button>
+<div id="out" style="display:none">
+  <p><b>1. VAPID_PUBLIC_KEY</b> <button data-c="pub" class="cp">Copy</button></p><div class="k" id="pub"></div>
+  <p><b>2. VAPID_PRIVATE_KEY</b> (secret) <button data-c="priv" class="cp">Copy</button></p><div class="k" id="priv"></div>
+  <p><b>3. VAPID_SUBJECT</b> <button data-c="sub" class="cp">Copy</button></p><div class="k" id="sub">mailto:ali@bashkaexpress.com</div>
+  <div class="warn">Add all three in Vercel: project <b>bashka</b> → Settings → Environment Variables (Production). Then redeploy. After that, close this page. If you lose the private key just open this page again and make a new pair (drivers will tap "Phone alerts" once more).</div>
+</div>
+<script>
+function b64u(buf){var s='';new Uint8Array(buf).forEach(function(b){s+=String.fromCharCode(b)});return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function fromB64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var r=atob(s),a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return a}
+document.getElementById('go').onclick=async function(){
+  var kp=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+  var j=await crypto.subtle.exportKey('jwk',kp.privateKey);
+  var x=fromB64u(j.x),y=fromB64u(j.y),pub=new Uint8Array(65);pub[0]=4;pub.set(x,1);pub.set(y,33);
+  document.getElementById('pub').textContent=b64u(pub);
+  document.getElementById('priv').textContent=j.d;
+  document.getElementById('out').style.display='block';this.textContent='Make a different pair';
+};
+document.querySelectorAll('.cp').forEach(function(b){b.onclick=function(){var t=document.getElementById(b.dataset.c).textContent;navigator.clipboard.writeText(t).then(function(){b.textContent='Copied'},function(){b.textContent='Select and copy by hand'})}});
+</script></div></body></html>

@@ -2809,11 +2809,19 @@ window.maintPrintDot=async function(){
     if(!title||!date||!st||!en){toast('Title, date, start and end time are required','error');return}
     var slots=Math.max(1,parseInt(g('ow-slots'),10)||1);
     var pay=g('ow-pay');
-    var r=await sb.from('open_work').insert({title:title,description:g('ow-desc')||null,work_date:date,start_time:st,end_time:en,pickup_address:g('ow-pickup')||null,drop_address:g('ow-drop')||null,slots:slots,pay:pay===''?null:Number(pay)});
+    var r=await sb.from('open_work').insert({title:title,description:g('ow-desc')||null,work_date:date,start_time:st,end_time:en,pickup_address:g('ow-pickup')||null,drop_address:g('ow-drop')||null,slots:slots,pay:pay===''?null:Number(pay)}).select('id').single();
     if(r.error){toast('Error: '+r.error.message,'error');return}
+    var newId=r.data&&r.data.id;
     ['ow-title','ow-date','ow-start','ow-end','ow-pickup','ow-drop','ow-pay','ow-desc'].forEach(function(i){document.getElementById(i).value=''});
     document.getElementById('ow-slots').value='1';
     toast('Posted — drivers can now see it ✓');
+    if(newId){(async function(){try{
+      var ss=await sb.auth.getSession();var tok=ss&&ss.data&&ss.data.session&&ss.data.session.access_token;
+      var pr=await fetch('/api/push-open-work',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({work_id:newId})});
+      var pj=await pr.json().catch(function(){return{}});
+      if(pr.ok)toast('Phone alert sent to '+pj.sent+' driver'+(pj.sent===1?'':'s')+(pj.skipped?' ('+pj.skipped+' skipped: schedule conflict)':'')+(pj.failed?' · '+pj.failed+' failed':''));
+      else if(pj.error==='not_configured')toast('Posted. Phone alerts are not set up yet.');
+    }catch(e){}})()}
     if(typeof logActivity==='function')logActivity('Posted open work','open_work',null,{title:title,date:date});
     loadOpenWork();
   };
