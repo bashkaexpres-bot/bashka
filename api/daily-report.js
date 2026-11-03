@@ -8,8 +8,8 @@ const { buildXlsx } = require('./_xlsx');
 // The database enforces who may read the data (report_loads checks the right); this file never trusts the browser.
 const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_NAFw4krk8evjh7Bx0VFD9g_EcuThMES';
 const TZ = 'America/Chicago';
-const HEAD = ['Date', 'Job #', 'Customer', 'Pickup address', 'Delivery address', 'Scheduled pickup', 'Scheduled delivery', 'Actual pickup', 'Pickup minutes late', 'Actual delivery', 'Delivery minutes late', 'Status', 'Driver', 'Truck'];
-const WIDTH = [12, 24, 22, 38, 38, 20, 20, 20, 20, 14, 20, 15, 12, 22, 10];
+const HEAD = ['Date', 'Job #', 'Customer', 'Pickup name', 'Pickup address', 'Delivery name', 'Delivery address', 'Scheduled pickup', 'Scheduled delivery', 'Actual pickup', 'Pickup minutes late', 'Actual delivery', 'Delivery minutes late', 'Status', 'Driver', 'Truck'];
+const WIDTH = [12, 24, 22, 24, 38, 24, 38, 20, 20, 20, 20, 14, 20, 15, 12, 22, 10];
 
 function centralDate(d) { return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d); }
 function fmt(t) {
@@ -40,7 +40,7 @@ async function loadsFor(day, token, customer) {
 
 function slug(n) { return String(n || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown'; }
 function toFile(day, rows) {
-  const data = rows.map((x) => [day, x.job_number, x.customer, x.pickup_address, x.drop_address, fmt(x.scheduled_pickup), fmt(x.scheduled_delivery), fmt(x.actual_pickup), minutesLate(x.actual_pickup, x.scheduled_pickup), fmt(x.actual_delivery), minutesLate(x.actual_delivery, x.scheduled_delivery), label(x.status), x.driver, x.truck]);
+  const data = rows.map((x) => [day, x.job_number, x.customer, x.pickup_name, x.pickup_address, x.drop_name, x.drop_address, fmt(x.scheduled_pickup), fmt(x.scheduled_delivery), fmt(x.actual_pickup), minutesLate(x.actual_pickup, x.scheduled_pickup), fmt(x.actual_delivery), minutesLate(x.actual_delivery, x.scheduled_delivery), label(x.status), x.driver, x.truck]);
   return buildXlsx('Loads ' + day, HEAD, data, WIDTH);
 }
 
