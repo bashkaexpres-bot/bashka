@@ -763,6 +763,7 @@ select.form-input{appearance:none}
               <button class="action-btn action-btn-sm" id="mt-review" onclick="maintView('review')">Review</button>
               <button class="action-btn action-btn-sm" id="mt-history" onclick="maintView('history')">History</button>
               <button class="action-btn action-btn-sm" id="mt-costs" onclick="maintView('costs')">Costs</button>
+              <button class="action-btn action-btn-sm" id="mt-equipment" onclick="equipOpen()">🧰 Equipment</button>
               <select class="form-input" id="maint-kind" style="width:auto" onchange="maintKind()"><option value="">Trucks + trailers</option><option value="trucks">Trucks only</option><option value="trailers">Trailers only</option></select> <select class="form-input" id="maint-type" style="width:auto" onchange="maintRender()"><option value="">All types</option><option value="repair">Repairs</option><option value="rental">Rentals</option><option value="parts">Parts bought</option><option value="wash">Truck wash</option><option value="parking">Parking</option><option value="other">Other expense</option></select> <select class="form-input" id="maint-truck" style="width:auto" onchange="maintRender()"><option value="">All</option></select>
               <button class="action-btn action-btn-sm" id="maint-dot" onclick="maintPrintDot()" style="display:none">🖨 Print DOT record</button>
               <button class="action-btn action-btn-sm" id="maint-xls" onclick="maintExportXlsx()" style="display:none">⬇ Excel file</button>
@@ -770,6 +771,28 @@ select.form-input{appearance:none}
               <button class="action-btn action-btn-sm" id="maint-exp-btn" onclick="maintExportOpen()" style="display:none">⬇ Export…</button>
             </div>
             <div id="maint-body" style="overflow-x:auto"><div class="loading">Loading...</div></div>
+          </div>
+          <div class="panel" id="equip-panel" style="display:none">
+            <div class="panel-header" style="flex-wrap:wrap;gap:10px"><div><div class="panel-title">Equipment purchases</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Everything bought for the fleet — one list per year, with receipts</div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select class="form-input" id="eq-year" style="width:auto" onchange="equipRender()"></select><button class="action-btn action-btn-sm" onclick="equipExport()">⬇ Excel file</button></div></div>
+            <div class="panel-body">
+              <div id="eq-kpis" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+              <div id="eq-form-title" style="font-weight:700;margin-bottom:8px">Add a purchase</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+                <div class="form-group"><div class="form-label">Date *</div><input class="form-input" type="date" id="eq-date"></div>
+                <div class="form-group"><div class="form-label">Item *</div><input class="form-input" id="eq-item" placeholder="e.g. Hand truck, 4 tires, tarps" maxlength="200"></div>
+                <div class="form-group"><div class="form-label">Category</div><select class="form-input" id="eq-cat"><option>Tires</option><option>Tools</option><option>Safety gear</option><option>Straps / tie-downs</option><option>Electronics</option><option>Cargo equipment</option><option>Truck parts</option><option>Office</option><option selected>Other</option></select></div>
+                <div class="form-group"><div class="form-label">Vendor</div><input class="form-input" id="eq-vendor" maxlength="200"></div>
+                <div class="form-group"><div class="form-label">Quantity</div><input class="form-input" type="number" min="0.01" step="0.01" value="1" id="eq-qty" oninput="equipCalc()"></div>
+                <div class="form-group"><div class="form-label">Unit price $</div><input class="form-input" type="number" min="0" step="0.01" id="eq-unit" oninput="equipCalc()"></div>
+                <div class="form-group"><div class="form-label">Total $ *</div><input class="form-input" type="number" min="0" step="0.01" id="eq-total"></div>
+                <div class="form-group"><div class="form-label">For truck / trailer (optional)</div><input class="form-input" id="eq-for" maxlength="60" placeholder="e.g. 112 or leave empty"></div>
+                <div class="form-group"><div class="form-label">Receipt (photo or PDF)</div><input class="form-input" type="file" id="eq-file" accept="application/pdf,image/*"></div>
+              </div>
+              <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="eq-notes" rows="2" maxlength="2000"></textarea></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" id="eq-save" onclick="equipSave()">＋ Add purchase</button><button class="action-btn" id="eq-cancel" style="display:none" onclick="equipReset()">Cancel edit</button></div>
+            </div>
+            <div id="eq-body" style="overflow-x:auto"><div class="loading">Loading...</div></div>
           </div>
           <input type="file" id="maint-file" accept="application/pdf,image/*" multiple style="display:none">
         </div>
@@ -999,7 +1022,7 @@ window.canDeleteData=false;window.canActivity=false;window.canExtraWork=false;wi
 function applyRightsUI(){var n=document.getElementById('nav-activity');if(n)n.style.display=window.canActivity?'':'none';}
 function loadMyRights(){
   window.canDeleteData=false;window.canActivity=false;window.canExtraWork=false;window.isSuperUser=false;applyRightsUI();
-  sb.rpc('my_rights').then(function(r){var a=r.data||[];window.canDeleteData=a.indexOf('delete')>-1;window.canActivity=a.indexOf('activity')>-1;window.canExtraWork=a.indexOf('extra_work')>-1;applyRightsUI();});
+  sb.rpc('my_rights').then(function(r){var a=r.data||[];window.canDeleteData=a.indexOf('delete')>-1;window.canActivity=a.indexOf('activity')>-1;window.canExtraWork=a.indexOf('extra_work')>-1;window.canEquipment=a.indexOf('equipment')>-1;applyRightsUI();});
   sb.rpc('is_super_admin').then(function(r){window.isSuperUser=r.data===true;});
 }
 function needDelete(){if(window.canDeleteData===true)return true;toast('Only the owner, or someone the owner allows, can delete data','error');return false}
@@ -1136,8 +1159,8 @@ window.refreshComplianceBadge=refreshComplianceBadge;
 window.deleteShipment=async(id)=>{if(!needDelete())return;if(!confirm('Delete this shipment?'))return;const{error}=await sb.from('jobs').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Shipment deleted');logActivity('Deleted shipment','job',id);loadShipments();loadOverview();}};
 async function loadDrivers(){const{data,error}=await sb.from('drivers').select('*').order('full_name');if(error){toast('Error loading drivers: '+error.message,'error');return;}allDrivers=data||[];document.getElementById('drivers-list').innerHTML=data?.length?data.map(d=>`<div class="driver-item"><div class="driver-avatar">${(d.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}</div><div><div class="driver-name">${d.full_name}</div><div class="driver-sub">${d.phone||'No phone'} · ${d.license_number||'No license'}</div></div><div class="driver-status">${stTag(d.status)}<button class="action-btn-neutral" onclick="editDriver('${d.id}')">Edit</button>${(!d.profile_id&&myRole==='admin')?`<button class="action-btn-neutral" onclick="assignDriverLogin('${d.id}')">🔑 Login</button>`:''}${myRole==='admin'?`<button class="action-btn-danger" onclick="deleteDriver('${d.id}')">✕</button>`:''}<button class="action-btn-neutral" onclick="openCommsModal('${d.id}','${d.full_name||'Driver'}')">💬</button></div></div>`).join(''):'<div class="empty">No drivers yet.</div>';const active=data?.filter(d=>d.status==='active').length||0;const off=data?.filter(d=>d.status==='off_duty').length||0;document.getElementById('drivers-stats').innerHTML=`<div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Total Drivers</span><span style="font-weight:600">${data?.length||0}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Active</span><span style="color:var(--green);font-weight:600">${active}</span></div><div class="detail-row"><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Off Duty</span><span style="color:var(--text3);font-weight:600">${off}</span></div>`;}
 window.deleteDriver=async(id)=>{if(!needDelete())return;if(!confirm('Delete this driver?'))return;const{error}=await sb.from('drivers').delete().eq('id',id);if(error)toast('Error: '+error.message,'error');else{toast('Driver deleted');logActivity('Deleted driver','driver',id);loadDrivers();}};
-async function loadTeam(){const{data,error}=await sb.from('profiles').select('*').in('role',['admin','dispatcher']).order('full_name');const tbody=document.getElementById('team-table');if(error){tbody.innerHTML=`<tr><td colspan="5"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}let granted={};if(window.isSuperUser){const g=await sb.rpc('list_rights');if(!g.error)(g.data||[]).forEach(x=>{(granted[x.user_id]=granted[x.user_id]||[]).push(x.permission)});}const me=currentUser&&currentUser.id;const RT=[['delete','Delete data'],['activity','Activity log'],['extra_work','Approve extra work']];tbody.innerHTML=data?.length?data.map(p=>{let rights='<span style="color:var(--text3)">—</span>';if(window.isSuperUser){if(p.id===me)rights='<span class="tag tag-gold">Owner — all rights</span>';else{const have=granted[p.id]||[];rights='<div style="display:flex;flex-wrap:wrap;gap:6px">'+RT.map(([k,l])=>have.includes(k)?`<button class="action-btn action-btn-sm" title="Click to take away" onclick="setRight('${p.id}','${k}',false)">✓ ${l}</button>`:`<button class="action-btn-neutral action-btn-sm" title="Click to allow" onclick="setRight('${p.id}','${k}',true)">${l}</button>`).join('')+'</div>';}}return `<tr><td class="td-primary">${escHtml(p.full_name||'—')}</td><td>${p.role==='admin'?'<span class="tag tag-gold">Admin</span>':'<span class="tag tag-blue">Dispatcher</span>'}</td><td>${escHtml(p.phone||'—')}</td><td>${p.is_active===false?'<span class="tag tag-muted">Inactive</span>':'<span class="tag tag-green">Active</span>'}</td><td>${rights}</td></tr>`;}).join(''):'<tr><td colspan="5"><div class="empty">No team accounts yet</div></td></tr>';}
-async function setRight(id,right,allowed){if(!window.isSuperUser)return;const names={delete:'delete data',activity:'see the Activity Log',extra_work:'approve or deny extra work'};if(!confirm((allowed?'Allow this person to ':'Take away their right to ')+names[right]+'?'))return;const r=await sb.rpc('set_right',{p_user:id,p_right:right,p_allowed:allowed});if(r.error){toast('Error: '+r.error.message,'error');return}toast(allowed?'Right granted':'Right removed');loadTeam();}
+async function loadTeam(){const{data,error}=await sb.from('profiles').select('*').in('role',['admin','dispatcher']).order('full_name');const tbody=document.getElementById('team-table');if(error){tbody.innerHTML=`<tr><td colspan="5"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}let granted={};if(window.isSuperUser){const g=await sb.rpc('list_rights');if(!g.error)(g.data||[]).forEach(x=>{(granted[x.user_id]=granted[x.user_id]||[]).push(x.permission)});}const me=currentUser&&currentUser.id;const RT=[['delete','Delete data'],['activity','Activity log'],['extra_work','Approve extra work'],['equipment','Edit equipment purchases']];tbody.innerHTML=data?.length?data.map(p=>{let rights='<span style="color:var(--text3)">—</span>';if(window.isSuperUser){if(p.id===me)rights='<span class="tag tag-gold">Owner — all rights</span>';else{const have=granted[p.id]||[];rights='<div style="display:flex;flex-wrap:wrap;gap:6px">'+RT.map(([k,l])=>have.includes(k)?`<button class="action-btn action-btn-sm" title="Click to take away" onclick="setRight('${p.id}','${k}',false)">✓ ${l}</button>`:`<button class="action-btn-neutral action-btn-sm" title="Click to allow" onclick="setRight('${p.id}','${k}',true)">${l}</button>`).join('')+'</div>';}}return `<tr><td class="td-primary">${escHtml(p.full_name||'—')}</td><td>${p.role==='admin'?'<span class="tag tag-gold">Admin</span>':'<span class="tag tag-blue">Dispatcher</span>'}</td><td>${escHtml(p.phone||'—')}</td><td>${p.is_active===false?'<span class="tag tag-muted">Inactive</span>':'<span class="tag tag-green">Active</span>'}</td><td>${rights}</td></tr>`;}).join(''):'<tr><td colspan="5"><div class="empty">No team accounts yet</div></td></tr>';}
+async function setRight(id,right,allowed){if(!window.isSuperUser)return;const names={delete:'delete data',activity:'see the Activity Log',extra_work:'approve or deny extra work',equipment:'edit and delete equipment purchases'};if(!confirm((allowed?'Allow this person to ':'Take away their right to ')+names[right]+'?'))return;const r=await sb.rpc('set_right',{p_user:id,p_right:right,p_allowed:allowed});if(r.error){toast('Error: '+r.error.message,'error');return}toast(allowed?'Right granted':'Right removed');loadTeam();}
 window.setRight=setRight;
 async function loadMessages(){const tbody=document.getElementById('messages-table');tbody.innerHTML='<tr><td colspan="7"><div class="loading">Loading...</div></td></tr>';const{data,error}=await sb.from('contact_submissions').select('*').order('created_at',{ascending:false});if(error){tbody.innerHTML=`<tr><td colspan="7"><div class="empty">Error: ${escHtml(error.message)}</div></td></tr>`;return;}tbody.innerHTML=data?.length?data.map(m=>`<tr style="${m.is_read?'':'background:rgba(232,160,32,0.06)'}"><td style="font-family:var(--mono);font-size:11px;color:var(--text3);white-space:nowrap">${new Date(m.created_at).toLocaleString()}</td><td class="td-primary">${escHtml(m.name)}<div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${escHtml(m.email)}</div></td><td style="font-size:12px;color:var(--text2)">${escHtml(m.company||'—')}</td><td style="font-size:12px;color:var(--text2);max-width:320px;white-space:pre-wrap">${escHtml(m.message)}</td><td style="font-size:11px;color:var(--text3)">${escHtml(m.source||'—')}</td><td>${m.is_read?'<span class="tag tag-muted">Read</span>':'<span class="tag tag-orange">New</span>'}</td><td style="white-space:nowrap">${m.is_read?`<button class="action-btn-neutral" onclick="markMessageRead('${m.id}',false)">Mark Unread</button>`:`<button class="action-btn-neutral" onclick="markMessageRead('${m.id}',true)">Mark Read</button>`}<button class="action-btn-danger" onclick="deleteMessage('${m.id}')">Delete</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty">No messages yet</div></td></tr>';refreshMessagesBadge();}
 async function markMessageRead(id,isRead){const{error}=await sb.from('contact_submissions').update({is_read:isRead}).eq('id',id);if(error){toast('Error updating message: '+error.message,'error');return;}loadMessages();}
@@ -2919,6 +2942,163 @@ window.maintPrintDot=async function(){
   window.loadOpenWork=function(){unread=0;badge();return prev&&prev.apply(this,arguments)};
   document.addEventListener('visibilitychange',function(){if(!document.hidden)poll()});
   setTimeout(poll,4000);timer=setInterval(poll,30000);
+})();
+</script>
+<script>
+/* ===== Equipment purchases (Maintenance > Equipment) ===== */
+(function(){
+  var rows=[],editing=null,mode=false,loaded=false,vehLoaded=false;
+  var $=function(i){return document.getElementById(i)};
+  var esc=function(x){return (window.escHtml||function(v){return String(v)})(x==null?'':x)};
+  var money=function(n){return(n===null||n===undefined||n===''||isNaN(n))?'—':'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})};
+  var dayF=function(d){return d?new Date(d+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'—'};
+  function canEdit(){return window.isSuperUser===true||window.canEquipment===true}
+  function tabRow(){var b=$('mt-review');return b&&b.parentNode}
+  function setMode(on){
+    mode=on;
+    var tabs=['mt-review','mt-history','mt-costs','mt-equipment'];
+    var row=tabRow();
+    if(row)Array.prototype.forEach.call(row.children,function(c){if(tabs.indexOf(c.id)>-1)return;c.style.display=on?'none':''});
+    if($('maint-kpis'))$('maint-kpis').style.display=on?'none':'';
+    if($('maint-body'))$('maint-body').style.display=on?'none':'';
+    $('equip-panel').style.display=on?'':'none';
+    var eb=$('mt-equipment');if(eb)eb.style.outline=on?'2px solid var(--gold)':'none';
+  }
+  var origView=window.maintView;
+  window.maintView=function(v){if(mode){setMode(false)}return origView&&origView.apply(this,arguments)};
+  window.equipOpen=async function(){
+    ['mt-review','mt-history','mt-costs'].forEach(function(i){var b=$(i);if(b)b.style.outline='none'});
+    setMode(true);equipReset();await equipLoad();
+  };
+  async function loadUnits(){
+    if(vehLoaded)return;vehLoaded=true;
+    try{
+      var dl=document.getElementById('eq-units');if(!dl){dl=document.createElement('datalist');dl.id='eq-units';document.body.appendChild(dl);$('eq-for').setAttribute('list','eq-units')}
+      var a=await sb.from('vehicles').select('unit_number,vehicle_code'),b=await sb.from('trailers').select('unit_number');
+      var u=[];(a.data||[]).forEach(function(v){u.push(v.unit_number||v.vehicle_code)});(b.data||[]).forEach(function(t){u.push(t.unit_number)});
+      dl.innerHTML=u.filter(Boolean).map(function(x){return '<option value="'+esc(x)+'">'}).join('');
+    }catch(e){}
+  }
+  async function equipLoad(){
+    $('eq-body').innerHTML='<div class="loading">Loading...</div>';loadUnits();
+    var r=await sb.from('equipment_purchases').select('*').order('purchased_on',{ascending:false}).order('created_at',{ascending:false}).limit(5000);
+    if(r.error){$('eq-body').innerHTML='<div class="empty">Could not load: '+esc(r.error.message)+'<br>If this is the first time, the equipment database step has not been run yet.</div>';return}
+    rows=r.data||[];loaded=true;
+    var ys={};ys[new Date().getFullYear()]=1;rows.forEach(function(x){ys[(x.purchased_on||'').slice(0,4)]=1});
+    var sel=$('eq-year'),keep=sel.value;
+    var list=Object.keys(ys).filter(Boolean).sort().reverse();
+    sel.innerHTML=list.map(function(y){return '<option value="'+y+'">'+y+'</option>'}).join('')+'<option value="all">All years</option>';
+    sel.value=list.indexOf(keep)>-1||keep==='all'?keep:String(new Date().getFullYear());
+    equipRender();
+  }
+  window.equipRender=function(){
+    var y=$('eq-year').value;
+    var list=rows.filter(function(x){return y==='all'||(x.purchased_on||'').slice(0,4)===y});
+    var tot=0,cats={};list.forEach(function(x){tot+=Number(x.total)||0;var c=x.category||'Other';cats[c]=(cats[c]||0)+(Number(x.total)||0)});
+    var chips='<div class="kpi-card gold" style="min-width:170px"><div class="kpi-label">'+(y==='all'?'All years':y)+' total</div><div class="kpi-val">'+money(tot)+'</div><div class="kpi-delta">'+list.length+' purchase'+(list.length===1?'':'s')+'</div></div>';
+    Object.keys(cats).sort(function(a,b){return cats[b]-cats[a]}).forEach(function(c){chips+='<div class="kpi-card blue" style="min-width:130px"><div class="kpi-label">'+esc(c)+'</div><div class="kpi-val" style="font-size:18px">'+money(cats[c])+'</div></div>'});
+    $('eq-kpis').innerHTML=chips;
+    if(!list.length){$('eq-body').innerHTML='<div class="empty">No purchases for '+(y==='all'?'any year':y)+' yet</div>';return}
+    var ce=canEdit();
+    $('eq-body').innerHTML='<table class="data-table"><thead><tr><th>Date</th><th>Item</th><th>Category</th><th>Vendor</th><th>Qty</th><th>For</th><th style="text-align:right">Total</th><th>Added by</th><th></th></tr></thead><tbody>'+list.map(function(x){
+      var act='';
+      if(x.receipt_path)act+='<button class="action-btn action-btn-sm" onclick="equipReceipt(\''+x.id+'\')">📎 Receipt</button> ';
+      if(ce)act+='<button class="action-btn action-btn-sm" onclick="equipEdit(\''+x.id+'\')">Edit</button> <button class="action-btn-danger action-btn-sm" onclick="equipDelete(\''+x.id+'\')">Delete</button>';
+      return '<tr><td>'+esc(dayF(x.purchased_on))+'</td><td><b>'+esc(x.item)+'</b>'+(x.notes?'<div style="font-size:11px;color:var(--text3)">'+esc(x.notes)+'</div>':'')+'</td><td>'+esc(x.category||'')+'</td><td>'+esc(x.vendor||'')+'</td><td>'+esc(x.quantity)+'</td><td>'+esc(x.for_unit||'')+'</td><td style="text-align:right"><b>'+money(x.total)+'</b></td><td style="font-size:11px;color:var(--text3)">'+esc(x.created_by_name||'')+'</td><td style="white-space:nowrap">'+act+'</td></tr>';
+    }).join('')+'</tbody></table>'+(ce?'':'<div style="padding:8px 16px;font-size:11px;color:var(--text3)">You can add and view purchases. Editing and deleting needs permission from the owner.</div>');
+  };
+  window.equipCalc=function(){
+    var q=parseFloat($('eq-qty').value),u=parseFloat($('eq-unit').value);
+    if(q>0&&u>=0&&!isNaN(u))$('eq-total').value=(Math.round(q*u*100)/100).toFixed(2);
+  };
+  window.equipReset=function(){
+    editing=null;
+    ['eq-date','eq-item','eq-vendor','eq-unit','eq-total','eq-for','eq-notes'].forEach(function(i){$(i).value=''});
+    $('eq-qty').value='1';$('eq-cat').value='Other';$('eq-file').value='';
+    $('eq-date').value=new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    $('eq-save').textContent='＋ Add purchase';$('eq-cancel').style.display='none';$('eq-form-title').textContent='Add a purchase';
+  };
+  window.equipEdit=function(id){
+    if(!canEdit()){toast('Ask the owner for permission to edit purchases','error');return}
+    var x=rows.find(function(r){return r.id===id});if(!x)return;
+    editing=id;
+    $('eq-date').value=x.purchased_on||'';$('eq-item').value=x.item||'';$('eq-cat').value=x.category||'Other';$('eq-vendor').value=x.vendor||'';
+    $('eq-qty').value=x.quantity;$('eq-unit').value=x.unit_price==null?'':x.unit_price;$('eq-total').value=x.total;$('eq-for').value=x.for_unit||'';$('eq-notes').value=x.notes||'';$('eq-file').value='';
+    $('eq-save').textContent='✓ Save changes';$('eq-cancel').style.display='';$('eq-form-title').textContent='Editing: '+(x.item||'');
+    $('eq-form-title').scrollIntoView({behavior:'smooth',block:'center'});
+  };
+  window.equipSave=async function(){
+    var item=$('eq-item').value.trim(),date=$('eq-date').value,total=parseFloat($('eq-total').value);
+    if(!item||!date||isNaN(total)||total<0){toast('Date, item and total are required','error');return}
+    var qty=parseFloat($('eq-qty').value);if(!(qty>0))qty=1;
+    var up=$('eq-unit').value;
+    var row={purchased_on:date,item:item,category:$('eq-cat').value||null,vendor:$('eq-vendor').value.trim()||null,quantity:qty,unit_price:up===''?null:parseFloat(up),total:total,for_unit:$('eq-for').value.trim()||null,notes:$('eq-notes').value.trim()||null};
+    var f=$('eq-file').files[0];
+    if(f){
+      if(f.size>15000000){toast('Receipt is too big (15 MB max)','error');return}
+      var safe=f.name.replace(/[^A-Za-z0-9._-]/g,'_').slice(-80);
+      var path='equipment/'+(crypto.randomUUID?crypto.randomUUID():Date.now())+'-'+safe;
+      var up2=await sb.storage.from('receipts').upload(path,f,{contentType:f.type||undefined,upsert:false});
+      if(up2.error){toast('Receipt upload failed: '+up2.error.message,'error');return}
+      row.receipt_path=path;row.receipt_name=f.name.slice(0,200);
+    }
+    var btn=$('eq-save');btn.disabled=true;
+    try{
+      if(editing){
+        row.updated_at=new Date().toISOString();
+        var r=await sb.from('equipment_purchases').update(row).eq('id',editing).select('id');
+        if(r.error){toast('Error: '+r.error.message,'error');return}
+        if(!r.data||!r.data.length){toast('Not allowed — ask the owner for permission to edit','error');return}
+        if(typeof logActivity==='function')logActivity('Edited equipment purchase','equipment',editing,{item:item,total:total});
+        toast('Saved ✓');
+      }else{
+        row.created_by_name=(document.getElementById('sidebar-user')||{}).textContent||null;
+        var r2=await sb.from('equipment_purchases').insert(row).select('id').single();
+        if(r2.error){toast('Error: '+r2.error.message,'error');return}
+        if(typeof logActivity==='function')logActivity('Added equipment purchase','equipment',r2.data&&r2.data.id,{item:item,total:total});
+        toast('Purchase added ✓');
+      }
+      equipReset();await equipLoad();
+    }finally{btn.disabled=false}
+  };
+  window.equipDelete=async function(id){
+    if(!canEdit()){toast('Ask the owner for permission to delete purchases','error');return}
+    var x=rows.find(function(r){return r.id===id});if(!x)return;
+    if(!confirm('Delete "'+x.item+'" ('+money(x.total)+')? This cannot be undone.'))return;
+    var r=await sb.from('equipment_purchases').delete().eq('id',id).select('id');
+    if(r.error){toast('Error: '+r.error.message,'error');return}
+    if(!r.data||!r.data.length){toast('Not allowed — ask the owner for permission to delete','error');return}
+    if(typeof logActivity==='function')logActivity('Deleted equipment purchase','equipment',id,{item:x.item,total:x.total});
+    toast('Deleted');if(editing===id)equipReset();equipLoad();
+  };
+  window.equipReceipt=async function(id){
+    var x=rows.find(function(r){return r.id===id});if(!x||!x.receipt_path)return;
+    var s=await sb.storage.from('receipts').createSignedUrl(x.receipt_path,300);
+    if(s.error||!s.data){toast('Could not open the receipt','error');return}
+    window.open(s.data.signedUrl,'_blank','noopener');
+  };
+  window.equipExport=async function(){
+    var y=$('eq-year').value;
+    var list=rows.filter(function(x){return y==='all'||(x.purchased_on||'').slice(0,4)===y});
+    if(!list.length){toast('Nothing to export','error');return}
+    try{
+      if(!window.XLSX)await new Promise(function(res,rej){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=function(){rej(new Error('Could not load the Excel tool'))};document.head.appendChild(s)});
+    }catch(e){toast(e.message,'error');return}
+    var aoa=[['Date','Item','Category','Vendor','Qty','Unit price','Total','For truck/trailer','Notes','Added by']];
+    var tot=0,cats={};
+    list.slice().sort(function(a,b){return String(a.purchased_on).localeCompare(String(b.purchased_on))}).forEach(function(x){
+      aoa.push([x.purchased_on,x.item,x.category||'',x.vendor||'',Number(x.quantity),x.unit_price==null?'':Number(x.unit_price),Number(x.total),x.for_unit||'',x.notes||'',x.created_by_name||'']);
+      tot+=Number(x.total)||0;var c=x.category||'Other';cats[c]=(cats[c]||0)+(Number(x.total)||0)});
+    aoa.push([]);aoa.push(['','','','','','TOTAL',tot]);
+    var ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[12,34,18,22,7,11,12,18,34,16].map(function(w){return{wch:w}});
+    for(var r=1;r<aoa.length;r++){['F','G'].forEach(function(c){var a=ws[c+(r+1)];if(a&&a.t==='n')a.z='$#,##0.00'})}
+    var cs=[['Category','Total']];Object.keys(cats).sort(function(a,b){return cats[b]-cats[a]}).forEach(function(c){cs.push([c,cats[c]])});cs.push(['TOTAL',tot]);
+    var ws2=XLSX.utils.aoa_to_sheet(cs);ws2['!cols']=[{wch:24},{wch:14}];for(var i=1;i<cs.length;i++){var a=ws2['B'+(i+1)];if(a)a.z='$#,##0.00'}
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Purchases');XLSX.utils.book_append_sheet(wb,ws2,'By category');
+    XLSX.writeFile(wb,'Bashka-equipment-purchases-'+(y==='all'?'all-years':y)+'.xlsx');
+    if(typeof logActivity==='function')logActivity('Exported equipment purchases','equipment',null,{year:y});
+    toast('Excel file downloaded ✓');
+  };
 })();
 </script>
 </body></html>
