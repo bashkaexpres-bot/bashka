@@ -2393,9 +2393,10 @@ window.maintRender=function(){
     /* truck-by-truck comparison over the last N months */
     const months=[];for(let k=cmpN-1;k>=0;k--){const d=new Date(now.getFullYear(),now.getMonth()-k,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
     const mlab=m=>new Date(m+'-15T12:00:00').toLocaleDateString([],{month:'short',year:'2-digit'});
-    const act=vehs.filter(v=>v.status!=='out_of_service'&&(kind==='trailers'?v.isTrailer:!v.isTrailer));
+    const rentOnly=new Set(appr.filter(i=>rt(i)==='rental').map(ukey));appr.filter(i=>rt(i)!=='rental').forEach(i=>rentOnly.delete(ukey(i)));/* rented units are fleet costs, not a truck of ours: keep them out of the comparison */
+    const act=vehs.filter(v=>v.status!=='out_of_service'&&!rentOnly.has(v.id)&&(kind==='trailers'?v.isTrailer:!v.isTrailer));
     const grid={};act.forEach(v=>{grid[v.id]=months.map(()=>0)});
-    appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[ukey(i)])return;grid[ukey(i)][k]+=totals(i).total});
+    appr.forEach(i=>{const k=months.indexOf((i.invoice_date||'').slice(0,7));if(k<0||!grid[ukey(i)]||rt(i)==='rental')return;grid[ukey(i)][k]+=totals(i).total});
     const tot=id=>grid[id].reduce((a,b)=>a+b,0);
     const fleet=act.reduce((a,v)=>a+tot(v.id),0),avg=act.length?fleet/act.length:0;
     const list=act.map(v=>({v,t:tot(v.id),g:grid[v.id]})).sort((a,b)=>b.t-a.t);
