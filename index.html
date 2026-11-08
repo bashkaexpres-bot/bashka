@@ -1675,6 +1675,28 @@ async function oilLoad(force){
     oilLoaded=Date.now();
   }catch(x){}
 }
+/* Oil change on an approved invoice -> update that truck's oil tracker. Works with or without an odometer on the invoice. */
+const OIL_WORDS=/oil\s*(&\s*filter|change|service|filter)|lube[,\s]*oil[,\s]*filter|\bpm\s*(service|oil)|engine oil/i;
+function isOilLine(l){return !!l&&(l.category==='oil_change'||OIL_WORDS.test(String(l.description||'')))}
+async function oilFromInvoice(inv,lines){
+  try{
+    if(!inv||!inv.vehicle_id||!inv.invoice_date||!(lines||[]).some(isOilLine))return null;
+    const ex=await sb.from('vehicle_service').select('last_oil_date,last_oil_miles').eq('vehicle_id',inv.vehicle_id).maybeSingle();
+    if(ex.data&&ex.data.last_oil_date&&ex.data.last_oil_date>inv.invoice_date)return null; /* a newer oil change is already recorded */
+    let miles=inv.odometer||null,src=miles?'invoice':null;
+    if(!miles){ /* no odometer on the receipt: use the truck's latest known reading, but only for a recent invoice (within 3 days) */
+      const age=(Date.now()-new Date(inv.invoice_date+'T12:00:00').getTime())/86400000;
+      if(age<=3){try{await inspLoadVehicles();await oilLoad(true)}catch(x){}
+        const v=(inspVeh||[]).find(x=>x.id===inv.vehicle_id);
+        const info=v?(oilOdo[inspNorm(v.unit_number)]||oilOdo[inspNorm(v.vehicle_code)]):null;
+        if(info&&info.odo){miles=info.odo;src='latest truck reading'}}
+    }
+    const r=await sb.from('vehicle_service').upsert({vehicle_id:inv.vehicle_id,last_oil_miles:miles,last_oil_date:inv.invoice_date,updated_at:new Date().toISOString()});
+    if(r.error)return null;
+    try{logActivity('Oil change recorded from invoice','vehicle',inv.vehicle_id,{date:inv.invoice_date,odometer:miles,source:src||'date only'})}catch(x){}
+    return {miles,src};
+  }catch(x){return null}
+}
 function oilToday(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago'}).format(new Date());}
 function oilStatus(v){
   const row=v&&v.id?oilRows[v.id]:null;
@@ -2325,14 +2347,12 @@ window.maintBulkApprove=async function(){
   const now=new Date().toISOString();
   const r=await sb.from('repair_invoices').update({status:'approved',approved_at:now,approved_by:by,updated_at:now}).in('id',list.map(i=>i.id)).eq('status','review');
   if(r.error){toast('Could not approve: '+r.error.message,'error');return}
+  let oilN=0;
   for(const i of list){
-    try{if(i.vehicle_id&&i.odometer&&(i.repair_lines||[]).some(l=>l.category==='oil_change')){
-      const ex=await sb.from('vehicle_service').select('last_oil_date').eq('vehicle_id',i.vehicle_id).maybeSingle();
-      if(!ex.data||!ex.data.last_oil_date||ex.data.last_oil_date<=i.invoice_date)await sb.from('vehicle_service').upsert({vehicle_id:i.vehicle_id,last_oil_miles:i.odometer,last_oil_date:i.invoice_date,updated_at:now});
-    }}catch(x){}
+    try{if(await oilFromInvoice(i,i.repair_lines||[]))oilN++}catch(x){}
     try{logActivity('Approved '+rt(i)+' invoice (bulk)',i.trailer_id?'trailer':'vehicle',i.vehicle_id||i.trailer_id,{vendor:i.vendor,total:totals(i).total})}catch(x){}
   }
-  bsel.clear();toast('Approved ✓ — '+list.length+' records ('+money(tot)+')');await loadMaint();
+  bsel.clear();toast('Approved ✓ — '+list.length+' records ('+money(tot)+')'+(oilN?' · oil tracker updated on '+oilN+' truck'+(oilN>1?'s':''):''));await loadMaint();
 };
 window.maintView=function(v){view=v;maintRender()};
 window.loadMaint=async function(){
@@ -2573,14 +2593,8 @@ window.maintSave=async function(approve){
   if(!(await persist(fl)))return;
   if(approve){
     try{
-      const ls=readLines();
-      if(fl.vehicle_id&&fl.odometer&&ls.some(l=>l.category==='oil_change')){
-        const ex=await sb.from('vehicle_service').select('last_oil_date').eq('vehicle_id',fl.vehicle_id).maybeSingle();
-        if(!ex.data||!ex.data.last_oil_date||ex.data.last_oil_date<=fl.invoice_date){
-          await sb.from('vehicle_service').upsert({vehicle_id:fl.vehicle_id,last_oil_miles:fl.odometer,last_oil_date:fl.invoice_date,updated_at:new Date().toISOString()});
-          if(typeof oilLoad==='function')oilLoad(true);
-        }
-      }
+      const oil=await oilFromInvoice(fl,readLines());
+      if(oil){if(typeof oilLoad==='function')oilLoad(true);toast('Oil tracker updated for this truck'+(oil.miles?' ('+Number(oil.miles).toLocaleString()+' mi)':' (date only — add the mileage on the Oil page)'))}
     }catch(x){}
     try{logActivity('Approved repair invoice',fl.trailer_id?'trailer':'vehicle',fl.vehicle_id||fl.trailer_id,{vendor:fl.vendor,total:fl.total})}catch(x){}
   }
