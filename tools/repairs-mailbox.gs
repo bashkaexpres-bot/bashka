@@ -56,7 +56,45 @@ function processInbox() {
   });
 }
 
+// Receipts that arrive as the email itself (Clover, Square, etc.) have no attachment, so the pass above never sees them.
+// This pass turns the email text into a PDF and sends it the same way. It only does this for known senders (and @clover.com),
+// and only when the email really looks like a receipt (has a dollar amount plus a receipt word). Everything still lands in Review.
+const BODY_SENDERS_EXTRA = ['@clover.com'];
+
+function processBodyReceipts() {
+  const secret = PropertiesService.getScriptProperties().getProperty('INTAKE_SECRET');
+  if (!secret) throw new Error('Add the INTAKE_SECRET script property first.');
+  const sent = GmailApp.getUserLabelByName('invoice-sent') || GmailApp.createLabel('invoice-sent');
+  const problem = GmailApp.getUserLabelByName('invoice-problem') || GmailApp.createLabel('invoice-problem');
+  const skipped = GmailApp.getUserLabelByName('invoice-skipped') || GmailApp.createLabel('invoice-skipped');
+  const allowed = allowedList_();
+  const bodyAllowed = allowed.concat(BODY_SENDERS_EXTRA);
+  const threads = GmailApp.search('in:inbox -has:attachment -label:invoice-sent -label:invoice-problem -label:invoice-skipped newer_than:30d', 0, 20);
+  threads.forEach(function (th) {
+    let ok = 0, fail = 0;
+    th.getMessages().forEach(function (m) {
+      if (!senderOk_(m.getFrom(), bodyAllowed)) return;
+      const plain = m.getPlainBody() || '';
+      if (!(/\$\s?\d[\d,]*\.\d{2}/.test(plain) && /(total|subtotal|invoice|receipt|amount paid|order id|payment id)/i.test(plain))) return;
+      let pdf;
+      try {
+        const html = '<html><body style="font-family:Arial,sans-serif">' + '<p><b>From:</b> ' + String(m.getFrom()).replace(/[<>&]/g, ' ') + '<br><b>Subject:</b> ' + String(m.getSubject()).replace(/[<>&]/g, ' ') + '<br><b>Email date:</b> ' + m.getDate() + '</p>' + m.getBody() + '</body></html>';
+        pdf = Utilities.newBlob(html, 'text/html', 'receipt.html').getAs('application/pdf');
+      } catch (e) { fail++; return; }
+      if (pdf.getBytes().length > MAX_BYTES) { fail++; return; }
+      const res = UrlFetchApp.fetch(ENDPOINT, {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        headers: { 'x-intake-secret': secret },
+        payload: JSON.stringify({ filename: 'email-receipt.pdf', mime: 'application/pdf', data: Utilities.base64Encode(pdf.getBytes()), from: m.getFrom(), subject: m.getSubject(), known: senderOk_(m.getFrom(), allowed) })
+      });
+      if (res.getResponseCode() === 201) ok++; else fail++;
+    });
+    th.addLabel(fail ? problem : (ok ? sent : skipped));
+  });
+}
+
 function setup() {
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('processInbox').timeBased().everyMinutes(10).create();
+  ScriptApp.newTrigger('processBodyReceipts').timeBased().everyMinutes(10).create();
 }
